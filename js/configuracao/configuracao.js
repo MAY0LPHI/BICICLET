@@ -1119,27 +1119,27 @@ export class ConfiguracaoManager {
         const systemData = this.prepareSystemExportData();
         const wb = XLSX.utils.book_new();
 
-        if (systemData.clientes && systemData.clientes.length > 0) {
+        if (systemData.clientes && systemData.clientes.length > 1) {
             const clientesWs = XLSX.utils.aoa_to_sheet(systemData.clientes);
             XLSX.utils.book_append_sheet(wb, clientesWs, "Clientes");
         }
 
-        if (systemData.bicicletas && systemData.bicicletas.length > 0) {
+        if (systemData.bicicletas && systemData.bicicletas.length > 1) {
             const bicicletasWs = XLSX.utils.aoa_to_sheet(systemData.bicicletas);
             XLSX.utils.book_append_sheet(wb, bicicletasWs, "Bicicletas");
         }
 
-        if (systemData.categorias && systemData.categorias.length > 0) {
+        if (systemData.categorias && systemData.categorias.length > 1) {
             const categoriasWs = XLSX.utils.aoa_to_sheet(systemData.categorias);
             XLSX.utils.book_append_sheet(wb, categoriasWs, "Categorias");
         }
 
-        if (systemData.registros && systemData.registros.length > 0) {
+        if (systemData.registros && systemData.registros.length > 1) {
             const registrosWs = XLSX.utils.aoa_to_sheet(systemData.registros);
             XLSX.utils.book_append_sheet(wb, registrosWs, "Registros");
         }
 
-        if (systemData.usuarios && systemData.usuarios.length > 0) {
+        if (systemData.usuarios && systemData.usuarios.length > 1) {
             const usuariosWs = XLSX.utils.aoa_to_sheet(systemData.usuarios);
             XLSX.utils.book_append_sheet(wb, usuariosWs, "Usuarios");
         }
@@ -1161,19 +1161,19 @@ export class ConfiguracaoManager {
         const systemData = this.prepareSystemExportData();
         
         const sections = [];
-        if (systemData.clientes && systemData.clientes.length > 0) {
+        if (systemData.clientes && systemData.clientes.length > 1) {
             sections.push({ name: 'Clientes', data: systemData.clientes });
         }
-        if (systemData.bicicletas && systemData.bicicletas.length > 0) {
+        if (systemData.bicicletas && systemData.bicicletas.length > 1) {
             sections.push({ name: 'Bicicletas', data: systemData.bicicletas });
         }
-        if (systemData.categorias && systemData.categorias.length > 0) {
+        if (systemData.categorias && systemData.categorias.length > 1) {
             sections.push({ name: 'Categorias', data: systemData.categorias });
         }
-        if (systemData.registros && systemData.registros.length > 0) {
+        if (systemData.registros && systemData.registros.length > 1) {
             sections.push({ name: 'Registros', data: systemData.registros });
         }
-        if (systemData.usuarios && systemData.usuarios.length > 0) {
+        if (systemData.usuarios && systemData.usuarios.length > 1) {
             sections.push({ name: 'Usuarios', data: systemData.usuarios });
         }
 
