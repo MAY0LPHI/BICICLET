@@ -19,6 +19,11 @@ O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicaç
     - Arquivo vazio "Gestão de Bicicletário" removido
     - Raiz do projeto agora mais limpa e organizada
     - Código continua funcionando perfeitamente - nenhum import quebrado
+  - **Correção na exportação Excel do sistema completo:**
+    - Agora exporta TODAS as abas com dados (igual ao CSV)
+    - Corrigido filtro que verificava `length > 0` para `length > 1`
+    - Garante que só exporta abas com dados reais (além do cabeçalho)
+    - Excel agora exporta: Clientes, Bicicletas, Categorias, Registros e Usuários completos
 
 ## Replit Environment Setup
 Successfully imported from GitHub and configured on November 23, 2025.

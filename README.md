@@ -9,7 +9,7 @@
 
 ## 📋 Sobre o Projeto
 
-Sistema web profissional para gerenciamento de bicicletários, desenvolvido para **BICICLETARIO.**, com funcionalidades completas de cadastro, controle de acesso, auditoria e relatórios.
+Sistema web profissional para gerenciamento de bicicletários, desenvolvido para **BICICLETARIO SHOP. BOULEVARD V.V.**, com funcionalidades completas de cadastro, controle de acesso, auditoria e relatórios.
 
 ### ✨ Principais Funcionalidades
 
