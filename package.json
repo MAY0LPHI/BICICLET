@@ -1,0 +1,54 @@
+{
+  "name": "bicicletario-desktop",
+  "version": "2.2.0",
+  "description": "Sistema de Gerenciamento de Bicicletário - Versão Desktop",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build:dir": "electron-builder --win --x64 --dir"
+  },
+  "keywords": [
+    "bicicletario",
+    "gestao",
+    "desktop"
+  ],
+  "author": "BICICLETARIO SHOP. BOULEVARD V.V.",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.bicicletario.desktop",
+    "productName": "Gestão de Bicicletário",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "index.html",
+      "style.css",
+      "js/**/*",
+      "docs/**/*",
+      "attached_assets/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Gestão de Bicicletário"
+    }
+  }
+}

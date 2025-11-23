@@ -1,0 +1,911 @@
+<html lang="pt-BR" class="dark"><head><style data-merge-styles="true"></style>
+    <style data-merge-styles="true"></style><style data-merge-styles="true"></style><style data-merge-styles="true"></style><style data-merge-styles="true"></style><style data-merge-styles="true"></style><meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gerenciamento de Bicicletário</title>
+    <script>
+        tailwind = window.tailwind || {};
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <script src="libs/tailwind.min.js"></script>
+    <script src="libs/lucide.js"></script>
+    <script src="libs/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css?v=3">
+    <script type="module" src="js/app-modular.js?v=3"></script>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0, 0, 0, 0);white-space:nowrap;border-width:0}.pointer-events-none{pointer-events:none}.pointer-events-auto{pointer-events:auto}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0px}.inset-y-0{top:0px;bottom:0px}.left-0{left:0px}.right-0{right:0px}.top-0{top:0px}.right-6{right:1.5rem}.bottom-full{bottom:100%}.left-1\/2{left:50%}.top-full{top:100%}.z-10{z-index:10}.z-20{z-index:20}.z-30{z-index:30}.z-\[10000\]{z-index:10000}.z-\[10001\]{z-index:10001}.z-\[9997\]{z-index:9997}.z-\[9998\]{z-index:9998}.z-\[9999\]{z-index:9999}.z-\[10002\]{z-index:10002}.z-50{z-index:50}.z-\[10005\]{z-index:10005}.mx-auto{margin-left:auto;margin-right:auto}.mx-0\.5{margin-left:0.125rem;margin-right:0.125rem}.-mb-px{margin-bottom:-1px}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mr-2{margin-right:0.5rem}.mt-1{margin-top:0.25rem}.mt-2{margin-top:0.5rem}.mr-1{margin-right:0.25rem}.ml-2{margin-left:0.5rem}.mb-1\.5{margin-bottom:0.375rem}.mt-0\.5{margin-top:0.125rem}.block{display:block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.hidden{display:none}.h-16{height:4rem}.h-4{height:1rem}.h-5{height:1.25rem}.h-1{height:0.25rem}.h-2{height:0.5rem}.h-6{height:1.5rem}.h-3\.5{height:0.875rem}.h-7{height:1.75rem}.h-2\.5{height:0.625rem}.h-3{height:0.75rem}.max-h-\[40vh\]{max-height:40vh}.min-h-screen{min-height:100vh}.w-16{width:4rem}.w-4{width:1rem}.w-48{width:12rem}.w-5{width:1.25rem}.w-full{width:100%}.w-1{width:0.25rem}.w-2{width:0.5rem}.w-6{width:1.5rem}.w-3\.5{width:0.875rem}.w-7{width:1.75rem}.w-2\.5{width:0.625rem}.w-px{width:1px}.min-w-\[280px\]{min-width:280px}.min-w-32{min-width:8rem}.max-w-7xl{max-width:80rem}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}.flex-shrink-0{flex-shrink:0}.flex-grow{flex-grow:1}.origin-left{transform-origin:left}.translate-x-full{--tw-translate-x:100%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.translate-x-0{--tw-translate-x:0px;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.-translate-x-1\/2{--tw-translate-x:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.scale-95{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.scale-x-0{--tw-scale-x:0;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.cursor-ew-resize{cursor:ew-resize}.cursor-nesw-resize{cursor:nesw-resize}.cursor-ns-resize{cursor:ns-resize}.cursor-nwse-resize{cursor:nwse-resize}.select-none{-webkit-user-select:none;user-select:none}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-4{gap:1rem}.gap-8{gap:2rem}.gap-3{gap:0.75rem}.gap-0\.5{gap:0.125rem}.space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-3 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.75rem * var(--tw-space-x-reverse));margin-left:calc(0.75rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-4 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(1rem * var(--tw-space-x-reverse));margin-left:calc(1rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-8 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(2rem * var(--tw-space-x-reverse));margin-left:calc(2rem * calc(1 - var(--tw-space-x-reverse)))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.space-y-8 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(2rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(2rem * var(--tw-space-y-reverse))}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.whitespace-nowrap{white-space:nowrap}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-md{border-radius:0.375rem}.rounded-xl{border-radius:0.75rem}.rounded-sm{border-radius:0.125rem}.rounded-2xl{border-radius:1rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-b-2{border-bottom-width:2px}.border-dashed{border-style:dashed}.border-blue-500{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240 / var(--tw-border-opacity, 1))}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.border-transparent{border-color:transparent}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249 / var(--tw-border-opacity, 1))}.border-blue-300\/60{border-color:rgb(147 197 253 / 0.6)}.border-blue-400\/40{border-color:rgb(96 165 250 / 0.4)}.border-blue-400\/20{border-color:rgb(96 165 250 / 0.2)}.border-blue-500\/60{border-color:rgb(59 130 246 / 0.6)}.border-emerald-500\/60{border-color:rgb(16 185 129 / 0.6)}.border-opacity-30{--tw-border-opacity:0.3}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-green-600{--tw-bg-opacity:1;background-color:rgb(22 163 74 / var(--tw-bg-opacity, 1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-white\/80{background-color:rgb(255 255 255 / 0.8)}.bg-red-600{--tw-bg-opacity:1;background-color:rgb(220 38 38 / var(--tw-bg-opacity, 1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.bg-blue-500\/20{background-color:rgb(59 130 246 / 0.2)}.bg-blue-500\/60{background-color:rgb(59 130 246 / 0.6)}.bg-gray-900\/95{background-color:rgb(17 24 39 / 0.95)}.bg-red-500\/20{background-color:rgb(239 68 68 / 0.2)}.bg-white\/15{background-color:rgb(255 255 255 / 0.15)}.bg-white\/20{background-color:rgb(255 255 255 / 0.2)}.bg-gradient-to-r{background-image:linear-gradient(to right, var(--tw-gradient-stops))}.bg-gradient-to-br{background-image:linear-gradient(to bottom right, var(--tw-gradient-stops))}.from-blue-400\/80{--tw-gradient-from:rgb(96 165 250 / 0.8) var(--tw-gradient-from-position);--tw-gradient-to:rgb(96 165 250 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-blue-500\/10{--tw-gradient-from:rgb(59 130 246 / 0.1) var(--tw-gradient-from-position);--tw-gradient-to:rgb(59 130 246 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-indigo-900\/50{--tw-gradient-from:rgb(49 46 129 / 0.5) var(--tw-gradient-from-position);--tw-gradient-to:rgb(49 46 129 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.via-indigo-500\/5{--tw-gradient-to:rgb(99 102 241 / 0)  var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), rgb(99 102 241 / 0.05) var(--tw-gradient-via-position), var(--tw-gradient-to)}.to-blue-500\/90{--tw-gradient-to:rgb(59 130 246 / 0.9) var(--tw-gradient-to-position)}.to-slate-900\/40{--tw-gradient-to:rgb(15 23 42 / 0.4) var(--tw-gradient-to-position)}.p-2{padding:0.5rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.p-3{padding:0.75rem}.p-1\.5{padding:0.375rem}.px-1{padding-left:0.25rem;padding-right:0.25rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.py-8{padding-top:2rem;padding-bottom:2rem}.py-3\.5{padding-top:0.875rem;padding-bottom:0.875rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.pl-10{padding-left:2.5rem}.pl-3{padding-left:0.75rem}.pr-2{padding-right:0.5rem}.pr-3{padding-right:0.75rem}.pt-4{padding-top:1rem}.text-left{text-align:left}.text-center{text-align:center}.align-top{vertical-align:top}.font-sans{font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"}.text-2xl{font-size:1.5rem;line-height:2rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-semibold{font-weight:600}.font-normal{font-weight:400}.leading-5{line-height:1.25rem}.leading-6{line-height:1.5rem}.leading-snug{line-height:1.375}.tracking-tight{letter-spacing:-0.025em}.text-blue-600{--tw-text-opacity:1;color:rgb(37 99 235 / var(--tw-text-opacity, 1))}.text-red-600{--tw-text-opacity:1;color:rgb(220 38 38 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175 / var(--tw-text-opacity, 1))}.text-blue-300{--tw-text-opacity:1;color:rgb(147 197 253 / var(--tw-text-opacity, 1))}.text-white\/60{color:rgb(255 255 255 / 0.6)}.text-white\/90{color:rgb(255 255 255 / 0.9)}.text-white\/95{color:rgb(255 255 255 / 0.95)}.text-blue-200{--tw-text-opacity:1;color:rgb(191 219 254 / var(--tw-text-opacity, 1))}.text-red-400{--tw-text-opacity:1;color:rgb(248 113 113 / var(--tw-text-opacity, 1))}.text-white\/80{color:rgb(255 255 255 / 0.8)}.placeholder-slate-400::placeholder{--tw-placeholder-opacity:1;color:rgb(148 163 184 / var(--tw-placeholder-opacity, 1))}.caret-blue-500{caret-color:#3b82f6}.opacity-0{opacity:0}.opacity-90{opacity:0.9}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.outline-none{outline:2px solid transparent;outline-offset:2px}.ring-1{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.ring-black{--tw-ring-opacity:1;--tw-ring-color:rgb(0 0 0 / var(--tw-ring-opacity, 1))}.ring-blue-400\/15{--tw-ring-color:rgb(96 165 250 / 0.15)}.ring-blue-400\/30{--tw-ring-color:rgb(96 165 250 / 0.3)}.ring-white\/0{--tw-ring-color:rgb(255 255 255 / 0)}.ring-white\/10{--tw-ring-color:rgb(255 255 255 / 0.1)}.ring-blue-500\/25{--tw-ring-color:rgb(59 130 246 / 0.25)}.ring-white\/15{--tw-ring-color:rgb(255 255 255 / 0.15)}.ring-emerald-500\/25{--tw-ring-color:rgb(16 185 129 / 0.25)}.ring-opacity-5{--tw-ring-opacity:0.05}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-xl{--tw-backdrop-blur:blur(24px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-saturate-150{--tw-backdrop-saturate:saturate(1.5);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-opacity{transition-property:opacity;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-300{transition-duration:300ms}.duration-150{transition-duration:150ms}.duration-200{transition-duration:200ms}.duration-500{transition-duration:500ms}.ease-out{transition-timing-function:cubic-bezier(0, 0, 0.2, 1)}.ease-\[cubic-bezier\(0\.34\2c 1\.56\2c 0\.64\2c 1\)\]{transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)}.ease-in-out{transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1)}.hover\:scale-105:hover{--tw-scale-x:1.05;--tw-scale-y:1.05;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:scale-110:hover{--tw-scale-x:1.1;--tw-scale-y:1.1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:scale-\[1\.02\]:hover{--tw-scale-x:1.02;--tw-scale-y:1.02;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:border-slate-300:hover{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.hover\:border-blue-400:hover{--tw-border-opacity:1;border-color:rgb(96 165 250 / var(--tw-border-opacity, 1))}.hover\:border-blue-200\/80:hover{border-color:rgb(191 219 254 / 0.8)}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216 / var(--tw-bg-opacity, 1))}.hover\:bg-green-700:hover{--tw-bg-opacity:1;background-color:rgb(21 128 61 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-100:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-200:hover{--tw-bg-opacity:1;background-color:rgb(226 232 240 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-50:hover{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.hover\:bg-red-700:hover{--tw-bg-opacity:1;background-color:rgb(185 28 28 / var(--tw-bg-opacity, 1))}.hover\:bg-white\/15:hover{background-color:rgb(255 255 255 / 0.15)}.hover\:bg-red-500\/30:hover{background-color:rgb(239 68 68 / 0.3)}.hover\:bg-white\/10:hover{background-color:rgb(255 255 255 / 0.1)}.hover\:bg-white\/25:hover{background-color:rgb(255 255 255 / 0.25)}.hover\:from-blue-300\/90:hover{--tw-gradient-from:rgb(147 197 253 / 0.9) var(--tw-gradient-from-position);--tw-gradient-to:rgb(147 197 253 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.hover\:from-indigo-900\/60:hover{--tw-gradient-from:rgb(49 46 129 / 0.6) var(--tw-gradient-from-position);--tw-gradient-to:rgb(49 46 129 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.hover\:to-blue-400\/95:hover{--tw-gradient-to:rgb(96 165 250 / 0.95) var(--tw-gradient-to-position)}.hover\:to-slate-900\/50:hover{--tw-gradient-to:rgb(15 23 42 / 0.5) var(--tw-gradient-to-position)}.hover\:text-slate-700:hover{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.hover\:text-blue-500:hover{--tw-text-opacity:1;color:rgb(59 130 246 / var(--tw-text-opacity, 1))}.hover\:text-white\/90:hover{color:rgb(255 255 255 / 0.9)}.hover\:text-red-300:hover{--tw-text-opacity:1;color:rgb(252 165 165 / var(--tw-text-opacity, 1))}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.hover\:shadow-xl:hover{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.hover\:shadow-md:hover{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.hover\:ring-blue-300\/50:hover{--tw-ring-color:rgb(147 197 253 / 0.5)}.hover\:ring-white\/10:hover{--tw-ring-color:rgb(255 255 255 / 0.1)}.hover\:ring-white\/20:hover{--tw-ring-color:rgb(255 255 255 / 0.2)}.hover\:ring-white\/25:hover{--tw-ring-color:rgb(255 255 255 / 0.25)}.hover\:backdrop-blur-2xl:hover{--tw-backdrop-blur:blur(40px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.hover\:backdrop-blur-md:hover{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.focus\:border-blue-500:focus{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:outline-2:focus{outline-width:2px}.focus\:outline-offset-2:focus{outline-offset:2px}.focus\:outline-white\/40:focus{outline-color:rgb(255 255 255 / 0.4)}.focus\:ring-1:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-2:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-blue-500:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(59 130 246 / var(--tw-ring-opacity, 1))}.focus\:ring-green-500:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(34 197 94 / var(--tw-ring-opacity, 1))}.focus\:ring-offset-2:focus{--tw-ring-offset-width:2px}.focus\:ring-offset-slate-50:focus{--tw-ring-offset-color:#f8fafc}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.group:hover .group-hover\:scale-x-100{--tw-scale-x:1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.group:hover .group-hover\:bg-blue-500\/40{background-color:rgb(59 130 246 / 0.4)}.group:hover .group-hover\:opacity-100{opacity:1}@media not all and (min-width: 640px){.max-sm\:right-4{right:1rem}.max-sm\:min-w-\[260px\]{min-width:260px}.max-sm\:max-w-\[calc\(100vw-2rem\)\]{max-width:calc(100vw - 2rem)}}@media (min-width: 640px){.sm\:min-w-\[280px\]{min-width:280px}.sm\:max-w-sm{max-width:24rem}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem}}@media (min-width: 768px){.md\:w-auto{width:auto}.md\:flex-row{flex-direction:row}.md\:items-center{align-items:center}}@media (min-width: 1024px){.lg\:col-span-1{grid-column:span 1 / span 1}.lg\:col-span-2{grid-column:span 2 / span 2}.lg\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.lg\:px-8{padding-left:2rem;padding-right:2rem}}@media (prefers-color-scheme: dark){.dark\:border-blue-400{--tw-border-opacity:1;border-color:rgb(96 165 250 / var(--tw-border-opacity, 1))}.dark\:border-slate-600{--tw-border-opacity:1;border-color:rgb(71 85 105 / var(--tw-border-opacity, 1))}.dark\:border-slate-700{--tw-border-opacity:1;border-color:rgb(51 65 85 / var(--tw-border-opacity, 1))}.dark\:border-slate-800{--tw-border-opacity:1;border-color:rgb(30 41 59 / var(--tw-border-opacity, 1))}.dark\:bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.dark\:bg-green-500{--tw-bg-opacity:1;background-color:rgb(34 197 94 / var(--tw-bg-opacity, 1))}.dark\:bg-slate-700{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.dark\:bg-slate-800{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.dark\:bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.dark\:bg-slate-900\/80{background-color:rgb(15 23 42 / 0.8)}.dark\:bg-slate-700\/40{background-color:rgb(51 65 85 / 0.4)}.dark\:text-blue-400{--tw-text-opacity:1;color:rgb(96 165 250 / var(--tw-text-opacity, 1))}.dark\:text-slate-100{--tw-text-opacity:1;color:rgb(241 245 249 / var(--tw-text-opacity, 1))}.dark\:text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240 / var(--tw-text-opacity, 1))}.dark\:text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.dark\:text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.dark\:text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.dark\:placeholder-slate-400::placeholder{--tw-placeholder-opacity:1;color:rgb(148 163 184 / var(--tw-placeholder-opacity, 1))}.dark\:hover\:border-slate-600:hover{--tw-border-opacity:1;border-color:rgb(71 85 105 / var(--tw-border-opacity, 1))}.dark\:hover\:border-blue-500:hover{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.dark\:hover\:bg-blue-600:hover{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.dark\:hover\:bg-green-600:hover{--tw-bg-opacity:1;background-color:rgb(22 163 74 / var(--tw-bg-opacity, 1))}.dark\:hover\:bg-slate-600:hover{--tw-bg-opacity:1;background-color:rgb(71 85 105 / var(--tw-bg-opacity, 1))}.dark\:hover\:bg-slate-700:hover{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.dark\:hover\:bg-slate-700\/50:hover{background-color:rgb(51 65 85 / 0.5)}.dark\:hover\:text-slate-300:hover{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.dark\:focus\:ring-offset-slate-800:focus{--tw-ring-offset-color:#1e293b}}</style><style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0, 0, 0, 0);white-space:nowrap;border-width:0}.pointer-events-none{pointer-events:none}.pointer-events-auto{pointer-events:auto}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0px}.inset-y-0{top:0px;bottom:0px}.left-0{left:0px}.right-0{right:0px}.top-0{top:0px}.right-6{right:1.5rem}.bottom-full{bottom:100%}.left-1\/2{left:50%}.top-full{top:100%}.z-10{z-index:10}.z-20{z-index:20}.z-30{z-index:30}.z-\[10000\]{z-index:10000}.z-\[10001\]{z-index:10001}.z-\[9997\]{z-index:9997}.z-\[9998\]{z-index:9998}.z-\[9999\]{z-index:9999}.z-\[10002\]{z-index:10002}.z-50{z-index:50}.z-\[10005\]{z-index:10005}.mx-auto{margin-left:auto;margin-right:auto}.mx-0\.5{margin-left:0.125rem;margin-right:0.125rem}.-mb-px{margin-bottom:-1px}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mr-1{margin-right:0.25rem}.mr-2{margin-right:0.5rem}.mt-1{margin-top:0.25rem}.mt-2{margin-top:0.5rem}.ml-2{margin-left:0.5rem}.mb-1\.5{margin-bottom:0.375rem}.mt-0\.5{margin-top:0.125rem}.block{display:block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.hidden{display:none}.h-16{height:4rem}.h-4{height:1rem}.h-5{height:1.25rem}.h-1{height:0.25rem}.h-2{height:0.5rem}.h-6{height:1.5rem}.h-3\.5{height:0.875rem}.h-7{height:1.75rem}.h-2\.5{height:0.625rem}.h-3{height:0.75rem}.max-h-\[40vh\]{max-height:40vh}.min-h-screen{min-height:100vh}.w-16{width:4rem}.w-4{width:1rem}.w-48{width:12rem}.w-5{width:1.25rem}.w-full{width:100%}.w-1{width:0.25rem}.w-2{width:0.5rem}.w-6{width:1.5rem}.w-3\.5{width:0.875rem}.w-7{width:1.75rem}.w-2\.5{width:0.625rem}.w-px{width:1px}.min-w-\[280px\]{min-width:280px}.min-w-32{min-width:8rem}.max-w-7xl{max-width:80rem}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}.flex-shrink-0{flex-shrink:0}.flex-grow{flex-grow:1}.origin-left{transform-origin:left}.translate-x-full{--tw-translate-x:100%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.translate-x-0{--tw-translate-x:0px;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.-translate-x-1\/2{--tw-translate-x:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.scale-95{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.scale-100{--tw-scale-x:1;--tw-scale-y:1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.scale-x-0{--tw-scale-x:0;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.cursor-ew-resize{cursor:ew-resize}.cursor-nesw-resize{cursor:nesw-resize}.cursor-ns-resize{cursor:ns-resize}.cursor-nwse-resize{cursor:nwse-resize}.select-none{-webkit-user-select:none;user-select:none}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-4{gap:1rem}.gap-8{gap:2rem}.gap-3{gap:0.75rem}.gap-0\.5{gap:0.125rem}.space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-3 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.75rem * var(--tw-space-x-reverse));margin-left:calc(0.75rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-4 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(1rem * var(--tw-space-x-reverse));margin-left:calc(1rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-8 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(2rem * var(--tw-space-x-reverse));margin-left:calc(2rem * calc(1 - var(--tw-space-x-reverse)))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.space-y-8 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(2rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(2rem * var(--tw-space-y-reverse))}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.whitespace-nowrap{white-space:nowrap}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-md{border-radius:0.375rem}.rounded-xl{border-radius:0.75rem}.rounded-sm{border-radius:0.125rem}.rounded-2xl{border-radius:1rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-b-2{border-bottom-width:2px}.border-dashed{border-style:dashed}.border-blue-500{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249 / var(--tw-border-opacity, 1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240 / var(--tw-border-opacity, 1))}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.border-transparent{border-color:transparent}.border-blue-300\/60{border-color:rgb(147 197 253 / 0.6)}.border-blue-400\/40{border-color:rgb(96 165 250 / 0.4)}.border-blue-400\/20{border-color:rgb(96 165 250 / 0.2)}.border-blue-500\/60{border-color:rgb(59 130 246 / 0.6)}.border-emerald-500\/60{border-color:rgb(16 185 129 / 0.6)}.border-opacity-30{--tw-border-opacity:0.3}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-green-600{--tw-bg-opacity:1;background-color:rgb(22 163 74 / var(--tw-bg-opacity, 1))}.bg-red-600{--tw-bg-opacity:1;background-color:rgb(220 38 38 / var(--tw-bg-opacity, 1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-white\/80{background-color:rgb(255 255 255 / 0.8)}.bg-blue-500\/20{background-color:rgb(59 130 246 / 0.2)}.bg-blue-500\/60{background-color:rgb(59 130 246 / 0.6)}.bg-gray-900\/95{background-color:rgb(17 24 39 / 0.95)}.bg-red-500\/20{background-color:rgb(239 68 68 / 0.2)}.bg-white\/15{background-color:rgb(255 255 255 / 0.15)}.bg-white\/20{background-color:rgb(255 255 255 / 0.2)}.bg-gradient-to-r{background-image:linear-gradient(to right, var(--tw-gradient-stops))}.bg-gradient-to-br{background-image:linear-gradient(to bottom right, var(--tw-gradient-stops))}.from-blue-400\/80{--tw-gradient-from:rgb(96 165 250 / 0.8) var(--tw-gradient-from-position);--tw-gradient-to:rgb(96 165 250 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-blue-500\/10{--tw-gradient-from:rgb(59 130 246 / 0.1) var(--tw-gradient-from-position);--tw-gradient-to:rgb(59 130 246 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-indigo-900\/50{--tw-gradient-from:rgb(49 46 129 / 0.5) var(--tw-gradient-from-position);--tw-gradient-to:rgb(49 46 129 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.via-indigo-500\/5{--tw-gradient-to:rgb(99 102 241 / 0)  var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), rgb(99 102 241 / 0.05) var(--tw-gradient-via-position), var(--tw-gradient-to)}.to-blue-500\/90{--tw-gradient-to:rgb(59 130 246 / 0.9) var(--tw-gradient-to-position)}.to-slate-900\/40{--tw-gradient-to:rgb(15 23 42 / 0.4) var(--tw-gradient-to-position)}.p-2{padding:0.5rem}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.p-1\.5{padding:0.375rem}.px-1{padding-left:0.25rem;padding-right:0.25rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.py-8{padding-top:2rem;padding-bottom:2rem}.py-3\.5{padding-top:0.875rem;padding-bottom:0.875rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.pl-10{padding-left:2.5rem}.pl-3{padding-left:0.75rem}.pr-2{padding-right:0.5rem}.pr-3{padding-right:0.75rem}.pt-4{padding-top:1rem}.text-left{text-align:left}.text-center{text-align:center}.align-top{vertical-align:top}.font-sans{font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"}.text-2xl{font-size:1.5rem;line-height:2rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-semibold{font-weight:600}.font-normal{font-weight:400}.leading-5{line-height:1.25rem}.leading-6{line-height:1.5rem}.leading-snug{line-height:1.375}.tracking-tight{letter-spacing:-0.025em}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.text-blue-600{--tw-text-opacity:1;color:rgb(37 99 235 / var(--tw-text-opacity, 1))}.text-red-600{--tw-text-opacity:1;color:rgb(220 38 38 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175 / var(--tw-text-opacity, 1))}.text-blue-300{--tw-text-opacity:1;color:rgb(147 197 253 / var(--tw-text-opacity, 1))}.text-white\/60{color:rgb(255 255 255 / 0.6)}.text-white\/90{color:rgb(255 255 255 / 0.9)}.text-white\/95{color:rgb(255 255 255 / 0.95)}.text-blue-200{--tw-text-opacity:1;color:rgb(191 219 254 / var(--tw-text-opacity, 1))}.text-red-400{--tw-text-opacity:1;color:rgb(248 113 113 / var(--tw-text-opacity, 1))}.text-white\/80{color:rgb(255 255 255 / 0.8)}.placeholder-slate-400::placeholder{--tw-placeholder-opacity:1;color:rgb(148 163 184 / var(--tw-placeholder-opacity, 1))}.caret-blue-500{caret-color:#3b82f6}.opacity-0{opacity:0}.opacity-90{opacity:0.9}.opacity-100{opacity:1}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.outline-none{outline:2px solid transparent;outline-offset:2px}.ring-1{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.ring-black{--tw-ring-opacity:1;--tw-ring-color:rgb(0 0 0 / var(--tw-ring-opacity, 1))}.ring-blue-400\/15{--tw-ring-color:rgb(96 165 250 / 0.15)}.ring-blue-400\/30{--tw-ring-color:rgb(96 165 250 / 0.3)}.ring-white\/0{--tw-ring-color:rgb(255 255 255 / 0)}.ring-white\/10{--tw-ring-color:rgb(255 255 255 / 0.1)}.ring-blue-500\/25{--tw-ring-color:rgb(59 130 246 / 0.25)}.ring-white\/15{--tw-ring-color:rgb(255 255 255 / 0.15)}.ring-emerald-500\/25{--tw-ring-color:rgb(16 185 129 / 0.25)}.ring-opacity-5{--tw-ring-opacity:0.05}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-xl{--tw-backdrop-blur:blur(24px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-saturate-150{--tw-backdrop-saturate:saturate(1.5);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-opacity{transition-property:opacity;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-300{transition-duration:300ms}.duration-150{transition-duration:150ms}.duration-200{transition-duration:200ms}.duration-500{transition-duration:500ms}.ease-out{transition-timing-function:cubic-bezier(0, 0, 0.2, 1)}.ease-\[cubic-bezier\(0\.34\2c 1\.56\2c 0\.64\2c 1\)\]{transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)}.ease-in-out{transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1)}.hover\:scale-105:hover{--tw-scale-x:1.05;--tw-scale-y:1.05;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:scale-110:hover{--tw-scale-x:1.1;--tw-scale-y:1.1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:scale-\[1\.02\]:hover{--tw-scale-x:1.02;--tw-scale-y:1.02;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:border-blue-400:hover{--tw-border-opacity:1;border-color:rgb(96 165 250 / var(--tw-border-opacity, 1))}.hover\:border-slate-300:hover{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.hover\:border-blue-200\/80:hover{border-color:rgb(191 219 254 / 0.8)}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216 / var(--tw-bg-opacity, 1))}.hover\:bg-green-700:hover{--tw-bg-opacity:1;background-color:rgb(21 128 61 / var(--tw-bg-opacity, 1))}.hover\:bg-red-700:hover{--tw-bg-opacity:1;background-color:rgb(185 28 28 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-100:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-200:hover{--tw-bg-opacity:1;background-color:rgb(226 232 240 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-50:hover{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.hover\:bg-white\/15:hover{background-color:rgb(255 255 255 / 0.15)}.hover\:bg-red-500\/30:hover{background-color:rgb(239 68 68 / 0.3)}.hover\:bg-white\/10:hover{background-color:rgb(255 255 255 / 0.1)}.hover\:bg-white\/25:hover{background-color:rgb(255 255 255 / 0.25)}.hover\:from-blue-300\/90:hover{--tw-gradient-from:rgb(147 197 253 / 0.9) var(--tw-gradient-from-position);--tw-gradient-to:rgb(147 197 253 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.hover\:from-indigo-900\/60:hover{--tw-gradient-from:rgb(49 46 129 / 0.6) var(--tw-gradient-from-position);--tw-gradient-to:rgb(49 46 129 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.hover\:to-blue-400\/95:hover{--tw-gradient-to:rgb(96 165 250 / 0.95) var(--tw-gradient-to-position)}.hover\:to-slate-900\/50:hover{--tw-gradient-to:rgb(15 23 42 / 0.5) var(--tw-gradient-to-position)}.hover\:text-slate-700:hover{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.hover\:text-blue-500:hover{--tw-text-opacity:1;color:rgb(59 130 246 / var(--tw-text-opacity, 1))}.hover\:text-white\/90:hover{color:rgb(255 255 255 / 0.9)}.hover\:text-red-300:hover{--tw-text-opacity:1;color:rgb(252 165 165 / var(--tw-text-opacity, 1))}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.hover\:shadow-xl:hover{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.hover\:shadow-md:hover{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.hover\:ring-blue-300\/50:hover{--tw-ring-color:rgb(147 197 253 / 0.5)}.hover\:ring-white\/10:hover{--tw-ring-color:rgb(255 255 255 / 0.1)}.hover\:ring-white\/20:hover{--tw-ring-color:rgb(255 255 255 / 0.2)}.hover\:ring-white\/25:hover{--tw-ring-color:rgb(255 255 255 / 0.25)}.hover\:backdrop-blur-2xl:hover{--tw-backdrop-blur:blur(40px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.hover\:backdrop-blur-md:hover{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.focus\:border-blue-500:focus{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:outline-2:focus{outline-width:2px}.focus\:outline-offset-2:focus{outline-offset:2px}.focus\:outline-white\/40:focus{outline-color:rgb(255 255 255 / 0.4)}.focus\:ring-1:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-2:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-blue-500:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(59 130 246 / var(--tw-ring-opacity, 1))}.focus\:ring-green-500:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(34 197 94 / var(--tw-ring-opacity, 1))}.focus\:ring-offset-2:focus{--tw-ring-offset-width:2px}.focus\:ring-offset-slate-50:focus{--tw-ring-offset-color:#f8fafc}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.group:hover .group-hover\:scale-x-100{--tw-scale-x:1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.group:hover .group-hover\:bg-blue-500\/40{background-color:rgb(59 130 246 / 0.4)}.group:hover .group-hover\:opacity-100{opacity:1}@media not all and (min-width: 640px){.max-sm\:right-4{right:1rem}.max-sm\:min-w-\[260px\]{min-width:260px}.max-sm\:max-w-\[calc\(100vw-2rem\)\]{max-width:calc(100vw - 2rem)}}@media (min-width: 640px){.sm\:min-w-\[280px\]{min-width:280px}.sm\:max-w-sm{max-width:24rem}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem}}@media (min-width: 768px){.md\:w-auto{width:auto}.md\:flex-row{flex-direction:row}.md\:items-center{align-items:center}}@media (min-width: 1024px){.lg\:col-span-1{grid-column:span 1 / span 1}.lg\:col-span-2{grid-column:span 2 / span 2}.lg\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.lg\:px-8{padding-left:2rem;padding-right:2rem}}@media (prefers-color-scheme: dark){.dark\:border-blue-400{--tw-border-opacity:1;border-color:rgb(96 165 250 / var(--tw-border-opacity, 1))}.dark\:border-slate-600{--tw-border-opacity:1;border-color:rgb(71 85 105 / var(--tw-border-opacity, 1))}.dark\:border-slate-700{--tw-border-opacity:1;border-color:rgb(51 65 85 / var(--tw-border-opacity, 1))}.dark\:border-slate-800{--tw-border-opacity:1;border-color:rgb(30 41 59 / var(--tw-border-opacity, 1))}.dark\:bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.dark\:bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.dark\:bg-green-500{--tw-bg-opacity:1;background-color:rgb(34 197 94 / var(--tw-bg-opacity, 1))}.dark\:bg-slate-700{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.dark\:bg-slate-700\/40{background-color:rgb(51 65 85 / 0.4)}.dark\:bg-slate-800{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.dark\:bg-slate-900\/80{background-color:rgb(15 23 42 / 0.8)}.dark\:text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240 / var(--tw-text-opacity, 1))}.dark\:text-blue-400{--tw-text-opacity:1;color:rgb(96 165 250 / var(--tw-text-opacity, 1))}.dark\:text-slate-100{--tw-text-opacity:1;color:rgb(241 245 249 / var(--tw-text-opacity, 1))}.dark\:text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.dark\:text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.dark\:text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.dark\:placeholder-slate-400::placeholder{--tw-placeholder-opacity:1;color:rgb(148 163 184 / var(--tw-placeholder-opacity, 1))}.dark\:hover\:border-blue-500:hover{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.dark\:hover\:border-slate-600:hover{--tw-border-opacity:1;border-color:rgb(71 85 105 / var(--tw-border-opacity, 1))}.dark\:hover\:bg-blue-600:hover{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.dark\:hover\:bg-green-600:hover{--tw-bg-opacity:1;background-color:rgb(22 163 74 / var(--tw-bg-opacity, 1))}.dark\:hover\:bg-slate-600:hover{--tw-bg-opacity:1;background-color:rgb(71 85 105 / var(--tw-bg-opacity, 1))}.dark\:hover\:bg-slate-700:hover{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.dark\:hover\:bg-slate-700\/50:hover{background-color:rgb(51 65 85 / 0.5)}.dark\:hover\:text-slate-300:hover{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.dark\:focus\:ring-offset-slate-800:focus{--tw-ring-offset-color:#1e293b}}</style></head>
+<body class="bg-slate-100 text-slate-800 font-sans dark:bg-slate-900 dark:text-slate-200 transition-colors duration-300">
+
+    <div id="login-container" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        <div class="max-w-md w-full mx-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
+                        <i data-lucide="bike" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200">Gestão de Bicicletário</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Entre com suas credenciais</p>
+                </div>
+
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="login-username" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Usuário</label>
+                        <input type="text" id="login-username" required autocomplete="username" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Senha</label>
+                        <input type="password" id="login-password" required autocomplete="current-password" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div id="login-error" class="hidden text-sm text-red-600 dark:text-red-400 text-center bg-red-50 dark:bg-red-900/20 p-3 rounded-lg"></div>
+                    <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Entrar
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                    <p>Credenciais padrão: <strong>admin</strong> / <strong>admin123</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-container" class="min-h-screen hidden">
+        <div id="app">
+            <header class="bg-white/80 dark:bg-slate-900/80 shadow-sm sticky top-0 z-20 backdrop-blur-sm border-b border-transparent dark:border-slate-800">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center justify-between py-4">
+                        <h1 class="text-2xl font-bold text-slate-700 dark:text-slate-200 tracking-tight">Gestão de Bicicletário</h1>
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
+                                <i data-lucide="bike" class="w-6 h-6"></i>
+                                <span class="font-semibold">BICICLETARIO SHOP. BOULEVARD V.V.</span>
+                            </div>
+                            <div class="flex items-center space-x-3 pl-4 border-l border-slate-300 dark:border-slate-600">
+                                <div class="text-right">
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Usuário</p>
+                                    <p id="user-info" class="text-sm font-medium text-slate-700 dark:text-slate-200">Admin</p>
+                                </div>
+                                <button id="logout-btn" class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" title="Sair">
+                                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                        <button id="clientes-tab" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400">
+                          Clientes
+                        </button>
+                        <button id="registros-diarios-tab" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:border-slate-600">
+                          Registros Diários
+                        </button>
+                        <button id="usuarios-tab" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:border-slate-600 hidden">
+                          Usuários
+                        </button>
+                        <button id="configuracao-tab" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:border-slate-600">
+                          Configuração
+                        </button>
+                    </nav>
+                </div>
+            </header>
+
+        <div id="clientes-tab-content">
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1 flex flex-col space-y-8">
+                        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                            <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="user-plus" class="lucide lucide-user-plus mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>
+                                Cadastrar Novo Cliente
+                            </h2>
+                            <form id="add-client-form" class="space-y-4">
+                                <div>
+                                    <label for="nome" class="block text-sm font-medium text-slate-600 dark:text-slate-400">Nome Completo</label>
+                                    <input type="text" id="nome" name="nome" required="" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
+                                </div>
+                                <div>
+                                    <label for="cpf" class="block text-sm font-medium text-slate-600 dark:text-slate-400">CPF</label>
+                                    <input type="text" id="cpf" name="cpf" required="" placeholder="000.000.000-00" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
+                                    <p id="cpf-error" class="text-xs text-red-600 mt-1 hidden"></p>
+                                </div>
+                                <div>
+                                    <label for="telefone" class="block text-sm font-medium text-slate-600 dark:text-slate-400">Telefone</label>
+                                    <input type="tel" id="telefone" name="telefone" required="" placeholder="(00) 00000-0000" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                        <i data-lucide="tag" class="w-4 h-4 inline mr-1"></i>
+                                        Categoria
+                                    </label>
+                                    <div class="custom-dropdown-wrapper">
+                                        <div class="custom-dropdown" id="categoria-dropdown">
+                                            <div class="dropdown-button">
+                                                <span class="dropdown-text">Selecione uma categoria (opcional)</span>
+                                                <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                            </div>
+                                            <div class="dropdown-menu hidden">
+                                                <div class="dropdown-option" data-value="">
+                                                    <span class="dropdown-option-icon">⚙️</span>
+                                                    Selecione uma categoria (opcional)
+                                                </div>
+                                                <div class="dropdown-option" data-value="Cliente">
+                                                    <span class="dropdown-option-icon">👤</span>
+                                                    Cliente
+                                                </div>
+                                                <div class="dropdown-option" data-value="Lojista">
+                                                    <span class="dropdown-option-icon">🏪</span>
+                                                    Lojista
+                                                </div>
+                                                <div class="dropdown-option" data-value="Ifood">
+                                                    <span class="dropdown-option-icon">🍽️</span>
+                                                    Ifood
+                                                </div>
+                                                <div class="dropdown-option" data-value="Academia">
+                                                    <span class="dropdown-option-icon">💪</span>
+                                                    Academia
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <select id="categoria" name="categoria" class="hidden" style="display: none;">
+                                            <option value="">Selecione uma categoria (opcional)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600">
+                                    Salvar Cliente
+                                </button>
+                            </form>
+                        </div>
+    
+                        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                             <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="users" class="lucide lucide-users mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><path d="M16 3.128a4 4 0 0 1 0 7.744"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                                Clientes Cadastrados
+                            </h2>
+                            <div class="mb-4">
+                                 <label for="search" class="sr-only">Pesquisar</label>
+                                 <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="search" class="lucide lucide-search h-5 w-5 text-slate-400"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg>
+                                    </div>
+                                    <input type="search" id="search" placeholder="Pesquisar por nome, CPF ou telefone..." class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md leading-5 bg-white dark:bg-slate-700 text-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
+                                </div>
+                            </div>
+                            <div id="client-list" class="space-y-3 max-h-[40vh] overflow-y-auto pr-2">
+                <div class="client-item p-3 rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-blue-400 cursor-pointer transition-colors dark:border-slate-700 dark:hover:bg-slate-700/50 dark:hover:border-blue-500 " data-id="288ac6a1-2cfe-4427-bee1-97e214349f24">
+                    <p class="font-semibold text-slate-800 dark:text-slate-100">Marcelo Jorge</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">149.315.587-39</p>
+                </div>
+            </div>
+                        </div>
+                    </div>
+    
+                    <div id="client-details-section" class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hidden">
+                    </div>
+                    <div id="client-details-placeholder" class="lg:col-span-2 bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="info" class="lucide lucide-info h-16 w-16 text-slate-300 dark:text-slate-600 mb-4"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                        <h3 class="text-lg font-semibold text-slate-600 dark:text-slate-300">Nenhum cliente selecionado</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Selecione um cliente na lista à esquerda para ver os detalhes.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <div id="registros-diarios-tab-content" class="hidden">
+             <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+                        <h2 class="text-lg font-semibold flex items-center text-slate-800 dark:text-slate-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar-clock" class="lucide lucide-calendar-clock mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"><path d="M16 14v2.2l1.6 1"></path><path d="M16 2v4"></path><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"></path><path d="M3 10h5"></path><path d="M8 2v4"></path><circle cx="16" cy="16" r="6"></circle></svg>
+                            Registros do Dia
+                        </h2>
+                        <div class="flex items-center gap-2 w-full md:w-auto">
+                            <div class="relative flex-grow">
+                                <label for="daily-records-search" class="sr-only">Pesquisar Registros</label>
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="search" class="lucide lucide-search h-4 w-4 text-slate-400"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg>
+                                </div>
+                                <input type="search" id="daily-records-search" placeholder="Pesquisar..." class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md leading-5 bg-white dark:bg-slate-700 text-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
+                            </div>
+                            <input type="date" id="daily-records-date" class="px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" style="color-scheme: dark;">
+                            <div class="relative">
+                                <button id="export-btn" type="button" class="flex items-center text-sm font-medium text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md shadow-sm transition-colors dark:bg-green-500 dark:hover:bg-green-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="download" class="lucide lucide-download h-4 w-4 mr-2"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>
+                                    Exportar
+                                </button>
+                                <div id="export-options" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-slate-700 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-10">
+                                    <button id="export-csv" class="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">Exportar para CSV</button>
+                                    <button id="export-pdf" class="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">Exportar para PDF</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="daily-records-list" class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-left bg-slate-50 dark:bg-slate-700/40">
+                        <tr class="border-b border-slate-200 dark:border-slate-700">
+                            <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Cliente</th>
+                            <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Bicicleta</th>
+                            <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Entrada</th>
+                            <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Saída</th>
+                            <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                            <tr class="border-b border-slate-100 dark:border-slate-700">
+                                <td class="p-3 align-top">
+                                    <p class="font-medium text-slate-800 dark:text-slate-100">Marcelo Jorge</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">149.315.587-39</p>
+                                </td>
+                                <td class="p-3 align-top">
+                                    <p class="font-medium text-slate-800 dark:text-slate-100">aro 29</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">rava - preta e laranja</p>
+                                </td>
+                                <td class="p-3 align-top text-slate-600 dark:text-slate-300">16/10/2025, 00:18:22</td>
+                                <td class="p-3 align-top text-slate-600 dark:text-slate-300"></td>
+                                <td class="p-3 align-top">
+                                    
+                                        <button class="register-saida-btn flex items-center text-sm font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md shadow-sm transition-colors" data-client-id="288ac6a1-2cfe-4427-bee1-97e214349f24" data-bike-id="ef0e7f68-514b-4ae3-94f2-41129420d2aa" data-registro-id="60bb09af-663a-4190-93cb-53cbb759ba2f">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="log-out" class="lucide lucide-log-out h-4 w-4 mr-1"><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path></svg>
+                                            Registrar Saída
+                                        </button>
+                                    
+                                </td>
+                            </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+                </div>
+             </main>
+        </div>
+
+        <div id="configuracao-tab-content" class="hidden">
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="palette" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                            Tema do Sistema
+                        </h2>
+                        <div class="space-y-3">
+                            <label class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                <input type="radio" name="theme" value="system" class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                <div class="flex-1">
+                                    <p class="font-medium text-slate-800 dark:text-slate-100">Sistema</p>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Usar preferência do sistema operacional</p>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                <input type="radio" name="theme" value="light" class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                <div class="flex-1">
+                                    <p class="font-medium text-slate-800 dark:text-slate-100">Claro</p>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Tema claro sempre ativo</p>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                <input type="radio" name="theme" value="dark" class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                <div class="flex-1">
+                                    <p class="font-medium text-slate-800 dark:text-slate-100">Escuro</p>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Tema escuro sempre ativo</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="search" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            Busca Avançada
+                        </h2>
+                        <div class="mb-4">
+                            <label for="global-search" class="sr-only">Buscar cliente</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                </div>
+                                <input type="search" id="global-search" placeholder="Buscar por nome, CPF ou número..." class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-600 rounded-md leading-5 bg-white dark:bg-slate-700 text-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        <div id="global-search-results" class="space-y-2 max-h-[300px] overflow-y-auto">
+                            <p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Digite para buscar clientes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="upload" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                            Importar Dados
+                        </h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="import-file" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+                                    Selecione um arquivo Excel (.xlsx) ou CSV
+                                </label>
+                                <input type="file" id="import-file" accept=".xlsx,.xls,.csv" class="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400">
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-md">
+                                <p class="text-xs text-slate-600 dark:text-slate-400"><strong>Formato esperado:</strong> Nome, Número, CPF (nesta ordem)</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Os dados serão importados e adicionados aos clientes existentes.</p>
+                            </div>
+                            <button type="button" id="import-btn" disabled class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Importar Arquivo
+                            </button>
+                            <div id="import-status" class="hidden text-sm"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="download" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                            Exportar Dados
+                        </h2>
+                        <div class="space-y-4">
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
+                                Exporte todos os clientes cadastrados em formato Excel ou CSV.
+                            </p>
+                            <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-md">
+                                <p class="text-xs text-slate-600 dark:text-slate-400"><strong>Formato de exportação:</strong> Nome, Número, CPF</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Compatível com importação para outros sistemas.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" id="export-excel-btn" class="flex-1 flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                    Excel (.xlsx)
+                                </button>
+                                <button type="button" id="export-csv-config-btn" class="flex-1 flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
+                                    CSV
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                            <i data-lucide="tags" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"></i>
+                            Gerenciar Categorias
+                        </h2>
+                        <div class="space-y-4">
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
+                                Adicione ou remova categorias para classificar clientes.
+                            </p>
+                            
+                            <div id="categorias-stats" class="bg-slate-100 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                                    <span>Carregando estatísticas...</span>
+                                </div>
+                            </div>
+                            
+                            <div id="categorias-list" class="space-y-2 max-h-[200px] overflow-y-auto">
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="nova-categoria" placeholder="Nova categoria..." class="flex-1 px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <button type="button" id="add-categoria-btn" class="flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                                    <i data-lucide="plus" class="h-4 w-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                            <i data-lucide="database" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"></i>
+                            Exportar Sistema Completo
+                        </h2>
+                        <div class="space-y-4">
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
+                                Exporte todos os dados do sistema: clientes, bicicletas, registros e usuários.
+                            </p>
+                            <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-md">
+                                <p class="text-xs text-slate-600 dark:text-slate-400"><strong>Conteúdo:</strong> Clientes, Bicicletas, Registros, Usuários e Permissões</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Backup completo do sistema.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" id="export-system-excel-btn" class="flex-1 flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+                                    <i data-lucide="database" class="h-4 w-4 mr-2"></i>
+                                    Excel (.xlsx)
+                                </button>
+                                <button type="button" id="export-system-csv-btn" class="flex-1 flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+                                    <i data-lucide="database" class="h-4 w-4 mr-2"></i>
+                                    CSV
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                            <i data-lucide="upload-cloud" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"></i>
+                            Importar Sistema Completo
+                        </h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="import-system-file" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+                                    Selecione um arquivo Excel (.xlsx) ou CSV com backup completo
+                                </label>
+                                <input type="file" id="import-system-file" accept=".xlsx,.xls,.csv" class="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400">
+                            </div>
+                            <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-md border border-orange-200 dark:border-orange-800">
+                                <p class="text-xs text-orange-700 dark:text-orange-300 font-medium">⚠️ Atenção!</p>
+                                <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">Esta operação substituirá todos os dados existentes no sistema.</p>
+                            </div>
+                            <button type="button" id="import-system-btn" disabled class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                Importar Backup Completo
+                            </button>
+                            <div id="import-system-status" class="hidden text-sm"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+                            Histórico Organizado de Registros
+                        </h2>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-md mb-4">
+                            <p class="text-xs text-slate-600 dark:text-slate-400">
+                                <strong>Organização automática:</strong> Todos os registros são automaticamente organizados por Ano → Mês → Dia
+                            </p>
+                        </div>
+                        <div id="historico-summary" class="text-sm text-slate-600 dark:text-slate-400 mb-4"></div>
+                        <div id="historico-organizado" class="space-y-2">
+                            <p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Carregando histórico organizado...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <div id="usuarios-tab-content" class="hidden">
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-lg font-semibold flex items-center text-slate-800 dark:text-slate-100">
+                                <i data-lucide="users" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"></i>
+                                Gerenciamento de Usuários
+                            </h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Gerencie funcionários e suas permissões de acesso</p>
+                        </div>
+                        <button id="add-user-btn" class="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                            <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>
+                            Adicionar Usuário
+                        </button>
+                    </div>
+                    <div id="users-list" class="space-y-4">
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-lg font-semibold flex items-center text-slate-800 dark:text-slate-100">
+                                <i data-lucide="file-text" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"></i>
+                                Relatório de Auditoria
+                            </h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Visualize todas as ações realizadas no sistema</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="export-audit-csv" class="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                                <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                                Excel
+                            </button>
+                            <button id="export-audit-pdf" class="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                                <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                                PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Data Início</label>
+                            <input type="date" id="audit-start-date" class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="color-scheme: dark;">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Data Fim</label>
+                            <input type="date" id="audit-end-date" class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="color-scheme: dark;">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Usuário</label>
+                            <select id="audit-user-filter" class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="todos">Todos os usuários</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button id="audit-clear-filters" class="w-full px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                                Limpar Filtros
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="audit-logs-list" class="overflow-x-auto">
+                        <p class="text-center text-slate-500 dark:text-slate-400 py-8">Carregando logs...</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+        </div>
+    </div>
+
+    <div id="add-bike-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md modal-content transform scale-95">
+             <div class="p-6">
+                <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100 mb-4">Adicionar Bicicleta</h3>
+                <form id="add-bike-form" class="space-y-4">
+                    <input type="hidden" id="bike-client-id">
+                    <div>
+                        <label for="bike-modelo" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Modelo</label>
+                        <input type="text" id="bike-modelo" required="" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
+                    </div>
+                     <div>
+                        <label for="bike-marca" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Marca</label>
+                        <input type="text" id="bike-marca" required="" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
+                    </div>
+                    <div>
+                        <label for="bike-cor" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Cor</label>
+                        <input type="text" id="bike-cor" required="" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
+                    </div>
+                    <div class="pt-4 flex justify-end space-x-3">
+                         <button type="button" id="cancel-add-bike" class="bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancelar</button>
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600">Adicionar</button>
+                    </div>
+                </form>
+             </div>
+        </div>
+    </div>
+    
+    <div id="add-registro-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md modal-content transform scale-95">
+             <div class="p-6">
+                <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100 mb-4">Registrar Movimentação</h3>
+                <form id="add-registro-form" class="space-y-4">
+                    <input type="hidden" id="registro-client-id">
+                    <input type="hidden" id="registro-bike-id">
+                     <div>
+                        <p class="text-sm text-slate-600 dark:text-slate-400">Cliente: <span id="registro-client-name" class="font-medium text-slate-800 dark:text-slate-200"></span></p>
+                        <p class="text-sm text-slate-600 dark:text-slate-400">Bicicleta: <span id="registro-bike-info" class="font-medium text-slate-800 dark:text-slate-200"></span></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            <i data-lucide="tag" class="w-4 h-4 inline mr-1"></i>
+                            Categoria
+                        </label>
+                        <div class="custom-dropdown-wrapper">
+                            <div class="custom-dropdown" id="registro-categoria-dropdown">
+                                <div class="dropdown-button">
+                                    <span class="dropdown-text">Selecione uma categoria (opcional)</span>
+                                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </div>
+                                <div class="dropdown-menu hidden">
+                                    <div class="dropdown-option" data-value="">
+                                        <span class="dropdown-option-icon">⚙️</span>
+                                        Selecione uma categoria (opcional)
+                                    </div>
+                                    <div class="dropdown-option" data-value="Cliente">
+                                        <span class="dropdown-option-icon">👤</span>
+                                        Cliente
+                                    </div>
+                                    <div class="dropdown-option" data-value="Lojista">
+                                        <span class="dropdown-option-icon">🏪</span>
+                                        Lojista
+                                    </div>
+                                    <div class="dropdown-option" data-value="Ifood">
+                                        <span class="dropdown-option-icon">🍽️</span>
+                                        Ifood
+                                    </div>
+                                    <div class="dropdown-option" data-value="Academia">
+                                        <span class="dropdown-option-icon">💪</span>
+                                        Academia
+                                    </div>
+                                </div>
+                            </div>
+                            <select id="registro-categoria" name="categoria" class="hidden" style="display: none;">
+                                <option value="">Selecione uma categoria (opcional)</option>
+                            </select>
+                        </div>
+                    </div>
+                     <p class="text-sm text-slate-600 dark:text-slate-300">Confirma o registro de uma nova entrada para esta bicicleta com a data e hora atuais?</p>
+                    <div class="pt-4 flex justify-end space-x-3">
+                         <button type="button" id="cancel-add-registro" class="bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancelar</button>
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Registrar Entrada</button>
+                    </div>
+                </form>
+             </div>
+        </div>
+    </div>
+    
+    <div id="edit-client-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md modal-content transform scale-95">
+            <div class="p-6">
+                <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100 mb-4">Editar Cliente</h3>
+                <form id="edit-client-form" class="space-y-4">
+                    <input type="hidden" id="edit-client-id">
+                    <div>
+                        <label for="edit-client-nome" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Nome Completo</label>
+                        <input type="text" id="edit-client-nome" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-client-cpf" class="block text-sm font-medium text-slate-700 dark:text-slate-300">CPF</label>
+                        <input type="text" id="edit-client-cpf" required placeholder="000.000.000-00" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        <p id="edit-cpf-error" class="text-xs text-red-600 mt-1 hidden"></p>
+                    </div>
+                    <div>
+                        <label for="edit-client-telefone" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Telefone</label>
+                        <input type="tel" id="edit-client-telefone" required placeholder="(00) 00000-0000" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            <i data-lucide="tag" class="w-4 h-4 inline mr-1"></i>
+                            Categoria
+                        </label>
+                        <div class="custom-dropdown-wrapper">
+                            <div class="custom-dropdown" id="edit-client-categoria-dropdown">
+                                <div class="dropdown-button">
+                                    <span class="dropdown-text">Selecione uma categoria (opcional)</span>
+                                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </div>
+                                <div class="dropdown-menu hidden">
+                                    <div class="dropdown-option" data-value="">
+                                        <span class="dropdown-option-icon">⚙️</span>
+                                        Selecione uma categoria (opcional)
+                                    </div>
+                                    <div class="dropdown-option" data-value="Cliente">
+                                        <span class="dropdown-option-icon">👤</span>
+                                        Cliente
+                                    </div>
+                                    <div class="dropdown-option" data-value="Lojista">
+                                        <span class="dropdown-option-icon">🏪</span>
+                                        Lojista
+                                    </div>
+                                    <div class="dropdown-option" data-value="Ifood">
+                                        <span class="dropdown-option-icon">🍽️</span>
+                                        Ifood
+                                    </div>
+                                    <div class="dropdown-option" data-value="Academia">
+                                        <span class="dropdown-option-icon">💪</span>
+                                        Academia
+                                    </div>
+                                </div>
+                            </div>
+                            <select id="edit-client-categoria" name="categoria" class="hidden" style="display: none;">
+                                <option value="">Selecione uma categoria (opcional)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pt-4 flex justify-end space-x-3">
+                        <button type="button" id="cancel-edit-client" class="bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancelar</button>
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div id="edit-bike-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md modal-content transform scale-95">
+            <div class="p-6">
+                <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100 mb-4">Editar Bicicleta</h3>
+                <form id="edit-bike-form" class="space-y-4">
+                    <input type="hidden" id="edit-bike-client-id">
+                    <input type="hidden" id="edit-bike-id">
+                    <div>
+                        <label for="edit-bike-modelo" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Modelo</label>
+                        <input type="text" id="edit-bike-modelo" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-bike-marca" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Marca</label>
+                        <input type="text" id="edit-bike-marca" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-bike-cor" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Cor</label>
+                        <input type="text" id="edit-bike-cor" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="pt-4 flex justify-end space-x-3">
+                        <button type="button" id="cancel-edit-bike" class="bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancelar</button>
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-registro-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg modal-content transform scale-95">
+            <div class="p-6">
+                <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100 mb-4">Editar Registro</h3>
+                <form id="edit-registro-form" class="space-y-4">
+                    <input type="hidden" id="edit-registro-id">
+                    <div>
+                        <label for="edit-registro-client" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Cliente</label>
+                        <select id="edit-registro-client" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Selecione um cliente</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="edit-registro-bike" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Bicicleta</label>
+                        <select id="edit-registro-bike" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Selecione uma bicicleta</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="edit-registro-entrada" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Data e Hora de Entrada</label>
+                        <input type="datetime-local" id="edit-registro-entrada" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-registro-saida" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Data e Hora de Saída (opcional)</label>
+                        <input type="datetime-local" id="edit-registro-saida" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="pt-4 flex justify-end space-x-3">
+                        <button type="button" id="cancel-edit-registro" class="bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancelar</button>
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div id="comments-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-slate-800 dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-lg modal-content transform scale-95">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex-1">
+                        <h3 id="comments-modal-client-name" class="text-xl font-bold text-slate-100"></h3>
+                        <p id="comments-modal-client-cpf" class="text-sm text-slate-400"></p>
+                    </div>
+                    <button type="button" id="close-comments-modal-btn" class="text-slate-400 hover:text-slate-200 transition-colors">
+                        <i data-lucide="x" class="h-6 w-6"></i>
+                    </button>
+                </div>
+                
+                <h4 class="text-sm font-semibold text-amber-400 mb-3 flex items-center">
+                    <i data-lucide="message-circle" class="w-4 h-4 mr-2"></i>
+                    Comentários
+                </h4>
+                
+                <div id="comments-modal-list" class="space-y-3 mb-4 max-h-[250px] overflow-y-auto">
+                    <p class="text-sm text-slate-400 text-center py-3">Nenhum comentário adicionado</p>
+                </div>
+                
+                <div class="flex gap-2">
+                    <input type="text" id="comments-modal-input" placeholder="Adicionar comentário..." class="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
+                    <button type="button" id="comments-modal-add-btn" class="flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors">
+                        <i data-lucide="send" class="h-4 w-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-confirm-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md modal-content transform scale-95">
+            <div class="p-6">
+                <h3 id="confirm-title" class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100 mb-4"></h3>
+                <p id="confirm-message" class="text-sm text-slate-600 dark:text-slate-300 mb-6"></p>
+                <div class="flex justify-end space-x-3">
+                    <button id="confirm-cancel-btn" class="bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancelar</button>
+                    <button id="confirm-ok-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-alert-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md modal-content transform scale-95">
+            <div class="p-6">
+                <h3 id="alert-title" class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100 mb-4"></h3>
+                <p id="alert-message" class="text-sm text-slate-600 dark:text-slate-300 mb-6"></p>
+                <div class="flex justify-end">
+                    <button id="alert-ok-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // Custom Dropdown Handler
+        class CustomDropdown {
+            constructor(dropdownId, selectId) {
+                this.dropdownId = dropdownId;
+                this.selectId = selectId;
+                this.handleClickOutside = (e) => this.closeIfClickedOutside(e);
+                this.handleToggle = (e) => {
+                    e.stopPropagation();
+                    this.toggle();
+                };
+                this.init();
+            }
+            
+            init() {
+                this.dropdown = document.getElementById(this.dropdownId);
+                this.select = document.getElementById(this.selectId);
+                if (!this.dropdown) return;
+                
+                this.button = this.dropdown.querySelector('.dropdown-button');
+                this.menu = this.dropdown.querySelector('.dropdown-menu');
+                this.text = this.dropdown.querySelector('.dropdown-text');
+                this.options = this.dropdown.querySelectorAll('.dropdown-option');
+                
+                // Remove old listeners before adding new ones
+                if (this.button) {
+                    this.button.removeEventListener('click', this.handleToggle);
+                    this.button.addEventListener('click', this.handleToggle);
+                }
+                
+                // Add click listeners to each option
+                this.options.forEach(option => {
+                    const handler = (e) => {
+                        e.stopPropagation();
+                        this.selectOption(option);
+                    };
+                    option.removeEventListener('click', handler);
+                    option.addEventListener('click', handler);
+                });
+                
+                // Handle clicks outside dropdown
+                document.removeEventListener('click', this.handleClickOutside);
+                document.addEventListener('click', this.handleClickOutside);
+            }
+            
+            toggle() {
+                if (!this.menu || !this.button) return;
+                this.menu.classList.toggle('hidden');
+                this.button.classList.toggle('active');
+            }
+            
+            selectOption(option) {
+                if (!option) return;
+                const value = option.getAttribute('data-value');
+                const text = option.textContent.trim();
+                
+                if (this.text) this.text.textContent = text;
+                if (this.select) this.select.value = value;
+                
+                this.options.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+                
+                if (this.menu) this.menu.classList.add('hidden');
+                if (this.button) this.button.classList.remove('active');
+            }
+            
+            closeIfClickedOutside(e) {
+                if (!this.dropdown || !this.dropdown.contains(e.target)) {
+                    if (this.menu) this.menu.classList.add('hidden');
+                    if (this.button) this.button.classList.remove('active');
+                }
+            }
+            
+            setValue(value) {
+                const option = Array.from(this.options).find(opt => opt.getAttribute('data-value') === value);
+                if (option) {
+                    this.selectOption(option);
+                }
+            }
+            
+            getValue() {
+                return this.select ? this.select.value : '';
+            }
+        }
+        
+        // Initialize all custom dropdowns when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            window.categoriaDropdown = new CustomDropdown('categoria-dropdown', 'categoria');
+            window.registroCategoriaDropdown = new CustomDropdown('registro-categoria-dropdown', 'registro-categoria');
+            window.editClientCategoriaDropdown = new CustomDropdown('edit-client-categoria-dropdown', 'edit-client-categoria');
+        });
+    </script>
+
+
+
+
+
+
+<editor-card style="position:absolute;top:0px;left:0px;z-index:auto;display: block !important"><div dir="ltr" style="all: initial;"><div style="color-scheme: initial; forced-color-adjust: initial; mask: initial; math-depth: initial; position: absolute; position-anchor: initial; text-size-adjust: initial; appearance: initial; color: initial; font: initial; font-palette: initial; font-synthesis: initial; position-area: initial; text-orientation: initial; text-rendering: initial; text-spacing-trim: initial; -webkit-font-smoothing: initial; -webkit-locale: initial; -webkit-text-orientation: initial; -webkit-writing-mode: initial; writing-mode: initial; zoom: initial; accent-color: initial; place-content: initial; place-items: initial; place-self: initial; alignment-baseline: initial; anchor-name: initial; anchor-scope: initial; animation-composition: initial; animation: initial; app-region: initial; aspect-ratio: initial; backdrop-filter: initial; backface-visibility: initial; background: initial; background-blend-mode: initial; baseline-shift: initial; baseline-source: initial; block-size: initial; border-block: initial; border: initial; border-radius: initial; border-collapse: initial; border-end-end-radius: initial; border-end-start-radius: initial; border-inline: initial; border-start-end-radius: initial; border-start-start-radius: initial; inset: initial; box-decoration-break: initial; box-shadow: initial; box-sizing: initial; break-after: initial; break-before: initial; break-inside: initial; buffered-rendering: initial; caption-side: initial; caret-animation: initial; caret-color: initial; clear: initial; clip: initial; clip-path: initial; clip-rule: initial; color-interpolation: initial; color-interpolation-filters: initial; color-rendering: initial; columns: initial; column-fill: initial; gap: initial; column-rule: initial; column-span: initial; contain: initial; contain-intrinsic-block-size: initial; contain-intrinsic-size: initial; contain-intrinsic-inline-size: initial; container: initial; content: initial; content-visibility: initial; corner-shape: initial; corner-block-end-shape: initial; corner-block-start-shape: initial; counter-increment: initial; counter-reset: initial; counter-set: initial; cursor: initial; cx: initial; cy: initial; d: initial; display: initial; dominant-baseline: initial; dynamic-range-limit: initial; empty-cells: initial; field-sizing: initial; fill: initial; fill-opacity: initial; fill-rule: initial; filter: initial; flex: initial; flex-flow: initial; float: initial; flood-color: initial; flood-opacity: initial; grid: initial; grid-area: initial; height: initial; hyphenate-character: initial; hyphenate-limit-chars: initial; hyphens: initial; image-orientation: initial; image-rendering: initial; initial-letter: initial; inline-size: initial; inset-block: initial; inset-inline: initial; interpolate-size: initial; isolation: initial; letter-spacing: initial; lighting-color: initial; line-break: initial; list-style: initial; margin-block: initial; margin: initial; margin-inline: initial; marker: initial; mask-type: initial; math-shift: initial; math-style: initial; max-block-size: initial; max-height: initial; max-inline-size: initial; max-width: initial; min-block-size: initial; min-height: initial; min-inline-size: initial; min-width: initial; mix-blend-mode: initial; object-fit: initial; object-position: initial; object-view-box: initial; offset: initial; opacity: initial; order: initial; orphans: initial; outline: initial; outline-offset: initial; overflow-anchor: initial; overflow-block: initial; overflow-clip-margin: initial; overflow-inline: initial; overflow-wrap: initial; overflow: initial; overlay: initial; overscroll-behavior-block: initial; overscroll-behavior-inline: initial; overscroll-behavior: initial; padding-block: initial; padding: initial; padding-inline: initial; page: initial; page-orientation: initial; paint-order: initial; perspective: initial; perspective-origin: initial; pointer-events: initial; position-try: initial; position-visibility: initial; print-color-adjust: initial; quotes: initial; r: initial; reading-flow: initial; reading-order: initial; resize: initial; rotate: initial; ruby-align: initial; ruby-position: initial; rx: initial; ry: initial; scale: initial; scroll-behavior: initial; scroll-initial-target: initial; scroll-margin-block: initial; scroll-margin: initial; scroll-margin-inline: initial; scroll-marker-group: initial; scroll-padding-block: initial; scroll-padding: initial; scroll-padding-inline: initial; scroll-snap-align: initial; scroll-snap-stop: initial; scroll-snap-type: initial; scroll-target-group: initial; scroll-timeline: initial; scrollbar-color: initial; scrollbar-gutter: initial; scrollbar-width: initial; shape-image-threshold: initial; shape-margin: initial; shape-outside: initial; shape-rendering: initial; size: initial; speak: initial; stop-color: initial; stop-opacity: initial; stroke: initial; stroke-dasharray: initial; stroke-dashoffset: initial; stroke-linecap: initial; stroke-linejoin: initial; stroke-miterlimit: initial; stroke-opacity: initial; stroke-width: initial; tab-size: initial; table-layout: initial; text-align: initial; text-align-last: initial; text-anchor: initial; text-autospace: initial; text-box: initial; text-combine-upright: initial; text-decoration: initial; text-decoration-skip-ink: initial; text-emphasis: initial; text-emphasis-position: initial; text-indent: initial; text-overflow: initial; text-shadow: initial; text-transform: initial; text-underline-offset: initial; text-underline-position: initial; text-wrap: initial; timeline-scope: initial; touch-action: initial; transform: initial; transform-box: initial; transform-origin: initial; transform-style: initial; transition: initial; translate: initial; user-select: initial; vector-effect: initial; vertical-align: initial; view-timeline: initial; view-transition-class: initial; view-transition-group: initial; view-transition-name: initial; visibility: initial; border-spacing: initial; -webkit-box-align: initial; -webkit-box-decoration-break: initial; -webkit-box-direction: initial; -webkit-box-flex: initial; -webkit-box-ordinal-group: initial; -webkit-box-orient: initial; -webkit-box-pack: initial; -webkit-box-reflect: initial; -webkit-line-break: initial; -webkit-line-clamp: initial; -webkit-mask-box-image: initial; -webkit-rtl-ordering: initial; -webkit-ruby-position: initial; -webkit-tap-highlight-color: initial; -webkit-text-combine: initial; -webkit-text-decorations-in-effect: initial; -webkit-text-fill-color: initial; -webkit-text-security: initial; -webkit-text-stroke: initial; -webkit-user-drag: initial; white-space-collapse: initial; widows: initial; width: initial; will-change: initial; word-break: initial; word-spacing: initial; x: initial; y: initial; z-index: 2147483647;"><link rel="stylesheet" href="chrome-extension://hokifickgkhplphjiodbggjmoafhignh/fonts/fabric-icons.css"><div style="all: initial;"></div></div><div style="color-scheme: initial; forced-color-adjust: initial; mask: initial; math-depth: initial; position: absolute; position-anchor: initial; text-size-adjust: initial; appearance: initial; color: initial; font: initial; font-palette: initial; font-synthesis: initial; position-area: initial; text-orientation: initial; text-rendering: initial; text-spacing-trim: initial; -webkit-font-smoothing: initial; -webkit-locale: initial; -webkit-text-orientation: initial; -webkit-writing-mode: initial; writing-mode: initial; zoom: initial; accent-color: initial; place-content: initial; place-items: initial; place-self: initial; alignment-baseline: initial; anchor-name: initial; anchor-scope: initial; animation-composition: initial; animation: initial; app-region: initial; aspect-ratio: initial; backdrop-filter: initial; backface-visibility: initial; background: initial; background-blend-mode: initial; baseline-shift: initial; baseline-source: initial; block-size: initial; border-block: initial; border: initial; border-radius: initial; border-collapse: initial; border-end-end-radius: initial; border-end-start-radius: initial; border-inline: initial; border-start-end-radius: initial; border-start-start-radius: initial; inset: initial; box-decoration-break: initial; box-shadow: initial; box-sizing: initial; break-after: initial; break-before: initial; break-inside: initial; buffered-rendering: initial; caption-side: initial; caret-animation: initial; caret-color: initial; clear: initial; clip: initial; clip-path: initial; clip-rule: initial; color-interpolation: initial; color-interpolation-filters: initial; color-rendering: initial; columns: initial; column-fill: initial; gap: initial; column-rule: initial; column-span: initial; contain: initial; contain-intrinsic-block-size: initial; contain-intrinsic-size: initial; contain-intrinsic-inline-size: initial; container: initial; content: initial; content-visibility: initial; corner-shape: initial; corner-block-end-shape: initial; corner-block-start-shape: initial; counter-increment: initial; counter-reset: initial; counter-set: initial; cursor: initial; cx: initial; cy: initial; d: initial; display: initial; dominant-baseline: initial; dynamic-range-limit: initial; empty-cells: initial; field-sizing: initial; fill: initial; fill-opacity: initial; fill-rule: initial; filter: initial; flex: initial; flex-flow: initial; float: initial; flood-color: initial; flood-opacity: initial; grid: initial; grid-area: initial; height: initial; hyphenate-character: initial; hyphenate-limit-chars: initial; hyphens: initial; image-orientation: initial; image-rendering: initial; initial-letter: initial; inline-size: initial; inset-block: initial; inset-inline: initial; interpolate-size: initial; isolation: initial; letter-spacing: initial; lighting-color: initial; line-break: initial; list-style: initial; margin-block: initial; margin: initial; margin-inline: initial; marker: initial; mask-type: initial; math-shift: initial; math-style: initial; max-block-size: initial; max-height: initial; max-inline-size: initial; max-width: initial; min-block-size: initial; min-height: initial; min-inline-size: initial; min-width: initial; mix-blend-mode: initial; object-fit: initial; object-position: initial; object-view-box: initial; offset: initial; opacity: initial; order: initial; orphans: initial; outline: initial; outline-offset: initial; overflow-anchor: initial; overflow-block: initial; overflow-clip-margin: initial; overflow-inline: initial; overflow-wrap: initial; overflow: initial; overlay: initial; overscroll-behavior-block: initial; overscroll-behavior-inline: initial; overscroll-behavior: initial; padding-block: initial; padding: initial; padding-inline: initial; page: initial; page-orientation: initial; paint-order: initial; perspective: initial; perspective-origin: initial; pointer-events: initial; position-try: initial; position-visibility: initial; print-color-adjust: initial; quotes: initial; r: initial; reading-flow: initial; reading-order: initial; resize: initial; rotate: initial; ruby-align: initial; ruby-position: initial; rx: initial; ry: initial; scale: initial; scroll-behavior: initial; scroll-initial-target: initial; scroll-margin-block: initial; scroll-margin: initial; scroll-margin-inline: initial; scroll-marker-group: initial; scroll-padding-block: initial; scroll-padding: initial; scroll-padding-inline: initial; scroll-snap-align: initial; scroll-snap-stop: initial; scroll-snap-type: initial; scroll-target-group: initial; scroll-timeline: initial; scrollbar-color: initial; scrollbar-gutter: initial; scrollbar-width: initial; shape-image-threshold: initial; shape-margin: initial; shape-outside: initial; shape-rendering: initial; size: initial; speak: initial; stop-color: initial; stop-opacity: initial; stroke: initial; stroke-dasharray: initial; stroke-dashoffset: initial; stroke-linecap: initial; stroke-linejoin: initial; stroke-miterlimit: initial; stroke-opacity: initial; stroke-width: initial; tab-size: initial; table-layout: initial; text-align: initial; text-align-last: initial; text-anchor: initial; text-autospace: initial; text-box: initial; text-combine-upright: initial; text-decoration: initial; text-decoration-skip-ink: initial; text-emphasis: initial; text-emphasis-position: initial; text-indent: initial; text-overflow: initial; text-shadow: initial; text-transform: initial; text-underline-offset: initial; text-underline-position: initial; text-wrap: initial; timeline-scope: initial; touch-action: initial; transform: initial; transform-box: initial; transform-origin: initial; transform-style: initial; transition: initial; translate: initial; user-select: initial; vector-effect: initial; vertical-align: initial; view-timeline: initial; view-transition-class: initial; view-transition-group: initial; view-transition-name: initial; visibility: initial; border-spacing: initial; -webkit-box-align: initial; -webkit-box-decoration-break: initial; -webkit-box-direction: initial; -webkit-box-flex: initial; -webkit-box-ordinal-group: initial; -webkit-box-orient: initial; -webkit-box-pack: initial; -webkit-box-reflect: initial; -webkit-line-break: initial; -webkit-line-clamp: initial; -webkit-mask-box-image: initial; -webkit-rtl-ordering: initial; -webkit-ruby-position: initial; -webkit-tap-highlight-color: initial; -webkit-text-combine: initial; -webkit-text-decorations-in-effect: initial; -webkit-text-fill-color: initial; -webkit-text-security: initial; -webkit-text-stroke: initial; -webkit-user-drag: initial; white-space-collapse: initial; widows: initial; width: initial; will-change: initial; word-break: initial; word-spacing: initial; x: initial; y: initial; z-index: 2147483647;"><link rel="stylesheet" href="chrome-extension://hokifickgkhplphjiodbggjmoafhignh/fonts/fabric-icons.css"></div></div></editor-card></body><editor-card style="position:absolute;top:0px;left:0px;z-index:auto;display: block !important"><div dir="ltr" style="all: initial;"><div style="color-scheme: initial; forced-color-adjust: initial; mask: initial; math-depth: initial; position: absolute; position-anchor: initial; text-size-adjust: initial; appearance: initial; color: initial; font: initial; font-palette: initial; font-synthesis: initial; position-area: initial; text-orientation: initial; text-rendering: initial; text-spacing-trim: initial; -webkit-font-smoothing: initial; -webkit-locale: initial; -webkit-text-orientation: initial; -webkit-writing-mode: initial; writing-mode: initial; zoom: initial; accent-color: initial; place-content: initial; place-items: initial; place-self: initial; alignment-baseline: initial; anchor-name: initial; anchor-scope: initial; animation-composition: initial; animation: initial; app-region: initial; aspect-ratio: initial; backdrop-filter: initial; backface-visibility: initial; background: initial; background-blend-mode: initial; baseline-shift: initial; baseline-source: initial; block-size: initial; border-block: initial; border: initial; border-radius: initial; border-collapse: initial; border-end-end-radius: initial; border-end-start-radius: initial; border-inline: initial; border-start-end-radius: initial; border-start-start-radius: initial; inset: initial; box-decoration-break: initial; box-shadow: initial; box-sizing: initial; break-after: initial; break-before: initial; break-inside: initial; buffered-rendering: initial; caption-side: initial; caret-animation: initial; caret-color: initial; clear: initial; clip: initial; clip-path: initial; clip-rule: initial; color-interpolation: initial; color-interpolation-filters: initial; color-rendering: initial; columns: initial; column-fill: initial; gap: initial; column-rule: initial; column-span: initial; contain: initial; contain-intrinsic-block-size: initial; contain-intrinsic-size: initial; contain-intrinsic-inline-size: initial; container: initial; content: initial; content-visibility: initial; corner-shape: initial; corner-block-end-shape: initial; corner-block-start-shape: initial; counter-increment: initial; counter-reset: initial; counter-set: initial; cursor: initial; cx: initial; cy: initial; d: initial; display: initial; dominant-baseline: initial; dynamic-range-limit: initial; empty-cells: initial; field-sizing: initial; fill: initial; fill-opacity: initial; fill-rule: initial; filter: initial; flex: initial; flex-flow: initial; float: initial; flood-color: initial; flood-opacity: initial; grid: initial; grid-area: initial; height: initial; hyphenate-character: initial; hyphenate-limit-chars: initial; hyphens: initial; image-orientation: initial; image-rendering: initial; initial-letter: initial; inline-size: initial; inset-block: initial; inset-inline: initial; interpolate-size: initial; isolation: initial; letter-spacing: initial; lighting-color: initial; line-break: initial; list-style: initial; margin-block: initial; margin: initial; margin-inline: initial; marker: initial; mask-type: initial; math-shift: initial; math-style: initial; max-block-size: initial; max-height: initial; max-inline-size: initial; max-width: initial; min-block-size: initial; min-height: initial; min-inline-size: initial; min-width: initial; mix-blend-mode: initial; object-fit: initial; object-position: initial; object-view-box: initial; offset: initial; opacity: initial; order: initial; orphans: initial; outline: initial; outline-offset: initial; overflow-anchor: initial; overflow-block: initial; overflow-clip-margin: initial; overflow-inline: initial; overflow-wrap: initial; overflow: initial; overlay: initial; overscroll-behavior-block: initial; overscroll-behavior-inline: initial; overscroll-behavior: initial; padding-block: initial; padding: initial; padding-inline: initial; page: initial; page-orientation: initial; paint-order: initial; perspective: initial; perspective-origin: initial; pointer-events: initial; position-try: initial; position-visibility: initial; print-color-adjust: initial; quotes: initial; r: initial; reading-flow: initial; reading-order: initial; resize: initial; rotate: initial; ruby-align: initial; ruby-position: initial; rx: initial; ry: initial; scale: initial; scroll-behavior: initial; scroll-initial-target: initial; scroll-margin-block: initial; scroll-margin: initial; scroll-margin-inline: initial; scroll-marker-group: initial; scroll-padding-block: initial; scroll-padding: initial; scroll-padding-inline: initial; scroll-snap-align: initial; scroll-snap-stop: initial; scroll-snap-type: initial; scroll-target-group: initial; scroll-timeline: initial; scrollbar-color: initial; scrollbar-gutter: initial; scrollbar-width: initial; shape-image-threshold: initial; shape-margin: initial; shape-outside: initial; shape-rendering: initial; size: initial; speak: initial; stop-color: initial; stop-opacity: initial; stroke: initial; stroke-dasharray: initial; stroke-dashoffset: initial; stroke-linecap: initial; stroke-linejoin: initial; stroke-miterlimit: initial; stroke-opacity: initial; stroke-width: initial; tab-size: initial; table-layout: initial; text-align: initial; text-align-last: initial; text-anchor: initial; text-autospace: initial; text-box: initial; text-combine-upright: initial; text-decoration: initial; text-decoration-skip-ink: initial; text-emphasis: initial; text-emphasis-position: initial; text-indent: initial; text-overflow: initial; text-shadow: initial; text-transform: initial; text-underline-offset: initial; text-underline-position: initial; text-wrap: initial; timeline-scope: initial; touch-action: initial; transform: initial; transform-box: initial; transform-origin: initial; transform-style: initial; transition: initial; translate: initial; user-select: initial; vector-effect: initial; vertical-align: initial; view-timeline: initial; view-transition-class: initial; view-transition-group: initial; view-transition-name: initial; visibility: initial; border-spacing: initial; -webkit-box-align: initial; -webkit-box-decoration-break: initial; -webkit-box-direction: initial; -webkit-box-flex: initial; -webkit-box-ordinal-group: initial; -webkit-box-orient: initial; -webkit-box-pack: initial; -webkit-box-reflect: initial; -webkit-line-break: initial; -webkit-line-clamp: initial; -webkit-mask-box-image: initial; -webkit-rtl-ordering: initial; -webkit-ruby-position: initial; -webkit-tap-highlight-color: initial; -webkit-text-combine: initial; -webkit-text-decorations-in-effect: initial; -webkit-text-fill-color: initial; -webkit-text-security: initial; -webkit-text-stroke: initial; -webkit-user-drag: initial; white-space-collapse: initial; widows: initial; width: initial; will-change: initial; word-break: initial; word-spacing: initial; x: initial; y: initial; z-index: 2147483647;"><link rel="stylesheet" href="chrome-extension://hokifickgkhplphjiodbggjmoafhignh/fonts/fabric-icons.css"><div style="all: initial;"></div></div><div style="color-scheme: initial; forced-color-adjust: initial; mask: initial; math-depth: initial; position: absolute; position-anchor: initial; text-size-adjust: initial; appearance: initial; color: initial; font: initial; font-palette: initial; font-synthesis: initial; position-area: initial; text-orientation: initial; text-rendering: initial; text-spacing-trim: initial; -webkit-font-smoothing: initial; -webkit-locale: initial; -webkit-text-orientation: initial; -webkit-writing-mode: initial; writing-mode: initial; zoom: initial; accent-color: initial; place-content: initial; place-items: initial; place-self: initial; alignment-baseline: initial; anchor-name: initial; anchor-scope: initial; animation-composition: initial; animation: initial; app-region: initial; aspect-ratio: initial; backdrop-filter: initial; backface-visibility: initial; background: initial; background-blend-mode: initial; baseline-shift: initial; baseline-source: initial; block-size: initial; border-block: initial; border: initial; border-radius: initial; border-collapse: initial; border-end-end-radius: initial; border-end-start-radius: initial; border-inline: initial; border-start-end-radius: initial; border-start-start-radius: initial; inset: initial; box-decoration-break: initial; box-shadow: initial; box-sizing: initial; break-after: initial; break-before: initial; break-inside: initial; buffered-rendering: initial; caption-side: initial; caret-animation: initial; caret-color: initial; clear: initial; clip: initial; clip-path: initial; clip-rule: initial; color-interpolation: initial; color-interpolation-filters: initial; color-rendering: initial; columns: initial; column-fill: initial; gap: initial; column-rule: initial; column-span: initial; contain: initial; contain-intrinsic-block-size: initial; contain-intrinsic-size: initial; contain-intrinsic-inline-size: initial; container: initial; content: initial; content-visibility: initial; corner-shape: initial; corner-block-end-shape: initial; corner-block-start-shape: initial; counter-increment: initial; counter-reset: initial; counter-set: initial; cursor: initial; cx: initial; cy: initial; d: initial; display: initial; dominant-baseline: initial; dynamic-range-limit: initial; empty-cells: initial; field-sizing: initial; fill: initial; fill-opacity: initial; fill-rule: initial; filter: initial; flex: initial; flex-flow: initial; float: initial; flood-color: initial; flood-opacity: initial; grid: initial; grid-area: initial; height: initial; hyphenate-character: initial; hyphenate-limit-chars: initial; hyphens: initial; image-orientation: initial; image-rendering: initial; initial-letter: initial; inline-size: initial; inset-block: initial; inset-inline: initial; interpolate-size: initial; isolation: initial; letter-spacing: initial; lighting-color: initial; line-break: initial; list-style: initial; margin-block: initial; margin: initial; margin-inline: initial; marker: initial; mask-type: initial; math-shift: initial; math-style: initial; max-block-size: initial; max-height: initial; max-inline-size: initial; max-width: initial; min-block-size: initial; min-height: initial; min-inline-size: initial; min-width: initial; mix-blend-mode: initial; object-fit: initial; object-position: initial; object-view-box: initial; offset: initial; opacity: initial; order: initial; orphans: initial; outline: initial; outline-offset: initial; overflow-anchor: initial; overflow-block: initial; overflow-clip-margin: initial; overflow-inline: initial; overflow-wrap: initial; overflow: initial; overlay: initial; overscroll-behavior-block: initial; overscroll-behavior-inline: initial; overscroll-behavior: initial; padding-block: initial; padding: initial; padding-inline: initial; page: initial; page-orientation: initial; paint-order: initial; perspective: initial; perspective-origin: initial; pointer-events: initial; position-try: initial; position-visibility: initial; print-color-adjust: initial; quotes: initial; r: initial; reading-flow: initial; reading-order: initial; resize: initial; rotate: initial; ruby-align: initial; ruby-position: initial; rx: initial; ry: initial; scale: initial; scroll-behavior: initial; scroll-initial-target: initial; scroll-margin-block: initial; scroll-margin: initial; scroll-margin-inline: initial; scroll-marker-group: initial; scroll-padding-block: initial; scroll-padding: initial; scroll-padding-inline: initial; scroll-snap-align: initial; scroll-snap-stop: initial; scroll-snap-type: initial; scroll-target-group: initial; scroll-timeline: initial; scrollbar-color: initial; scrollbar-gutter: initial; scrollbar-width: initial; shape-image-threshold: initial; shape-margin: initial; shape-outside: initial; shape-rendering: initial; size: initial; speak: initial; stop-color: initial; stop-opacity: initial; stroke: initial; stroke-dasharray: initial; stroke-dashoffset: initial; stroke-linecap: initial; stroke-linejoin: initial; stroke-miterlimit: initial; stroke-opacity: initial; stroke-width: initial; tab-size: initial; table-layout: initial; text-align: initial; text-align-last: initial; text-anchor: initial; text-autospace: initial; text-box: initial; text-combine-upright: initial; text-decoration: initial; text-decoration-skip-ink: initial; text-emphasis: initial; text-emphasis-position: initial; text-indent: initial; text-overflow: initial; text-shadow: initial; text-transform: initial; text-underline-offset: initial; text-underline-position: initial; text-wrap: initial; timeline-scope: initial; touch-action: initial; transform: initial; transform-box: initial; transform-origin: initial; transform-style: initial; transition: initial; translate: initial; user-select: initial; vector-effect: initial; vertical-align: initial; view-timeline: initial; view-transition-class: initial; view-transition-group: initial; view-transition-name: initial; visibility: initial; border-spacing: initial; -webkit-box-align: initial; -webkit-box-decoration-break: initial; -webkit-box-direction: initial; -webkit-box-flex: initial; -webkit-box-ordinal-group: initial; -webkit-box-orient: initial; -webkit-box-pack: initial; -webkit-box-reflect: initial; -webkit-line-break: initial; -webkit-line-clamp: initial; -webkit-mask-box-image: initial; -webkit-rtl-ordering: initial; -webkit-ruby-position: initial; -webkit-tap-highlight-color: initial; -webkit-text-combine: initial; -webkit-text-decorations-in-effect: initial; -webkit-text-fill-color: initial; -webkit-text-security: initial; -webkit-text-stroke: initial; -webkit-user-drag: initial; white-space-collapse: initial; widows: initial; width: initial; will-change: initial; word-break: initial; word-spacing: initial; x: initial; y: initial; z-index: 2147483647;"><link rel="stylesheet" href="chrome-extension://hokifickgkhplphjiodbggjmoafhignh/fonts/fabric-icons.css"></div></div></editor-card></html>
