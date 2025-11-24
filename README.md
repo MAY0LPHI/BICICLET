@@ -238,7 +238,7 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 ## 👨‍💻 Autor
 
-**BICICLETARIO SHOP. BOULEVARD V.V.**
+**Marcelo Jorge**
 
 ---
 
