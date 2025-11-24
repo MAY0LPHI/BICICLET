@@ -364,32 +364,32 @@ class App {
             const canEditClients = Auth.hasPermission('clientes', 'editar');
 
             if (comentarios.length === 0) {
-                commentsList.innerHTML = '<p class="text-sm text-slate-400 text-center py-3">Nenhum comentário adicionado</p>';
+                commentsList.innerHTML = '<p class="text-sm text-slate-400 dark:text-slate-400 text-center py-3">Nenhum comentário adicionado</p>';
             } else {
                 commentsList.innerHTML = comentarios.map(comment => {
                     const commentDate = new Date(comment.data);
                     const isOwner = currentUsername && comment.usuario === currentUsername;
                     const canDeleteComment = isOwner || canEditClients;
                     return `
-                        <div class="flex gap-3 p-3 rounded-lg bg-slate-700 border border-slate-600">
+                        <div class="flex gap-3 p-3 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
                             <div class="flex-shrink-0">
-                                <div class="flex items-center justify-center w-8 h-8 bg-amber-900/30 rounded-full">
-                                    <i data-lucide="user" class="w-4 h-4 text-amber-400"></i>
+                                <div class="flex items-center justify-center w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                                    <i data-lucide="user" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
                                 </div>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between mb-1">
-                                    <p class="text-xs font-medium text-amber-200">${comment.usuario}</p>
+                                    <p class="text-xs font-medium text-amber-700 dark:text-amber-200">${comment.usuario}</p>
                                     <div class="flex items-center gap-2">
-                                        <p class="text-xs text-amber-400">${commentDate.toLocaleDateString('pt-BR')} ${commentDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</p>
+                                        <p class="text-xs text-amber-600 dark:text-amber-400">${commentDate.toLocaleDateString('pt-BR')} ${commentDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</p>
                                         ${canDeleteComment ? `
-                                        <button class="delete-modal-comment-btn text-red-400 hover:text-red-300" data-comment-id="${comment.id}" title="Excluir comentário">
+                                        <button class="delete-modal-comment-btn text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" data-comment-id="${comment.id}" title="Excluir comentário">
                                             <i data-lucide="trash-2" class="w-3 h-3"></i>
                                         </button>
                                         ` : ''}
                                     </div>
                                 </div>
-                                <p class="text-sm text-slate-100 break-words">${comment.texto}</p>
+                                <p class="text-sm text-slate-700 dark:text-slate-100 break-words">${comment.texto}</p>
                             </div>
                         </div>
                     `;

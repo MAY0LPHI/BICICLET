@@ -28,6 +28,7 @@ export class RegistrosManager {
             editRegistroIdInput: document.getElementById('edit-registro-id'),
             editRegistroClientSelect: document.getElementById('edit-registro-client'),
             editRegistroBikeSelect: document.getElementById('edit-registro-bike'),
+            editRegistroCategoriaSelect: document.getElementById('edit-registro-categoria'),
             editRegistroEntradaInput: document.getElementById('edit-registro-entrada'),
             editRegistroSaidaInput: document.getElementById('edit-registro-saida'),
         };
@@ -346,6 +347,18 @@ export class RegistrosManager {
 
         this.populateBikeSelect(registro.clientId, registro.bikeId);
 
+        const categorias = Storage.loadCategorias();
+        this.elements.editRegistroCategoriaSelect.innerHTML = '<option value="">Selecione uma categoria (opcional)</option>';
+        Object.entries(categorias).forEach(([nome, emoji]) => {
+            const option = document.createElement('option');
+            option.value = nome;
+            option.textContent = `${emoji} ${nome}`;
+            if (registro.categoria === nome) {
+                option.selected = true;
+            }
+            this.elements.editRegistroCategoriaSelect.appendChild(option);
+        });
+
         const entradaDate = new Date(registro.dataHoraEntrada);
         this.elements.editRegistroEntradaInput.value = this.formatDateTimeLocal(entradaDate);
 
@@ -408,6 +421,7 @@ export class RegistrosManager {
 
         const newClientId = this.elements.editRegistroClientSelect.value;
         const newBikeId = this.elements.editRegistroBikeSelect.value;
+        const newCategoria = this.elements.editRegistroCategoriaSelect.value;
         const newEntrada = this.elements.editRegistroEntradaInput.value;
         const newSaida = this.elements.editRegistroSaidaInput.value;
 
@@ -426,6 +440,7 @@ export class RegistrosManager {
 
         registro.clientId = newClientId;
         registro.bikeId = newBikeId;
+        registro.categoria = newCategoria !== '' ? newCategoria : (registro.categoria || client.categoria || '');
         registro.bikeSnapshot = {
             modelo: bike.modelo,
             marca: bike.marca,
@@ -843,11 +858,22 @@ export class RegistrosManager {
                                 `}
                             </td>
                             <td class="p-3 align-top flex items-center gap-2">
+                                ${client.comentarios && client.comentarios.length > 0 ? `
+                                <div class="relative">
+                                    <button class="view-comments-btn flex items-center justify-center w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full cursor-pointer" 
+                                            data-client-id="${client.id}"
+                                            title="Ver comentários">
+                                        <i data-lucide="message-circle" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                                    </button>
+                                    <span class="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-amber-500 rounded-full">${client.comentarios.length}</span>
+                                </div>
+                                ` : `
                                 <button class="view-comments-btn text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 transition-colors p-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20" 
                                         data-client-id="${client.id}"
                                         title="Ver comentários">
                                     <i data-lucide="message-circle" class="w-4 h-4"></i>
                                 </button>
+                                `}
                                 ${canEditRegistros ? `
                                 <button class="edit-registro-btn text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" 
                                         data-registro-id="${registro.id}"
@@ -1016,13 +1042,22 @@ export class RegistrosManager {
         
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        const head = [['Cliente', 'Bicicleta', 'Entrada', 'Saída']];
-        const body = this.app.data.currentDailyRecords.map(({ client, bike, registro }) => [
-            `${client.nome}\n(${client.cpf})`,
-            `${bike.modelo}\n(${bike.marca} - ${bike.cor})`,
-            new Date(registro.dataHoraEntrada).toLocaleString('pt-BR'),
-            registro.dataHoraSaida ? new Date(registro.dataHoraSaida).toLocaleString('pt-BR') : 'Em aberto'
-        ]);
+        const categorias = Storage.loadCategorias();
+        
+        const head = [['Cliente', 'Categoria', 'Bicicleta', 'Entrada', 'Saída']];
+        const body = this.app.data.currentDailyRecords.map(({ client, bike, registro }) => {
+            const categoria = registro.categoria || client.categoria || '';
+            const categoriaEmoji = categoria && categorias[categoria] ? categorias[categoria] : '';
+            const categoriaDisplay = categoria ? `${categoriaEmoji} ${categoria}` : '-';
+            
+            return [
+                `${client.nome}\n(${client.cpf})`,
+                categoriaDisplay,
+                `${bike.modelo}\n(${bike.marca} - ${bike.cor})`,
+                new Date(registro.dataHoraEntrada).toLocaleString('pt-BR'),
+                registro.dataHoraSaida ? new Date(registro.dataHoraSaida).toLocaleString('pt-BR') : 'Em aberto'
+            ];
+        });
         
         const selectedDateStr = this.elements.dailyRecordsDateInput.value;
         const selectedDate = new Date(selectedDateStr);
@@ -1035,6 +1070,31 @@ export class RegistrosManager {
             body: body,
             theme: 'striped',
             headStyles: { fillColor: [41, 128, 185] },
+        });
+
+        const categoriaCounts = {};
+        const categoriaPernoite = {};
+        this.app.data.currentDailyRecords.forEach(({ client, registro }) => {
+            const categoria = registro.categoria || client.categoria || 'Sem Categoria';
+            categoriaCounts[categoria] = (categoriaCounts[categoria] || 0) + 1;
+            if (registro.pernoite || registro.registroOriginalId) {
+                categoriaPernoite[categoria] = (categoriaPernoite[categoria] || 0) + 1;
+            }
+        });
+
+        let finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.text('Estatísticas por Categoria:', 14, finalY);
+        finalY += 7;
+        
+        doc.setFontSize(10);
+        Object.entries(categoriaCounts).sort((a, b) => b[1] - a[1]).forEach(([nome, count]) => {
+            const emoji = categorias[nome] || '';
+            const displayNome = nome === 'Sem Categoria' ? nome : `${emoji} ${nome}`;
+            const pernoiteCount = categoriaPernoite[nome] || 0;
+            const pernoiteText = pernoiteCount > 0 ? ` (${pernoiteCount} pernoite)` : '';
+            doc.text(`${displayNome}: ${count} registro(s)${pernoiteText}`, 14, finalY);
+            finalY += 5;
         });
 
         doc.save(`registros_${selectedDateStr}.pdf`);

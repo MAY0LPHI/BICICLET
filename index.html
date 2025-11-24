@@ -338,15 +338,31 @@
                     <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
                         <h2 class="text-lg font-semibold mb-4 flex items-center text-slate-800 dark:text-slate-100">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="download" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                            Exportar Dados
+                            Exportar Dados por Período
                         </h2>
                         <div class="space-y-4">
                             <p class="text-sm text-slate-600 dark:text-slate-400">
-                                Exporte todos os clientes cadastrados em formato Excel ou CSV.
+                                Exporte registros de um período específico com todos os dados relacionados.
                             </p>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label for="export-data-inicio" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                                        Data Inicial
+                                    </label>
+                                    <input type="date" id="export-data-inicio" class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="export-data-fim" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                                        Data Final
+                                    </label>
+                                    <input type="date" id="export-data-fim" class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                            
                             <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-md">
-                                <p class="text-xs text-slate-600 dark:text-slate-400"><strong>Formato de exportação:</strong> Nome, Número, CPF</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Compatível com importação para outros sistemas.</p>
+                                <p class="text-xs text-slate-600 dark:text-slate-400"><strong>Conteúdo:</strong> Registros, Clientes e Bicicletas relacionados</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Deixe as datas vazias para exportar todos os dados.</p>
                             </div>
                             <div class="flex gap-2">
                                 <button type="button" id="export-excel-btn" class="flex-1 flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
@@ -734,6 +750,12 @@
                         </select>
                     </div>
                     <div>
+                        <label for="edit-registro-categoria" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Categoria</label>
+                        <select id="edit-registro-categoria" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Selecione uma categoria (opcional)</option>
+                        </select>
+                    </div>
+                    <div>
                         <label for="edit-registro-entrada" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Data e Hora de Entrada</label>
                         <input type="datetime-local" id="edit-registro-entrada" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                     </div>
@@ -751,29 +773,29 @@
     </div>
     
     <div id="comments-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 hidden modal-backdrop">
-        <div class="bg-slate-800 dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-lg modal-content transform scale-95">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg modal-content transform scale-95">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex-1">
-                        <h3 id="comments-modal-client-name" class="text-xl font-bold text-slate-100"></h3>
-                        <p id="comments-modal-client-cpf" class="text-sm text-slate-400"></p>
+                        <h3 id="comments-modal-client-name" class="text-xl font-bold text-slate-800 dark:text-slate-100"></h3>
+                        <p id="comments-modal-client-cpf" class="text-sm text-slate-500 dark:text-slate-400"></p>
                     </div>
-                    <button type="button" id="close-comments-modal-btn" class="text-slate-400 hover:text-slate-200 transition-colors">
+                    <button type="button" id="close-comments-modal-btn" class="text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
                         <i data-lucide="x" class="h-6 w-6"></i>
                     </button>
                 </div>
                 
-                <h4 class="text-sm font-semibold text-amber-400 mb-3 flex items-center">
+                <h4 class="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-3 flex items-center">
                     <i data-lucide="message-circle" class="w-4 h-4 mr-2"></i>
                     Comentários
                 </h4>
                 
                 <div id="comments-modal-list" class="space-y-3 mb-4 max-h-[250px] overflow-y-auto">
-                    <p class="text-sm text-slate-400 text-center py-3">Nenhum comentário adicionado</p>
+                    <p class="text-sm text-slate-400 dark:text-slate-400 text-center py-3">Nenhum comentário adicionado</p>
                 </div>
                 
                 <div class="flex gap-2">
-                    <input type="text" id="comments-modal-input" placeholder="Adicionar comentário..." class="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
+                    <input type="text" id="comments-modal-input" placeholder="Adicionar comentário..." class="flex-1 px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
                     <button type="button" id="comments-modal-add-btn" class="flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors">
                         <i data-lucide="send" class="h-4 w-4"></i>
                     </button>

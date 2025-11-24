@@ -15,6 +15,8 @@ export class ConfiguracaoManager {
             importStatus: document.getElementById('import-status'),
             exportExcelBtn: document.getElementById('export-excel-btn'),
             exportCsvBtn: document.getElementById('export-csv-config-btn'),
+            exportDataInicio: document.getElementById('export-data-inicio'),
+            exportDataFim: document.getElementById('export-data-fim'),
             exportSystemExcelBtn: document.getElementById('export-system-excel-btn'),
             exportSystemCsvBtn: document.getElementById('export-system-csv-btn'),
             importSystemFile: document.getElementById('import-system-file'),
@@ -307,7 +309,7 @@ export class ConfiguracaoManager {
         const categorias = Storage.loadCategorias();
         const emojiAtual = categorias[categoria];
         
-        const emojiOptions = ['👤', '🏪', '🍽️', '💪', '⚙️', '🎯', '📱', '💼', '🏢', '📊', '🔧', '🎨', '🌟', '📦', '🚀'];
+        const emojiOptions = ['👨', '🏢', '🍽️', '💼', '⚙️', '🎯', '📱', '💼', '🏢', '📊', '🔧', '🎨', '⭐', '📦', '🚀'];
         
         const content = `
             <div class="space-y-4">
@@ -669,13 +671,54 @@ export class ConfiguracaoManager {
             return;
         }
         
-        const data = this.prepareExportData();
+        const dataInicio = this.elements.exportDataInicio.value;
+        const dataFim = this.elements.exportDataFim.value;
         
-        const ws = XLSX.utils.aoa_to_sheet(data);
+        const exportData = this.prepareFilteredExportData(dataInicio, dataFim);
+        const totalRegistros = (exportData.registros && exportData.registros.length > 0) ? exportData.registros.length - 1 : 0;
+        
+        if (totalRegistros === 0) {
+            const periodoMsg = dataInicio && dataFim 
+                ? ` entre ${dataInicio} e ${dataFim}` 
+                : dataInicio 
+                    ? ` a partir de ${dataInicio}` 
+                    : dataFim 
+                        ? ` até ${dataFim}` 
+                        : '';
+            Modals.alert(`Nenhum registro encontrado${periodoMsg} para exportar.`, 'Aviso');
+            return;
+        }
+        
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Clientes");
+
+        if (exportData.registros && exportData.registros.length > 1) {
+            const registrosWs = XLSX.utils.aoa_to_sheet(exportData.registros);
+            XLSX.utils.book_append_sheet(wb, registrosWs, "Registros");
+        }
+
+        if (exportData.clientes && exportData.clientes.length > 1) {
+            const clientesWs = XLSX.utils.aoa_to_sheet(exportData.clientes);
+            XLSX.utils.book_append_sheet(wb, clientesWs, "Clientes");
+        }
+
+        if (exportData.bicicletas && exportData.bicicletas.length > 1) {
+            const bicicletasWs = XLSX.utils.aoa_to_sheet(exportData.bicicletas);
+            XLSX.utils.book_append_sheet(wb, bicicletasWs, "Bicicletas");
+        }
+
+        if (exportData.categorias && exportData.categorias.length > 1) {
+            const categoriasWs = XLSX.utils.aoa_to_sheet(exportData.categorias);
+            XLSX.utils.book_append_sheet(wb, categoriasWs, "Categorias");
+        }
+
+        const periodoStr = dataInicio && dataFim 
+            ? `${dataInicio}_${dataFim}` 
+            : new Date().toISOString().split('T')[0];
+        const fileName = `export_dados_${periodoStr}.xlsx`;
         
-        XLSX.writeFile(wb, `clientes_${new Date().toISOString().split('T')[0]}.xlsx`);
+        XLSX.writeFile(wb, fileName);
+        
+        Modals.alert(`Exportação concluída! ${totalRegistros} registro(s) exportado(s).`);
     }
 
     exportToCSV() {
@@ -686,38 +729,163 @@ export class ConfiguracaoManager {
             return;
         }
         
-        const data = this.prepareExportData();
+        const dataInicio = this.elements.exportDataInicio.value;
+        const dataFim = this.elements.exportDataFim.value;
         
-        const csvContent = data.map(row => 
-            row.map(cell => {
-                const cellStr = String(cell);
-                const escaped = cellStr.replace(/"/g, '""');
-                return `"${escaped}"`;
-            }).join(',')
-        ).join('\n');
+        const exportData = this.prepareFilteredExportData(dataInicio, dataFim);
+        const totalRegistros = (exportData.registros && exportData.registros.length > 0) ? exportData.registros.length - 1 : 0;
         
+        if (totalRegistros === 0) {
+            const periodoMsg = dataInicio && dataFim 
+                ? ` entre ${dataInicio} e ${dataFim}` 
+                : dataInicio 
+                    ? ` a partir de ${dataInicio}` 
+                    : dataFim 
+                        ? ` até ${dataFim}` 
+                        : '';
+            Modals.alert(`Nenhum registro encontrado${periodoMsg} para exportar.`, 'Aviso');
+            return;
+        }
+        
+        const sections = [];
+        if (exportData.registros && exportData.registros.length > 1) {
+            sections.push({ name: 'Registros', data: exportData.registros });
+        }
+        if (exportData.clientes && exportData.clientes.length > 1) {
+            sections.push({ name: 'Clientes', data: exportData.clientes });
+        }
+        if (exportData.bicicletas && exportData.bicicletas.length > 1) {
+            sections.push({ name: 'Bicicletas', data: exportData.bicicletas });
+        }
+        if (exportData.categorias && exportData.categorias.length > 1) {
+            sections.push({ name: 'Categorias', data: exportData.categorias });
+        }
+
+        let csvContent = '';
+        sections.forEach((section, index) => {
+            if (index > 0) csvContent += '\n\n';
+            csvContent += `=== ${section.name} ===\n`;
+            csvContent += section.data.map(row => 
+                row.map(cell => {
+                    const cellStr = String(cell);
+                    const escaped = cellStr.replace(/"/g, '""');
+                    return `"${escaped}"`;
+                }).join(',')
+            ).join('\n');
+        });
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         
+        const periodoStr = dataInicio && dataFim 
+            ? `${dataInicio}_${dataFim}` 
+            : new Date().toISOString().split('T')[0];
+        const fileName = `export_dados_${periodoStr}.csv`;
+        
         link.setAttribute('href', url);
-        link.setAttribute('download', `clientes_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
         
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        Modals.alert(`Exportação concluída! ${totalRegistros} registro(s) exportado(s).`);
     }
 
-    prepareExportData() {
-        const headers = ['Nome', 'Número', 'CPF'];
-        const rows = this.app.data.clients.map(client => [
-            client.nome,
-            client.telefone ? Utils.formatTelefone(client.telefone) : '',
-            Utils.formatCPF(client.cpf)
-        ]);
+    prepareFilteredExportData(dataInicio, dataFim) {
+        let filteredRegistros = this.app.data.registros;
         
-        return [headers, ...rows];
+        if (dataInicio && dataFim) {
+            const inicio = new Date(dataInicio);
+            inicio.setHours(0, 0, 0, 0);
+            const fim = new Date(dataFim);
+            fim.setHours(23, 59, 59, 999);
+            
+            filteredRegistros = this.app.data.registros.filter(registro => {
+                const dataEntrada = new Date(registro.dataHoraEntrada);
+                return dataEntrada >= inicio && dataEntrada <= fim;
+            });
+        } else if (dataInicio) {
+            const inicio = new Date(dataInicio);
+            inicio.setHours(0, 0, 0, 0);
+            
+            filteredRegistros = this.app.data.registros.filter(registro => {
+                const dataEntrada = new Date(registro.dataHoraEntrada);
+                return dataEntrada >= inicio;
+            });
+        } else if (dataFim) {
+            const fim = new Date(dataFim);
+            fim.setHours(23, 59, 59, 999);
+            
+            filteredRegistros = this.app.data.registros.filter(registro => {
+                const dataEntrada = new Date(registro.dataHoraEntrada);
+                return dataEntrada <= fim;
+            });
+        }
+        
+        const clientIds = new Set(filteredRegistros.map(r => r.clientId));
+        const bikeIds = new Set(filteredRegistros.map(r => r.bikeId));
+        
+        const relatedClients = this.app.data.clients.filter(c => clientIds.has(c.id));
+        
+        const clientesHeaders = ['ID', 'Nome', 'CPF', 'Telefone', 'Categoria', 'Comentários', 'Bicicletas'];
+        const clientesRows = relatedClients.map(client => [
+            client.id,
+            client.nome,
+            client.cpf,
+            client.telefone || '',
+            client.categoria || '',
+            client.comentarios ? JSON.stringify(client.comentarios) : '[]',
+            client.bicicletas ? JSON.stringify(client.bicicletas) : '[]'
+        ]);
+
+        const bicicletasHeaders = ['ID', 'Cliente ID', 'Marca', 'Modelo', 'Cor'];
+        const bicicletasRows = [];
+        relatedClients.forEach(client => {
+            if (client.bicicletas && client.bicicletas.length > 0) {
+                client.bicicletas.forEach(bike => {
+                    if (bikeIds.has(bike.id)) {
+                        bicicletasRows.push([
+                            bike.id,
+                            client.id,
+                            bike.marca,
+                            bike.modelo,
+                            bike.cor
+                        ]);
+                    }
+                });
+            }
+        });
+
+        const categoriasHeaders = ['Nome', 'Emoji'];
+        const categorias = Storage.loadCategorias();
+        const categoriasRows = Object.entries(categorias).map(([nome, emoji]) => [
+            nome,
+            emoji
+        ]);
+
+        const registrosHeaders = ['ID', 'Cliente ID', 'Bicicleta ID', 'Categoria', 'Data Entrada', 'Data Saída', 'Pernoite', 'Acesso Removido', 'Registro Original ID', 'Bike Snapshot'];
+        const registrosRows = filteredRegistros.map(registro => [
+            registro.id,
+            registro.clientId,
+            registro.bikeId,
+            registro.categoria || '',
+            registro.dataHoraEntrada,
+            registro.dataHoraSaida || '',
+            registro.pernoite ? 'Sim' : 'Não',
+            registro.acessoRemovido ? 'Sim' : 'Não',
+            registro.registroOriginalId || '',
+            registro.bikeSnapshot ? JSON.stringify(registro.bikeSnapshot) : '{}'
+        ]);
+
+        return {
+            clientes: [clientesHeaders, ...clientesRows],
+            bicicletas: [bicicletasHeaders, ...bicicletasRows],
+            categorias: [categoriasHeaders, ...categoriasRows],
+            registros: [registrosHeaders, ...registrosRows]
+        };
     }
 
     getClientRecords(clientId) {
@@ -1425,13 +1593,13 @@ export class ConfiguracaoManager {
                     const bicicletasSheet = workbook.Sheets['Bicicletas'];
                     const categoriasSheet = workbook.Sheets['Categorias'];
 
-                    if (!clientesSheet || !registrosSheet || !usuariosSheet) {
-                        throw new Error('Arquivo inválido. Certifique-se de que contém as abas: Clientes, Registros e Usuarios');
+                    if (!clientesSheet || !registrosSheet) {
+                        throw new Error('Arquivo inválido. Certifique-se de que contém ao menos as abas: Clientes e Registros');
                     }
 
                     const clientesData = XLSX.utils.sheet_to_json(clientesSheet, { header: 1 });
                     const registrosData = XLSX.utils.sheet_to_json(registrosSheet, { header: 1 });
-                    const usuariosData = XLSX.utils.sheet_to_json(usuariosSheet, { header: 1 });
+                    const usuariosData = usuariosSheet ? XLSX.utils.sheet_to_json(usuariosSheet, { header: 1 }) : [];
                     const bicicletasData = bicicletasSheet ? XLSX.utils.sheet_to_json(bicicletasSheet, { header: 1 }) : [];
                     const categoriasData = categoriasSheet ? XLSX.utils.sheet_to_json(categoriasSheet, { header: 1 }) : [];
 
