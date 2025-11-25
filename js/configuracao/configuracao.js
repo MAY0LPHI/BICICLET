@@ -4,6 +4,26 @@ import { Modals } from '../shared/modals.js';
 import { Auth } from '../shared/auth.js';
 
 export class ConfiguracaoManager {
+    emojiToIconMap = {
+        '👤': 'user',
+        '🏢': 'building',
+        '🍽️': 'utensils',
+        '💪': 'dumbbell',
+        '👨': 'user',
+        '🏪': 'store',
+        '⚙️': 'settings',
+        '🎯': 'target',
+        '📱': 'smartphone',
+        '📊': 'bar-chart',
+        '🔧': 'wrench',
+        '🎨': 'palette',
+        '⭐': 'star',
+        '📦': 'package',
+        '🚀': 'rocket',
+        '🛍️': 'shopping-bag',
+        '☕': 'coffee'
+    };
+
     constructor(app) {
         this.app = app;
         this.elements = {
@@ -122,6 +142,10 @@ export class ConfiguracaoManager {
         }
     }
 
+    getIconForEmoji(emoji) {
+        return this.emojiToIconMap[emoji] || 'circle';
+    }
+
     renderCategorias() {
         const categoriasList = document.getElementById('categorias-list');
         if (!categoriasList) return;
@@ -134,10 +158,12 @@ export class ConfiguracaoManager {
             return;
         }
 
-        categoriasList.innerHTML = Object.entries(categorias).map(([nome, emoji]) => `
+        categoriasList.innerHTML = Object.entries(categorias).map(([nome, emoji]) => {
+            const iconName = this.getIconForEmoji(emoji);
+            return `
             <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
                 <div class="flex items-center gap-2">
-                    <span class="text-lg">${emoji}</span>
+                    <i data-lucide="${iconName}" class="w-5 h-5 text-slate-700 dark:text-slate-300"></i>
                     <span class="text-sm font-medium text-slate-800 dark:text-slate-200">${nome}</span>
                 </div>
                 <div class="flex gap-2">
@@ -149,7 +175,8 @@ export class ConfiguracaoManager {
                     </button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         lucide.createIcons();
 
@@ -215,11 +242,12 @@ export class ConfiguracaoManager {
                 .sort((a, b) => b[1] - a[1])
                 .map(([nome, count]) => {
                     const emoji = categorias[nome];
+                    const iconName = this.getIconForEmoji(emoji);
                     const percentual = totalClientes > 0 ? ((count / totalClientes) * 100).toFixed(1) : '0.0';
                     return `
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <span class="text-base">${emoji}</span>
+                                <i data-lucide="${iconName}" class="w-4 h-4 text-slate-700 dark:text-slate-300"></i>
                                 <span class="text-sm font-medium text-slate-700 dark:text-slate-300">${nome}</span>
                             </div>
                             <div class="flex items-center gap-2">
@@ -235,7 +263,7 @@ export class ConfiguracaoManager {
             semCategoriaHTML = `
                 <div class="flex items-center justify-between pt-2 mt-2 border-t border-slate-300 dark:border-slate-600">
                     <div class="flex items-center gap-2">
-                        <span class="text-base">⚙️</span>
+                        <i data-lucide="settings" class="w-4 h-4 text-slate-700 dark:text-slate-300"></i>
                         <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Sem categoria</span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -248,7 +276,7 @@ export class ConfiguracaoManager {
             semCategoriaHTML = `
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <span class="text-base">⚙️</span>
+                        <i data-lucide="settings" class="w-4 h-4 text-slate-700 dark:text-slate-300"></i>
                         <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Sem categoria</span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -309,7 +337,23 @@ export class ConfiguracaoManager {
         const categorias = Storage.loadCategorias();
         const emojiAtual = categorias[categoria];
         
-        const emojiOptions = ['👨', '🏢', '🍽️', '💼', '⚙️', '🎯', '📱', '💼', '🏢', '📊', '🔧', '🎨', '⭐', '📦', '🚀'];
+        const iconOptions = [
+            { icon: 'user', emoji: '👨' },
+            { icon: 'building', emoji: '🏢' },
+            { icon: 'utensils', emoji: '🍽️' },
+            { icon: 'briefcase', emoji: '💼' },
+            { icon: 'settings', emoji: '⚙️' },
+            { icon: 'target', emoji: '🎯' },
+            { icon: 'smartphone', emoji: '📱' },
+            { icon: 'bar-chart', emoji: '📊' },
+            { icon: 'wrench', emoji: '🔧' },
+            { icon: 'palette', emoji: '🎨' },
+            { icon: 'star', emoji: '⭐' },
+            { icon: 'package', emoji: '📦' },
+            { icon: 'rocket', emoji: '🚀' },
+            { icon: 'shopping-bag', emoji: '🛍️' },
+            { icon: 'coffee', emoji: '☕' }
+        ];
         
         const content = `
             <div class="space-y-4">
@@ -319,11 +363,11 @@ export class ConfiguracaoManager {
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Selecione um Emoji</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Selecione um Ícone</label>
                     <div class="grid grid-cols-5 gap-2">
-                        ${emojiOptions.map(emoji => `
-                            <button type="button" class="emoji-option p-3 rounded-lg border-2 transition-all ${emoji === emojiAtual ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30'} hover:border-blue-500 text-2xl" data-emoji="${emoji}">
-                                ${emoji}
+                        ${iconOptions.map(option => `
+                            <button type="button" class="icon-option p-3 rounded-lg border-2 transition-all ${option.emoji === emojiAtual ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30'} hover:border-blue-500 flex items-center justify-center" data-emoji="${option.emoji}" data-icon="${option.icon}">
+                                <i data-lucide="${option.icon}" class="w-6 h-6 text-slate-700 dark:text-slate-300"></i>
                             </button>
                         `).join('')}
                     </div>
@@ -338,11 +382,15 @@ export class ConfiguracaoManager {
         
         Modals.show('Editar Categoria', content);
         
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 0);
+        
         let emojiSelecionado = emojiAtual;
         
-        document.querySelectorAll('.emoji-option').forEach(btn => {
+        document.querySelectorAll('.icon-option').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.emoji-option').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30'));
+                document.querySelectorAll('.icon-option').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30'));
                 btn.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30');
                 emojiSelecionado = btn.dataset.emoji;
             });
@@ -409,14 +457,18 @@ export class ConfiguracaoManager {
             const menu = dropdown.querySelector('.dropdown-menu');
             if (!menu) return;
 
-            menu.innerHTML = '<div class="dropdown-option" data-value=""><span class="dropdown-option-icon">⚙️</span>Selecione uma categoria (opcional)</div>' +
-                Object.entries(categorias).map(([nome, emoji]) => `
+            menu.innerHTML = '<div class="dropdown-option" data-value=""><i data-lucide="settings" class="w-4 h-4 inline mr-2"></i>Selecione uma categoria (opcional)</div>' +
+                Object.entries(categorias).map(([nome, emoji]) => {
+                    const iconName = this.getIconForEmoji(emoji);
+                    return `
                     <div class="dropdown-option" data-value="${nome}">
-                        <span class="dropdown-option-icon">${emoji}</span>${nome}
+                        <i data-lucide="${iconName}" class="w-4 h-4 inline mr-2"></i>${nome}
                     </div>
-                `).join('');
+                `;
+                }).join('');
 
             setTimeout(() => {
+                lucide.createIcons();
                 if (window[config.windowKey]) {
                     window[config.windowKey].init();
                 }
@@ -1112,6 +1164,7 @@ export class ConfiguracaoManager {
         }).join('');
 
         this.attachHistoricoEventListeners();
+        lucide.createIcons();
     }
 
     renderMonths(year, monthsData, summaryData) {
@@ -1200,12 +1253,12 @@ export class ConfiguracaoManager {
                 .sort((a, b) => b[1] - a[1])
                 .map(([nome, count]) => {
                     const emoji = categorias[nome];
-                    return `<span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded flex items-center gap-1" title="Pernoites ${nome}">🌙 ${emoji} ${count}</span>`;
+                    return `<span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded flex items-center gap-1" title="Pernoites ${nome}"><i data-lucide="moon" class="w-3 h-3"></i> ${emoji} ${count}</span>`;
                 })
                 .join('');
             
             const semCategoriaPernoitesBadge = semCategoriaPernoites > 0 
-                ? `<span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded flex items-center gap-1" title="Pernoites sem categoria">🌙 ⚙️ ${semCategoriaPernoites}</span>` 
+                ? `<span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded flex items-center gap-1" title="Pernoites sem categoria"><i data-lucide="moon" class="w-3 h-3"></i> ⚙️ ${semCategoriaPernoites}</span>` 
                 : '';
             
             const totalPernoites = Object.values(categoriaPernoites).reduce((sum, c) => sum + c, 0) + semCategoriaPernoites;
@@ -1227,7 +1280,7 @@ export class ConfiguracaoManager {
                         ${totalRegistrosNormais > 0 ? `<span class="text-xs px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded font-medium" title="Total de registros normais">${totalRegistrosNormais} ${totalRegistrosNormais === 1 ? 'registro' : 'registros'}</span>` : ''}
                         ${categoriaRegistrosBadges}
                         ${semCategoriaRegistrosBadge}
-                        ${totalPernoites > 0 ? `<span class="text-xs px-2 py-0.5 bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 rounded font-medium flex items-center gap-1" title="Total de pernoites">🌙 ${totalPernoites}</span>` : ''}
+                        ${totalPernoites > 0 ? `<span class="text-xs px-2 py-0.5 bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 rounded font-medium flex items-center gap-1" title="Total de pernoites"><i data-lucide="moon" class="w-3 h-3"></i> ${totalPernoites}</span>` : ''}
                         ${categoriaPernoitesBadges}
                         ${semCategoriaPernoitesBadge}
                     </div>

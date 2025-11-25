@@ -4,15 +4,41 @@
 O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicação web, com versão desktop executável, desenvolvida para gerenciar clientes, bicicletas e controlar o fluxo de entrada e saída em estacionamentos de bicicletas. O objetivo é otimizar as operações de bicicletários através de funcionalidades de cadastro, registro de movimentação, exportação de dados, sistema de auditoria completo e configurações personalizáveis, visando o mercado de lojas locais.
 
 ## Recent Changes
-- **23/11/2025**: Projeto importado do GitHub e configurado no Replit
-  - Ambiente Replit configurado com sucesso
-  - Workflow "Web Application" configurado para executar `python3 server.py`
-  - Servidor web Python rodando na porta 5000 (0.0.0.0:5000)
+- **24/11/2025**: Fresh GitHub import setup completed on Replit
+  - Python 3.12 module confirmed installed
+  - Workflow "Web Application" configured to execute `python3 server.py` on port 5000
+  - Servidor web Python rodando na porta 5000 (0.0.0.0:5000) - webview enabled
   - API de armazenamento em arquivos rodando na porta 5001 (localhost:5001)
-  - Deployment configurado para modo "autoscale"
-  - .gitignore criado para excluir node_modules, dist/, dados/, e arquivos temporários
-  - Aplicação testada e funcionando corretamente
+  - Deployment configured for autoscale mode (production ready)
+  - .gitignore created with Python, Node.js, Electron, and data directory exclusions
+  - Application tested and verified working correctly via screenshot
   - Sistema de armazenamento em arquivos funcionando (dados salvos em dados/navegador/)
+  - Default users created successfully (admin and CELO123)
+  - **UI Improvements - ALL Emojis replaced with Lucide Icons (COMPLETE):**
+    - **Daily Records Tab:**
+      - Replaced 📋 emoji with clipboard-list icon in "Registro" section header
+      - Replaced category emojis in the table with corresponding Lucide icons (user, store, utensils, dumbbell, etc.)
+      - Replaced 🏷️ emoji with tag icon in "Categorias Registradas" section header
+      - Replaced category summary emojis with Lucide icons in grid display
+      - Replaced 🌙 emoji with moon icon in "Pernoite" section header and all PERNOITE badges
+    - **Configuration Page:**
+      - Replaced emoji selector in "Editar Categoria" modal with 15 Lucide icons (user, building, utensils, dumbbell, settings, target, smartphone, bar-chart, wrench, palette, star, package, rocket, shopping-bag, coffee)
+      - Replaced category list display emojis with corresponding Lucide icons in "Gerenciar Categorias" section
+      - Replaced "Sem categoria" emoji (⚙️) with settings icon in statistics
+    - **Dropdowns & Registration Forms:**
+      - Replaced category emojis in "Categoria" dropdown (Cadastro de Clientes) with Lucide icons
+      - Replaced all dropdown options in custom dropdowns with Lucide icons via updateCustomDropdowns()
+      - Applied to all dropdown IDs: categoria-dropdown, registro-categoria-dropdown, edit-client-categoria-dropdown
+    - **PDF/CSV Export:**
+      - Removed emojis from PDF export to prevent displaying strange symbols (icons only appear in UI, not in exports)
+      - Removed emojis from statistics section in PDF exports
+      - CSV exports display only category names without emojis
+    - **Implementation Details:**
+      - Created emoji-to-icon mapping system for consistent icon display across the application
+      - Updated js/registros/registros-diarios.js and js/configuracao/configuracao.js
+      - All Lucide icons properly initialized with lucide.createIcons() calls
+      - Maintains backward compatibility by storing emoji values for existing categories
+      - Icons are display-only in UI; emoji values remain stored in backend but not exported
   - **Reorganização de arquivos concluída:**
     - 11 arquivos .md duplicados movidos para `docs/legacy/`
     - 5 scripts de inicialização (.bat e .sh) movidos para `scripts/`
@@ -26,7 +52,7 @@ O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicaç
     - Excel agora exporta: Clientes, Bicicletas, Categorias, Registros e Usuários completos
 
 ## Replit Environment Setup
-Successfully imported from GitHub and configured on November 23, 2025.
+Successfully imported from GitHub and configured on November 24, 2025.
 
 ### Running in Replit
 The project runs automatically when you start the Repl:

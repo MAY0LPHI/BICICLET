@@ -740,7 +740,8 @@ export class RegistrosManager {
             <div class="space-y-6">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-                        <span>📋 Registro</span>
+                        <i data-lucide="clipboard-list" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                        <span>Registro</span>
                     </h3>
                     <table class="w-full text-sm">
                         <thead class="text-left bg-slate-50 dark:bg-slate-700/40">
@@ -758,7 +759,29 @@ export class RegistrosManager {
                             ${dailyRecords.map(({ client, bike, registro }) => {
                                 const categoria = registro.categoria || client.categoria || '';
                                 const categoriaEmoji = categoria && categorias[categoria] ? categorias[categoria] : '';
-                                const categoriaDisplay = categoria ? (categoriaEmoji + ' ' + categoria) : '<span class="text-xs text-slate-400">-</span>';
+                                const categoriaDisplay = categoria ? (() => {
+                                    const iconMap = {
+                                        '👤': 'user',
+                                        '🏢': 'building',
+                                        '🍽️': 'utensils',
+                                        '💪': 'dumbbell',
+                                        '👨': 'user',
+                                        '🏪': 'store',
+                                        '⚙️': 'settings',
+                                        '🎯': 'target',
+                                        '📱': 'smartphone',
+                                        '📊': 'bar-chart',
+                                        '🔧': 'wrench',
+                                        '🎨': 'palette',
+                                        '⭐': 'star',
+                                        '📦': 'package',
+                                        '🚀': 'rocket',
+                                        '🛍️': 'shopping-bag',
+                                        '☕': 'coffee'
+                                    };
+                                    const iconName = iconMap[categoriaEmoji] || 'circle';
+                                    return `<i data-lucide="${iconName}" class="w-4 h-4 inline mr-2"></i>${categoria}`;
+                                })() : '<span class="text-xs text-slate-400">-</span>';
                                 
                                 return `
                         <tr class="border-b border-slate-100 dark:border-slate-700">
@@ -775,9 +798,9 @@ export class RegistrosManager {
                             </td>
                             <td class="p-3 align-top text-slate-600 dark:text-slate-300">
                                 ${registro.pernoite && registro.dataHoraEntradaOriginal ? 
-                                    `${new Date(registro.dataHoraEntradaOriginal).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full">🌙 PERNOITE</span>` 
+                                    `${new Date(registro.dataHoraEntradaOriginal).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>` 
                                     : registro.pernoite ? 
-                                        `${new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full">🌙 PERNOITE</span>`
+                                        `${new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>`
                                         : new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')}
                             </td>
                             <td class="p-3 align-top text-slate-600 dark:text-slate-300">${registro.dataHoraSaida ? new Date(registro.dataHoraSaida).toLocaleString('pt-BR') : ''}</td>
@@ -788,11 +811,11 @@ export class RegistrosManager {
                                             data-client-id="${client.id}" 
                                             data-bike-id="${bike.id}">
                                         <option value="">Selecione uma ação</option>
-                                        ${canEditRegistros ? '<option value="saida">🚪 Registrar Saída</option>' : ''}
-                                        ${canEditRegistros ? '<option value="remover">🚫 Remover Acesso</option>' : ''}
-                                        ${canEditRegistros ? '<option value="pernoite">🌙 Pernoite</option>' : ''}
-                                        ${canEditRegistros ? '<option value="alterar">🔄 Trocar Bicicleta</option>' : ''}
-                                        ${canAddRegistros ? '<option value="adicionar">➕ Adicionar Outra Bike</option>' : ''}
+                                        ${canEditRegistros ? '<option value="saida">Registrar Saída</option>' : ''}
+                                        ${canEditRegistros ? '<option value="remover">Remover Acesso</option>' : ''}
+                                        ${canEditRegistros ? '<option value="pernoite">Pernoite</option>' : ''}
+                                        ${canEditRegistros ? '<option value="alterar">Trocar Bicicleta</option>' : ''}
+                                        ${canAddRegistros ? '<option value="adicionar">Adicionar Outra Bike</option>' : ''}
                                     </select>
                                 ` : !registro.dataHoraSaida && !registro.pernoite ? '<span class="text-xs text-slate-500">Em aberto</span>' : registro.pernoite && !registro.dataHoraSaida && registro.registroOriginalId && (canEditRegistros || canAddRegistros) ? `
                                     <div class="flex flex-col gap-2">
@@ -801,11 +824,11 @@ export class RegistrosManager {
                                                 data-client-id="${client.id}" 
                                                 data-bike-id="${bike.id}">
                                             <option value="">Selecione uma ação</option>
-                                            ${canEditRegistros ? '<option value="saida">🚪 Registrar Saída</option>' : ''}
-                                            ${canEditRegistros ? '<option value="remover">🚫 Remover Acesso</option>' : ''}
-                                            ${canEditRegistros ? '<option value="pernoite">🌙 Pernoite</option>' : ''}
-                                            ${canEditRegistros ? '<option value="alterar">🔄 Trocar Bicicleta</option>' : ''}
-                                            ${canAddRegistros ? '<option value="adicionar">➕ Adicionar Outra Bike</option>' : ''}
+                                            ${canEditRegistros ? '<option value="saida">Registrar Saída</option>' : ''}
+                                            ${canEditRegistros ? '<option value="remover">Remover Acesso</option>' : ''}
+                                            ${canEditRegistros ? '<option value="pernoite">Pernoite</option>' : ''}
+                                            ${canEditRegistros ? '<option value="alterar">Trocar Bicicleta</option>' : ''}
+                                            ${canAddRegistros ? '<option value="adicionar">Adicionar Outra Bike</option>' : ''}
                                         </select>
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full">PERNOITE Ativo</span>
@@ -894,14 +917,16 @@ export class RegistrosManager {
 
                 <div>
                     <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-                        <span>🏷️ Categorias Registradas</span>
+                        <i data-lucide="tag" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                        <span>Categorias Registradas</span>
                     </h3>
                     ${this.renderCategoriasSummary(dailyRecords)}
                 </div>
 
                 <div>
                     <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-                        <span>🌙 Pernoite</span>
+                        <i data-lucide="moon" class="w-5 h-5 text-purple-600 dark:text-purple-400"></i>
+                        <span>Pernoite</span>
                     </h3>
                     ${this.renderPernoiteSummary(dailyRecords)}
                 </div>
@@ -930,9 +955,29 @@ export class RegistrosManager {
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 ${Object.entries(categoriasCount).map(([categoria, count]) => {
                     const emoji = categoria === 'Sem Categoria' ? '⚙️' : (categorias[categoria] || '⚙️');
+                    const iconMap = {
+                        '👤': 'user',
+                        '🏢': 'building',
+                        '🍽️': 'utensils',
+                        '💪': 'dumbbell',
+                        '👨': 'user',
+                        '🏪': 'store',
+                        '⚙️': 'settings',
+                        '🎯': 'target',
+                        '📱': 'smartphone',
+                        '📊': 'bar-chart',
+                        '🔧': 'wrench',
+                        '🎨': 'palette',
+                        '⭐': 'star',
+                        '📦': 'package',
+                        '🚀': 'rocket',
+                        '🛍️': 'shopping-bag',
+                        '☕': 'coffee'
+                    };
+                    const iconName = iconMap[emoji] || 'circle';
                     return `
                         <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
-                            <span class="text-2xl">${emoji}</span>
+                            <i data-lucide="${iconName}" class="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0"></i>
                             <div class="flex-1">
                                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">${categoria}</p>
                                 <p class="text-lg font-semibold text-slate-800 dark:text-slate-100">${count}</p>
@@ -961,7 +1006,7 @@ export class RegistrosManager {
                             <p class="font-medium text-slate-800 dark:text-slate-100">${client.nome}</p>
                             <p class="text-xs text-slate-500 dark:text-slate-400">${bike.modelo} (${bike.marca} - ${bike.cor})</p>
                         </div>
-                        <span class="text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full">🌙 PERNOITE</span>
+                        <span class="text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>
                     </div>
                 `).join('')}
             </div>
@@ -1047,8 +1092,7 @@ export class RegistrosManager {
         const head = [['Cliente', 'Categoria', 'Bicicleta', 'Entrada', 'Saída']];
         const body = this.app.data.currentDailyRecords.map(({ client, bike, registro }) => {
             const categoria = registro.categoria || client.categoria || '';
-            const categoriaEmoji = categoria && categorias[categoria] ? categorias[categoria] : '';
-            const categoriaDisplay = categoria ? `${categoriaEmoji} ${categoria}` : '-';
+            const categoriaDisplay = categoria ? categoria : '-';
             
             return [
                 `${client.nome}\n(${client.cpf})`,
@@ -1089,11 +1133,9 @@ export class RegistrosManager {
         
         doc.setFontSize(10);
         Object.entries(categoriaCounts).sort((a, b) => b[1] - a[1]).forEach(([nome, count]) => {
-            const emoji = categorias[nome] || '';
-            const displayNome = nome === 'Sem Categoria' ? nome : `${emoji} ${nome}`;
             const pernoiteCount = categoriaPernoite[nome] || 0;
             const pernoiteText = pernoiteCount > 0 ? ` (${pernoiteCount} pernoite)` : '';
-            doc.text(`${displayNome}: ${count} registro(s)${pernoiteText}`, 14, finalY);
+            doc.text(`${nome}: ${count} registro(s)${pernoiteText}`, 14, finalY);
             finalY += 5;
         });
 
