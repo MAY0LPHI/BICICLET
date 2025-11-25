@@ -49,6 +49,7 @@ export class RegistrosManager {
         this.elements.dailyRecordsList.addEventListener('click', this.handleEditRegistroClick.bind(this));
         this.elements.dailyRecordsList.addEventListener('click', this.handleViewComments.bind(this));
         this.elements.dailyRecordsList.addEventListener('change', this.handleActionChange.bind(this));
+        this.elements.dailyRecordsList.addEventListener('click', this.handleActionDropdownClick.bind(this));
         this.elements.editRegistroForm.addEventListener('submit', this.handleEditRegistroSubmit.bind(this));
         this.elements.cancelEditRegistroBtn.addEventListener('click', () => this.app.toggleModal('edit-registro-modal', false));
         this.elements.editRegistroClientSelect.addEventListener('change', this.handleClientChange.bind(this));
@@ -59,7 +60,17 @@ export class RegistrosManager {
         this.elements.exportCsvBtn.addEventListener('click', () => this.exportToCSV());
         this.elements.exportPdfBtn.addEventListener('click', () => this.exportToPDF());
         
-        window.addEventListener('click', () => this.toggleExportMenu(false));
+        window.addEventListener('click', (e) => {
+            this.toggleExportMenu(false);
+            // Close all action dropdowns when clicking outside
+            if (!e.target.closest('.action-dropdown')) {
+                document.querySelectorAll('.action-dropdown .dropdown-menu').forEach(menu => {
+                    menu.classList.add('hidden');
+                    const button = menu.closest('.action-dropdown').querySelector('.dropdown-button');
+                    if (button) button.classList.remove('active');
+                });
+            }
+        });
     }
 
     handleViewComments(e) {
@@ -211,6 +222,84 @@ export class RegistrosManager {
             }
             
             select.value = '';
+        }
+    }
+
+    async handleActionDropdownClick(e) {
+        // Toggle dropdown menu
+        const dropdownButton = e.target.closest('.dropdown-button');
+        if (dropdownButton) {
+            e.stopPropagation();
+            const dropdown = dropdownButton.closest('.action-dropdown');
+            const menu = dropdown.querySelector('.dropdown-menu');
+            const isOpen = !menu.classList.contains('hidden');
+            
+            // Close all other action dropdowns
+            document.querySelectorAll('.action-dropdown .dropdown-menu').forEach(m => {
+                if (m !== menu) {
+                    m.classList.add('hidden');
+                    m.closest('.action-dropdown').querySelector('.dropdown-button').classList.remove('active');
+                }
+            });
+            
+            // Toggle this dropdown
+            if (isOpen) {
+                menu.classList.add('hidden');
+                dropdownButton.classList.remove('active');
+            } else {
+                menu.classList.remove('hidden');
+                dropdownButton.classList.add('active');
+            }
+            return;
+        }
+
+        // Handle option selection
+        const dropdownOption = e.target.closest('.dropdown-option');
+        if (dropdownOption) {
+            const action = dropdownOption.dataset.value;
+            const dropdown = dropdownOption.closest('.action-dropdown');
+            const registroId = dropdown.dataset.registroId;
+            const clientId = dropdown.dataset.clientId;
+            const bikeId = dropdown.dataset.bikeId;
+            const menu = dropdown.querySelector('.dropdown-menu');
+            const button = dropdown.querySelector('.dropdown-button');
+            
+            // Close dropdown
+            menu.classList.add('hidden');
+            button.classList.remove('active');
+            
+            if (!action) return;
+
+            const requiresEdit = ['saida', 'remover', 'pernoite', 'alterar'].includes(action);
+            const requiresAdd = action === 'adicionar';
+
+            if (requiresEdit && !Auth.hasPermission('registros', 'editar')) {
+                Modals.alert('Você não tem permissão para editar registros.', 'Permissão Negada');
+                return;
+            }
+
+            if (requiresAdd && !Auth.hasPermission('registros', 'adicionar')) {
+                Modals.alert('Você não tem permissão para adicionar registros.', 'Permissão Negada');
+                return;
+            }
+
+            switch(action) {
+                case 'saida':
+                    await this.registerSaida(registroId);
+                    break;
+                case 'remover':
+                    await this.removerAcesso(registroId);
+                    break;
+                case 'alterar':
+                    await this.alterarRegistro(registroId);
+                    break;
+                case 'adicionar':
+                    await this.adicionarBike(clientId, registroId);
+                    break;
+                case 'pernoite':
+                    await this.registrarPernoite(registroId);
+                    break;
+            }
         }
     }
 
@@ -806,30 +895,38 @@ export class RegistrosManager {
                             <td class="p-3 align-top text-slate-600 dark:text-slate-300">${registro.dataHoraSaida ? new Date(registro.dataHoraSaida).toLocaleString('pt-BR') : ''}</td>
                             <td class="p-3 align-top">
                                 ${!registro.dataHoraSaida && !registro.pernoite && (canEditRegistros || canAddRegistros) ? `
-                                    <select class="action-select text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" 
-                                            data-registro-id="${registro.id}" 
-                                            data-client-id="${client.id}" 
-                                            data-bike-id="${bike.id}">
-                                        <option value="">Selecione uma ação</option>
-                                        ${canEditRegistros ? '<option value="saida">Registrar Saída</option>' : ''}
-                                        ${canEditRegistros ? '<option value="remover">Remover Acesso</option>' : ''}
-                                        ${canEditRegistros ? '<option value="pernoite">Pernoite</option>' : ''}
-                                        ${canEditRegistros ? '<option value="alterar">Trocar Bicicleta</option>' : ''}
-                                        ${canAddRegistros ? '<option value="adicionar">Adicionar Outra Bike</option>' : ''}
-                                    </select>
+                                    <div class="custom-dropdown-wrapper">
+                                        <div class="custom-dropdown action-dropdown" data-registro-id="${registro.id}" data-client-id="${client.id}" data-bike-id="${bike.id}">
+                                            <div class="dropdown-button">
+                                                <span class="dropdown-text">Selecione uma ação</span>
+                                                <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                            </div>
+                                            <div class="dropdown-menu hidden">
+                                                ${canEditRegistros ? '<div class="dropdown-option" data-value="saida"><i data-lucide="log-out" class="w-4 h-4 inline mr-2"></i>Registrar Saída</div>' : ''}
+                                                ${canEditRegistros ? '<div class="dropdown-option" data-value="remover"><i data-lucide="x-circle" class="w-4 h-4 inline mr-2"></i>Remover Acesso</div>' : ''}
+                                                ${canEditRegistros ? '<div class="dropdown-option" data-value="pernoite"><i data-lucide="moon" class="w-4 h-4 inline mr-2"></i>Pernoite</div>' : ''}
+                                                ${canEditRegistros ? '<div class="dropdown-option" data-value="alterar"><i data-lucide="repeat" class="w-4 h-4 inline mr-2"></i>Trocar Bicicleta</div>' : ''}
+                                                ${canAddRegistros ? '<div class="dropdown-option" data-value="adicionar"><i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i>Adicionar Outra Bike</div>' : ''}
+                                            </div>
+                                        </div>
+                                    </div>
                                 ` : !registro.dataHoraSaida && !registro.pernoite ? '<span class="text-xs text-slate-500">Em aberto</span>' : registro.pernoite && !registro.dataHoraSaida && registro.registroOriginalId && (canEditRegistros || canAddRegistros) ? `
                                     <div class="flex flex-col gap-2">
-                                        <select class="action-select text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" 
-                                                data-registro-id="${registro.id}" 
-                                                data-client-id="${client.id}" 
-                                                data-bike-id="${bike.id}">
-                                            <option value="">Selecione uma ação</option>
-                                            ${canEditRegistros ? '<option value="saida">Registrar Saída</option>' : ''}
-                                            ${canEditRegistros ? '<option value="remover">Remover Acesso</option>' : ''}
-                                            ${canEditRegistros ? '<option value="pernoite">Pernoite</option>' : ''}
-                                            ${canEditRegistros ? '<option value="alterar">Trocar Bicicleta</option>' : ''}
-                                            ${canAddRegistros ? '<option value="adicionar">Adicionar Outra Bike</option>' : ''}
-                                        </select>
+                                        <div class="custom-dropdown-wrapper">
+                                            <div class="custom-dropdown action-dropdown" data-registro-id="${registro.id}" data-client-id="${client.id}" data-bike-id="${bike.id}">
+                                                <div class="dropdown-button">
+                                                    <span class="dropdown-text">Selecione uma ação</span>
+                                                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
+                                                <div class="dropdown-menu hidden">
+                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="saida"><i data-lucide="log-out" class="w-4 h-4 inline mr-2"></i>Registrar Saída</div>' : ''}
+                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="remover"><i data-lucide="x-circle" class="w-4 h-4 inline mr-2"></i>Remover Acesso</div>' : ''}
+                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="pernoite"><i data-lucide="moon" class="w-4 h-4 inline mr-2"></i>Pernoite</div>' : ''}
+                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="alterar"><i data-lucide="repeat" class="w-4 h-4 inline mr-2"></i>Trocar Bicicleta</div>' : ''}
+                                                    ${canAddRegistros ? '<div class="dropdown-option" data-value="adicionar"><i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i>Adicionar Outra Bike</div>' : ''}
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full">PERNOITE Ativo</span>
                                             ${canEditRegistros ? `<button class="reverter-pernoite-btn text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20" 

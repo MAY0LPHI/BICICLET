@@ -750,10 +750,27 @@
                         </select>
                     </div>
                     <div>
-                        <label for="edit-registro-categoria" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Categoria</label>
-                        <select id="edit-registro-categoria" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Selecione uma categoria (opcional)</option>
-                        </select>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            <i data-lucide="tag" class="w-4 h-4 inline mr-1"></i>
+                            Categoria
+                        </label>
+                        <div class="custom-dropdown-wrapper">
+                            <div class="custom-dropdown" id="edit-registro-categoria-dropdown">
+                                <div class="dropdown-button">
+                                    <span class="dropdown-text">Selecione uma categoria (opcional)</span>
+                                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </div>
+                                <div class="dropdown-menu hidden">
+                                    <div class="dropdown-option" data-value="">
+                                        <i data-lucide="settings" class="w-4 h-4 inline mr-2"></i>
+                                        Selecione uma categoria (opcional)
+                                    </div>
+                                </div>
+                            </div>
+                            <select id="edit-registro-categoria" class="hidden" style="display: none;">
+                                <option value="">Selecione uma categoria (opcional)</option>
+                            </select>
+                        </div>
                     </div>
                     <div>
                         <label for="edit-registro-entrada" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Data e Hora de Entrada</label>
@@ -922,6 +939,7 @@
             window.categoriaDropdown = new CustomDropdown('categoria-dropdown', 'categoria');
             window.registroCategoriaDropdown = new CustomDropdown('registro-categoria-dropdown', 'registro-categoria');
             window.editClientCategoriaDropdown = new CustomDropdown('edit-client-categoria-dropdown', 'edit-client-categoria');
+            window.editRegistroCategoriaDropdown = new CustomDropdown('edit-registro-categoria-dropdown', 'edit-registro-categoria');
         });
     </script>
 

@@ -419,143 +419,104 @@ export class Usuarios {
                 </div>
                 
                 <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
-                    <h4 class="font-medium text-slate-700 dark:text-slate-300 mb-3">Permissões</h4>
+                    <h4 class="font-medium text-slate-700 dark:text-slate-300 mb-4">Permissões por Aba</h4>
                     
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Clientes</p>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-clientes-ver" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Ver</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-clientes-ver" ${user.permissoes.clientes.ver ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-clientes-adicionar" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Adicionar</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-clientes-adicionar" ${user.permissoes.clientes.adicionar ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-clientes-editar" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Editar</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-clientes-editar" ${user.permissoes.clientes.editar ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-clientes-excluir" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Excluir</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-clientes-excluir" ${user.permissoes.clientes.excluir ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
+                    <div class="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                        <!-- Clientes -->
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center">
+                                <i data-lucide="users" class="w-4 h-4 mr-2"></i>
+                                Clientes
+                            </p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-clientes-ver" ${user.permissoes.clientes.ver ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Ver</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-clientes-adicionar" ${user.permissoes.clientes.adicionar ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Adicionar</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-clientes-editar" ${user.permissoes.clientes.editar ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Editar</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-clientes-excluir" ${user.permissoes.clientes.excluir ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Excluir</span>
+                                </label>
                             </div>
                         </div>
                         
-                        <div>
-                            <p class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Registros</p>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-registros-ver" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Ver</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-registros-ver" ${user.permissoes.registros.ver ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-registros-adicionar" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Adicionar</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-registros-adicionar" ${user.permissoes.registros.adicionar ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-registros-editar" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Editar</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-registros-editar" ${user.permissoes.registros.editar ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-registros-excluir" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Excluir</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-registros-excluir" ${user.permissoes.registros.excluir ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
+                        <!-- Registros Diários -->
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center">
+                                <i data-lucide="calendar-clock" class="w-4 h-4 mr-2"></i>
+                                Registros Diários
+                            </p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-registros-ver" ${user.permissoes.registros.ver ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Ver</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-registros-adicionar" ${user.permissoes.registros.adicionar ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Adicionar</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-registros-editar" ${user.permissoes.registros.editar ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Editar</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-registros-excluir" ${user.permissoes.registros.excluir ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Excluir</span>
+                                </label>
                             </div>
                         </div>
                         
-                        <div>
-                            <p class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Configuração</p>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-configuracao-ver" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Ver</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-configuracao-ver" ${user.permissoes.configuracao.ver ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-configuracao-exportar" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Exportar</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-configuracao-exportar" ${user.permissoes.configuracao.exportar ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-configuracao-importar" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Importar</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-configuracao-importar" ${user.permissoes.configuracao.importar ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-configuracao-gerenciarUsuarios" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Gerenciar Usuários</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-configuracao-gerenciarUsuarios" ${user.permissoes.configuracao.gerenciarUsuarios ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-configuracao-buscaAvancada" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Busca Avançada</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-configuracao-buscaAvancada" ${user.permissoes.configuracao.buscaAvancada ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-configuracao-exportarDados" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Exportar Dados</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-configuracao-exportarDados" ${user.permissoes.configuracao.exportarDados ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-configuracao-importarDados" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Importar Dados</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-configuracao-importarDados" ${user.permissoes.configuracao.importarDados ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-configuracao-exportarSistema" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Exportar Sistema</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-configuracao-exportarSistema" ${user.permissoes.configuracao.exportarSistema ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label for="edit-perm-configuracao-importarSistema" class="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">Importar Sistema</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="edit-perm-configuracao-importarSistema" ${user.permissoes.configuracao.importarSistema ? 'checked' : ''}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
+                        <!-- Configuração -->
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center">
+                                <i data-lucide="settings" class="w-4 h-4 mr-2"></i>
+                                Configuração
+                            </p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-ver" ${user.permissoes.configuracao.ver ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Ver</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-exportar" ${user.permissoes.configuracao.exportar ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Exportar</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-importar" ${user.permissoes.configuracao.importar ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Importar</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-gerenciarUsuarios" ${user.permissoes.configuracao.gerenciarUsuarios ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Gerenciar Usuários</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-buscaAvancada" ${user.permissoes.configuracao.buscaAvancada ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Busca Avançada</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-exportarDados" ${user.permissoes.configuracao.exportarDados ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Exportar Dados</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-importarDados" ${user.permissoes.configuracao.importarDados ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Importar Dados</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-exportarSistema" ${user.permissoes.configuracao.exportarSistema ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Exportar Sistema</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-importarSistema" ${user.permissoes.configuracao.importarSistema ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span>Importar Sistema</span>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -573,6 +534,11 @@ export class Usuarios {
         `;
 
         Modals.show('Editar Usuário', modalContent);
+
+        // Inicializar ícones Lucide
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 0);
 
         document.getElementById('edit-user-form').addEventListener('submit', (e) => {
             e.preventDefault();

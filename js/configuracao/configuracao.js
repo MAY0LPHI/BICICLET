@@ -426,7 +426,7 @@ export class ConfiguracaoManager {
 
     updateCategoryDropdowns() {
         const categorias = Storage.loadCategorias();
-        const selectIds = ['categoria', 'edit-client-categoria', 'registro-categoria'];
+        const selectIds = ['categoria', 'edit-client-categoria', 'registro-categoria', 'edit-registro-categoria'];
 
         selectIds.forEach(id => {
             const select = document.getElementById(id);
@@ -447,7 +447,8 @@ export class ConfiguracaoManager {
         const dropdownConfigs = [
             { id: 'categoria-dropdown', windowKey: 'categoriaDropdown' },
             { id: 'registro-categoria-dropdown', windowKey: 'registroCategoriaDropdown' },
-            { id: 'edit-client-categoria-dropdown', windowKey: 'editClientCategoriaDropdown' }
+            { id: 'edit-client-categoria-dropdown', windowKey: 'editClientCategoriaDropdown' },
+            { id: 'edit-registro-categoria-dropdown', windowKey: 'editRegistroCategoriaDropdown' }
         ];
 
         dropdownConfigs.forEach(config => {
