@@ -64,6 +64,14 @@ export class JogosManager {
     init() {
         this.renderGameMenu();
         this.setupEventListeners();
+        this.setupBackButton();
+    }
+
+    setupBackButton() {
+        const backBtn = document.getElementById('back-to-games-btn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => this.closeGame());
+        }
     }
 
     setupEventListeners() {
@@ -169,11 +177,17 @@ export class JogosManager {
     closeGame() {
         const gameContainer = document.getElementById('game-container');
         const menuContainer = document.getElementById('games-menu-section');
+        const canvas = document.getElementById('game-canvas');
         
         if (this.currentGame && this.currentGame.stop) {
             this.currentGame.stop();
         }
         this.currentGame = null;
+        
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
         
         if (gameContainer && menuContainer) {
             gameContainer.classList.add('hidden');
@@ -358,28 +372,37 @@ class SnakeGame {
     }
 
     start() {
+        if (this.running) return;
         this.running = true;
-        this.gameLoop();
+        this.lastUpdate = 0;
+        this.animationId = requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
     }
 
     stop() {
         this.running = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
         document.removeEventListener('keydown', this.keyHandler);
         const selector = document.getElementById('snake-difficulty');
         if (selector) selector.remove();
     }
 
-    gameLoop() {
+    gameLoop(timestamp) {
         if (!this.running) return;
 
-        if (!this.gameOver) {
-            this.update();
+        const speed = this.difficulties[this.currentDifficulty].speed;
+        
+        if (timestamp - this.lastUpdate >= speed) {
+            if (!this.gameOver) {
+                this.update();
+            }
+            this.lastUpdate = timestamp;
         }
+        
         this.draw();
-
-        setTimeout(() => {
-            requestAnimationFrame(() => this.gameLoop());
-        }, this.difficulties[this.currentDifficulty].speed);
+        this.animationId = requestAnimationFrame((ts) => this.gameLoop(ts));
     }
 
     update() {
@@ -639,26 +662,35 @@ class PacmanGame {
     }
 
     start() {
+        if (this.running) return;
         this.running = true;
-        this.gameLoop();
+        this.lastUpdate = 0;
+        this.animationId = requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
     }
 
     stop() {
         this.running = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
         document.removeEventListener('keydown', this.keyHandler);
     }
 
-    gameLoop() {
+    gameLoop(timestamp) {
         if (!this.running) return;
 
-        if (!this.gameOver) {
-            this.update();
+        const speed = 150;
+        
+        if (timestamp - this.lastUpdate >= speed) {
+            if (!this.gameOver) {
+                this.update();
+            }
+            this.lastUpdate = timestamp;
         }
+        
         this.draw();
-
-        setTimeout(() => {
-            requestAnimationFrame(() => this.gameLoop());
-        }, 100);
+        this.animationId = requestAnimationFrame((ts) => this.gameLoop(ts));
     }
 
     canMove(x, y) {
@@ -906,14 +938,34 @@ class TypingGame {
         this.onScore = onScore;
         this.container = canvas.parentElement;
         
-        this.words = {
-            easy: ['casa', 'bola', 'gato', 'carro', 'mesa', 'sol', 'lua', 'mar', 'rio', 'flor', 'ave', 'pão', 'luz', 'amor', 'vida', 'céu', 'dia', 'noite', 'paz', 'cor'],
-            medium: ['bicicleta', 'computador', 'telefone', 'chocolate', 'borboleta', 'aventura', 'fantasia', 'universo', 'melodia', 'harmonia', 'esperança', 'liberdade', 'felicidade', 'natureza', 'saudade'],
-            hard: ['extraordinário', 'desenvolvimento', 'estabelecimento', 'responsabilidade', 'inconstitucional', 'paralelepípedo', 'otorrinolaringologista', 'descompartimentalização', 'pneumoultramicroscopicossilicovulcanoconiose']
-        };
+        this.words = [
+            'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i',
+            'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
+            'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she',
+            'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what',
+            'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me',
+            'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take',
+            'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other',
+            'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also',
+            'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way',
+            'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us',
+            'casa', 'bola', 'vida', 'amor', 'tempo', 'mundo', 'coisa', 'pessoa', 'olho', 'mao',
+            'lugar', 'parte', 'forma', 'lado', 'hora', 'ponto', 'agua', 'nome', 'terra', 'cidade',
+            'trabalho', 'momento', 'governo', 'empresa', 'projeto', 'sistema', 'problema', 'processo',
+            'desenvolvimento', 'informacao', 'tecnologia', 'conhecimento', 'comunicacao', 'educacao'
+        ];
         
         this.running = false;
-        this.reset();
+        this.gameEnded = false;
+        this.timeLimit = 30;
+        this.timeLeft = this.timeLimit;
+        this.currentWordIndex = 0;
+        this.correctChars = 0;
+        this.incorrectChars = 0;
+        this.totalTyped = 0;
+        this.wordInputs = [];
+        this.timerInterval = null;
+        
         this.createUI();
     }
 
@@ -925,148 +977,344 @@ class TypingGame {
         
         typingUI = document.createElement('div');
         typingUI.id = 'typing-game-ui';
-        typingUI.className = 'w-full max-w-2xl mx-auto';
+        typingUI.className = 'w-full max-w-3xl mx-auto select-none';
         typingUI.innerHTML = `
-            <div class="flex gap-2 mb-4 justify-center">
-                <button data-diff="easy" class="diff-btn px-4 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 transition-colors">Fácil</button>
-                <button data-diff="medium" class="diff-btn px-4 py-2 rounded-lg bg-blue-500 text-white">Médio</button>
-                <button data-diff="hard" class="diff-btn px-4 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 transition-colors">Difícil</button>
-            </div>
+            <style>
+                #typing-game-ui .word { display: inline-block; margin: 0 5px 5px 0; }
+                #typing-game-ui .letter { transition: color 0.1s; }
+                #typing-game-ui .letter.correct { color: #22c55e; }
+                #typing-game-ui .letter.incorrect { color: #ef4444; }
+                #typing-game-ui .letter.extra { color: #ef4444; opacity: 0.7; }
+                #typing-game-ui .word.current { border-bottom: 2px solid #646669; }
+                #typing-game-ui .caret {
+                    position: absolute;
+                    width: 2px;
+                    height: 1.5em;
+                    background: #e2b714;
+                    animation: blink 1s infinite;
+                    transition: left 0.1s ease-out, top 0.1s ease-out;
+                }
+                @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+                #typing-game-ui .typing-input-hidden {
+                    position: absolute;
+                    opacity: 0;
+                    pointer-events: none;
+                }
+                #typing-game-ui .stats-row { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1.5rem; }
+                #typing-game-ui .stat-item { text-align: center; }
+                #typing-game-ui .stat-value { font-size: 2rem; font-weight: bold; color: #e2b714; }
+                #typing-game-ui .stat-label { font-size: 0.75rem; color: #646669; text-transform: uppercase; }
+                #typing-game-ui .time-options { display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem; }
+                #typing-game-ui .time-btn { 
+                    padding: 0.25rem 0.75rem; 
+                    border-radius: 0.25rem; 
+                    background: transparent; 
+                    color: #646669; 
+                    border: none;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                #typing-game-ui .time-btn:hover { color: #d1d0c5; }
+                #typing-game-ui .time-btn.active { color: #e2b714; }
+                #typing-game-ui .words-container {
+                    position: relative;
+                    font-size: 1.5rem;
+                    line-height: 2;
+                    color: #646669;
+                    font-family: 'Roboto Mono', monospace;
+                    min-height: 150px;
+                    overflow: hidden;
+                    padding: 1rem;
+                    background: rgba(0,0,0,0.2);
+                    border-radius: 0.5rem;
+                    cursor: text;
+                }
+                #typing-game-ui .focus-warning {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0,0,0,0.8);
+                    padding: 1rem 2rem;
+                    border-radius: 0.5rem;
+                    color: #d1d0c5;
+                    font-size: 1rem;
+                    display: none;
+                    z-index: 10;
+                }
+                #typing-game-ui .words-container.blur .words-wrap { filter: blur(5px); }
+                #typing-game-ui .words-container.blur .focus-warning { display: block; }
+                #typing-game-ui .result-screen {
+                    text-align: center;
+                    padding: 2rem;
+                }
+                #typing-game-ui .result-wpm { font-size: 4rem; color: #e2b714; font-weight: bold; }
+                #typing-game-ui .result-label { color: #646669; font-size: 1rem; margin-bottom: 1rem; }
+                #typing-game-ui .result-stats { display: flex; justify-content: center; gap: 3rem; margin-top: 1.5rem; }
+                #typing-game-ui .result-stat-value { font-size: 1.5rem; color: #d1d0c5; }
+                #typing-game-ui .restart-hint { color: #646669; margin-top: 2rem; font-size: 0.875rem; }
+            </style>
             
-            <div class="bg-slate-100 dark:bg-slate-700/50 rounded-xl p-6 mb-4">
-                <div class="flex justify-between items-center mb-4">
-                    <div class="text-center">
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Tempo</p>
-                        <p id="typing-time" class="text-2xl font-bold text-slate-800 dark:text-slate-200">60</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-sm text-slate-500 dark:text-slate-400">WPM</p>
-                        <p id="typing-wpm" class="text-2xl font-bold text-blue-600 dark:text-blue-400">0</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Precisão</p>
-                        <p id="typing-accuracy" class="text-2xl font-bold text-green-600 dark:text-green-400">100%</p>
+            <div class="bg-slate-900 rounded-xl p-6" style="background: #323437;">
+                <div class="time-options">
+                    <button class="time-btn" data-time="15">15</button>
+                    <button class="time-btn active" data-time="30">30</button>
+                    <button class="time-btn" data-time="60">60</button>
+                    <button class="time-btn" data-time="120">120</button>
+                </div>
+                
+                <div class="stats-row" id="typing-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="typing-time">${this.timeLimit}</div>
+                        <div class="stat-label">segundos</div>
                     </div>
                 </div>
                 
-                <div id="typing-display" class="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4 min-h-[100px] text-lg leading-relaxed font-mono select-none">
-                    <span class="text-slate-400">Pressione Start para começar...</span>
+                <div class="words-container blur" id="words-container">
+                    <div class="focus-warning">
+                        <i data-lucide="mouse-pointer-click" class="w-5 h-5 inline mr-2"></i>
+                        Clique aqui ou pressione qualquer tecla para focar
+                    </div>
+                    <div class="words-wrap" id="words-display"></div>
+                    <div class="caret" id="typing-caret" style="display: none;"></div>
                 </div>
                 
-                <input type="text" id="typing-input" disabled class="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-lg text-lg font-mono focus:outline-none focus:border-blue-500 dark:text-white" placeholder="Digite aqui...">
-            </div>
-            
-            <div class="flex justify-center gap-4">
-                <button id="typing-start" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
-                    <i data-lucide="play" class="w-5 h-5"></i>
-                    Iniciar
-                </button>
-                <button id="typing-reset" class="px-6 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors flex items-center gap-2">
-                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
-                    Reiniciar
-                </button>
-            </div>
-            
-            <div id="typing-results" class="hidden mt-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-6 text-white text-center">
-                <h3 class="text-2xl font-bold mb-4">Resultados</h3>
-                <div class="grid grid-cols-3 gap-4">
-                    <div>
-                        <p class="text-blue-200 text-sm">Palavras</p>
-                        <p id="result-words" class="text-3xl font-bold">0</p>
+                <input type="text" id="typing-input" class="typing-input-hidden" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                
+                <div id="typing-results" class="result-screen hidden">
+                    <div class="result-label">wpm</div>
+                    <div class="result-wpm" id="result-wpm">0</div>
+                    <div class="result-stats">
+                        <div class="stat-item">
+                            <div class="result-stat-value" id="result-accuracy">100%</div>
+                            <div class="stat-label">precisao</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="result-stat-value" id="result-chars">0/0</div>
+                            <div class="stat-label">caracteres</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="result-stat-value" id="result-time">0s</div>
+                            <div class="stat-label">tempo</div>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-blue-200 text-sm">WPM</p>
-                        <p id="result-wpm" class="text-3xl font-bold">0</p>
-                    </div>
-                    <div>
-                        <p class="text-blue-200 text-sm">Precisão</p>
-                        <p id="result-accuracy" class="text-3xl font-bold">0%</p>
+                    <div class="restart-hint">
+                        <kbd style="background: #646669; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Tab</kbd> + <kbd style="background: #646669; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Enter</kbd> - reiniciar teste
                     </div>
                 </div>
             </div>
         `;
         
         this.container.appendChild(typingUI);
-        
         lucide.createIcons();
         
-        typingUI.querySelectorAll('.diff-btn').forEach(btn => {
+        this.wordsContainer = document.getElementById('words-container');
+        this.wordsDisplay = document.getElementById('words-display');
+        this.input = document.getElementById('typing-input');
+        this.caret = document.getElementById('typing-caret');
+        this.resultsDiv = document.getElementById('typing-results');
+        this.statsDiv = document.getElementById('typing-stats');
+        
+        typingUI.querySelectorAll('.time-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                this.difficulty = btn.dataset.diff;
-                this.updateDifficultyButtons();
+                if (this.running) return;
+                typingUI.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.timeLimit = parseInt(btn.dataset.time);
                 this.reset();
             });
         });
         
-        document.getElementById('typing-start').addEventListener('click', () => this.start());
-        document.getElementById('typing-reset').addEventListener('click', () => this.reset());
+        this.wordsContainer.addEventListener('click', () => this.focusInput());
         
-        const input = document.getElementById('typing-input');
-        input.addEventListener('input', () => this.handleInput());
-    }
-
-    updateDifficultyButtons() {
-        const btns = document.querySelectorAll('#typing-game-ui .diff-btn');
-        btns.forEach(btn => {
-            if (btn.dataset.diff === this.difficulty) {
-                btn.className = 'diff-btn px-4 py-2 rounded-lg bg-blue-500 text-white';
-            } else {
-                const colors = {
-                    easy: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200',
-                    medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200',
-                    hard: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200'
-                };
-                btn.className = `diff-btn px-4 py-2 rounded-lg ${colors[btn.dataset.diff]} transition-colors`;
+        this.input.addEventListener('input', () => this.handleInput());
+        this.input.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        this.input.addEventListener('blur', () => this.handleBlur());
+        this.input.addEventListener('focus', () => this.handleFocus());
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab' && this.gameEnded) {
+                e.preventDefault();
+                this.tabPressed = true;
+            }
+            if (e.key === 'Enter' && this.tabPressed && this.gameEnded) {
+                e.preventDefault();
+                this.reset();
+                this.focusInput();
+                this.tabPressed = false;
             }
         });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Tab') this.tabPressed = false;
+        });
+        
+        this.generateWords();
+        this.renderWords();
+    }
+
+    focusInput() {
+        this.input.focus();
+    }
+
+    handleFocus() {
+        this.wordsContainer.classList.remove('blur');
+        this.caret.style.display = 'block';
+        this.updateCaretPosition();
+    }
+
+    handleBlur() {
+        if (!this.gameEnded) {
+            this.wordsContainer.classList.add('blur');
+            this.caret.style.display = 'none';
+        }
     }
 
     reset() {
-        this.difficulty = this.difficulty || 'medium';
-        this.timeLimit = 60;
         this.timeLeft = this.timeLimit;
         this.currentWordIndex = 0;
         this.currentCharIndex = 0;
         this.correctChars = 0;
-        this.totalChars = 0;
-        this.wordsCompleted = 0;
+        this.incorrectChars = 0;
+        this.totalTyped = 0;
         this.running = false;
+        this.gameEnded = false;
+        this.wordInputs = [];
         
-        this.generateWords();
-        this.updateDisplay();
-        
-        const input = document.getElementById('typing-input');
-        if (input) {
-            input.value = '';
-            input.disabled = true;
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
         }
         
-        document.getElementById('typing-time').textContent = this.timeLimit;
-        document.getElementById('typing-wpm').textContent = '0';
-        document.getElementById('typing-accuracy').textContent = '100%';
-        document.getElementById('typing-results').classList.add('hidden');
+        this.generateWords();
+        this.renderWords();
+        
+        if (this.input) {
+            this.input.value = '';
+            this.input.disabled = false;
+        }
+        
+        if (this.resultsDiv) this.resultsDiv.classList.add('hidden');
+        if (this.statsDiv) this.statsDiv.classList.remove('hidden');
+        if (this.wordsContainer) {
+            this.wordsContainer.style.display = 'block';
+            this.wordsContainer.classList.add('blur');
+        }
+        
+        const timeEl = document.getElementById('typing-time');
+        if (timeEl) timeEl.textContent = this.timeLimit;
     }
 
     generateWords() {
-        const wordList = this.words[this.difficulty];
         this.testWords = [];
-        for (let i = 0; i < 50; i++) {
-            this.testWords.push(wordList[Math.floor(Math.random() * wordList.length)]);
+        for (let i = 0; i < 100; i++) {
+            this.testWords.push(this.words[Math.floor(Math.random() * this.words.length)]);
+        }
+        this.wordInputs = this.testWords.map(() => '');
+    }
+
+    renderWords() {
+        if (!this.wordsDisplay) return;
+        
+        let html = '';
+        this.testWords.forEach((word, wordIndex) => {
+            const wordInput = this.wordInputs[wordIndex] || '';
+            let wordClass = 'word';
+            if (wordIndex === this.currentWordIndex) wordClass += ' current';
+            
+            let wordHtml = `<span class="${wordClass}" data-word="${wordIndex}">`;
+            
+            for (let i = 0; i < word.length; i++) {
+                let letterClass = 'letter';
+                if (wordIndex < this.currentWordIndex) {
+                    letterClass += wordInput[i] === word[i] ? ' correct' : ' incorrect';
+                } else if (wordIndex === this.currentWordIndex && i < wordInput.length) {
+                    letterClass += wordInput[i] === word[i] ? ' correct' : ' incorrect';
+                }
+                wordHtml += `<span class="${letterClass}" data-char="${i}">${word[i]}</span>`;
+            }
+            
+            if (wordInput.length > word.length) {
+                for (let i = word.length; i < wordInput.length; i++) {
+                    wordHtml += `<span class="letter extra">${wordInput[i]}</span>`;
+                }
+            }
+            
+            wordHtml += '</span>';
+            html += wordHtml;
+        });
+        
+        this.wordsDisplay.innerHTML = html;
+        this.scrollToCurrentWord();
+    }
+
+    scrollToCurrentWord() {
+        const currentWordEl = this.wordsDisplay.querySelector('.word.current');
+        if (currentWordEl && this.wordsContainer) {
+            const containerRect = this.wordsContainer.getBoundingClientRect();
+            const wordRect = currentWordEl.getBoundingClientRect();
+            
+            if (wordRect.top > containerRect.top + 80) {
+                this.wordsContainer.scrollTop += 48;
+            }
+        }
+    }
+
+    updateCaretPosition() {
+        if (!this.caret || !this.wordsDisplay) return;
+        
+        const currentWordEl = this.wordsDisplay.querySelector('.word.current');
+        if (!currentWordEl) return;
+        
+        const chars = currentWordEl.querySelectorAll('.letter');
+        const currentInput = this.wordInputs[this.currentWordIndex] || '';
+        let targetEl;
+        
+        if (currentInput.length === 0) {
+            targetEl = chars[0];
+            if (targetEl) {
+                const rect = targetEl.getBoundingClientRect();
+                const containerRect = this.wordsContainer.getBoundingClientRect();
+                this.caret.style.left = (rect.left - containerRect.left) + 'px';
+                this.caret.style.top = (rect.top - containerRect.top + this.wordsContainer.scrollTop) + 'px';
+            }
+        } else if (currentInput.length >= chars.length) {
+            targetEl = chars[chars.length - 1];
+            if (targetEl) {
+                const rect = targetEl.getBoundingClientRect();
+                const containerRect = this.wordsContainer.getBoundingClientRect();
+                this.caret.style.left = (rect.right - containerRect.left) + 'px';
+                this.caret.style.top = (rect.top - containerRect.top + this.wordsContainer.scrollTop) + 'px';
+            }
+        } else {
+            targetEl = chars[currentInput.length];
+            if (targetEl) {
+                const rect = targetEl.getBoundingClientRect();
+                const containerRect = this.wordsContainer.getBoundingClientRect();
+                this.caret.style.left = (rect.left - containerRect.left) + 'px';
+                this.caret.style.top = (rect.top - containerRect.top + this.wordsContainer.scrollTop) + 'px';
+            }
         }
     }
 
     start() {
+        if (this.input) {
+            this.input.focus();
+        }
+    }
+    
+    startTimer() {
         if (this.running) return;
         
         this.running = true;
-        const input = document.getElementById('typing-input');
-        input.disabled = false;
-        input.focus();
-        
         this.startTime = Date.now();
+        
         this.timerInterval = setInterval(() => {
-            this.timeLeft = Math.max(0, this.timeLimit - Math.floor((Date.now() - this.startTime) / 1000));
-            document.getElementById('typing-time').textContent = this.timeLeft;
+            const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+            this.timeLeft = Math.max(0, this.timeLimit - elapsed);
+            
+            const timeEl = document.getElementById('typing-time');
+            if (timeEl) timeEl.textContent = this.timeLeft;
             
             if (this.timeLeft <= 0) {
                 this.endGame();
@@ -1078,115 +1326,88 @@ class TypingGame {
         this.running = false;
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
+            this.timerInterval = null;
         }
         const typingUI = document.getElementById('typing-game-ui');
         if (typingUI) typingUI.remove();
         this.canvas.style.display = 'block';
     }
 
+    handleKeyDown(e) {
+        if (e.key === 'Backspace' && this.input.value === '' && this.currentWordIndex > 0) {
+            e.preventDefault();
+            this.currentWordIndex--;
+            this.input.value = this.wordInputs[this.currentWordIndex];
+            this.renderWords();
+            this.updateCaretPosition();
+        }
+    }
+
     handleInput() {
-        if (!this.running) return;
+        if (this.gameEnded) return;
         
-        const input = document.getElementById('typing-input');
-        const typed = input.value;
-        const currentWord = this.testWords[this.currentWordIndex];
+        if (!this.running) {
+            this.startTimer();
+        }
+        
+        const typed = this.input.value;
         
         if (typed.endsWith(' ')) {
-            const wordTyped = typed.trim();
+            const wordTyped = typed.slice(0, -1);
+            this.wordInputs[this.currentWordIndex] = wordTyped;
             
-            for (let i = 0; i < wordTyped.length; i++) {
-                this.totalChars++;
-                if (i < currentWord.length && wordTyped[i] === currentWord[i]) {
+            const currentWord = this.testWords[this.currentWordIndex];
+            for (let i = 0; i < Math.max(wordTyped.length, currentWord.length); i++) {
+                this.totalTyped++;
+                if (i < currentWord.length && i < wordTyped.length && wordTyped[i] === currentWord[i]) {
                     this.correctChars++;
+                } else {
+                    this.incorrectChars++;
                 }
             }
             
-            if (wordTyped === currentWord) {
-                this.wordsCompleted++;
-            }
-            
             this.currentWordIndex++;
-            this.currentCharIndex = 0;
-            input.value = '';
+            this.input.value = '';
             
             if (this.currentWordIndex >= this.testWords.length) {
                 this.generateWords();
                 this.currentWordIndex = 0;
             }
+            
+            this.renderWords();
         } else {
-            this.currentCharIndex = typed.length;
+            this.wordInputs[this.currentWordIndex] = typed;
+            this.renderWords();
         }
         
-        this.updateDisplay();
-        this.updateStats();
-    }
-
-    updateDisplay() {
-        const display = document.getElementById('typing-display');
-        if (!display) return;
-        
-        const input = document.getElementById('typing-input');
-        const typed = input ? input.value : '';
-        
-        let html = '';
-        const visibleWords = this.testWords.slice(this.currentWordIndex, this.currentWordIndex + 15);
-        
-        visibleWords.forEach((word, wordIndex) => {
-            if (wordIndex === 0) {
-                let wordHtml = '';
-                for (let i = 0; i < word.length; i++) {
-                    if (i < typed.length) {
-                        if (typed[i] === word[i]) {
-                            wordHtml += `<span class="text-green-600 dark:text-green-400">${word[i]}</span>`;
-                        } else {
-                            wordHtml += `<span class="text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30">${word[i]}</span>`;
-                        }
-                    } else if (i === typed.length) {
-                        wordHtml += `<span class="border-l-2 border-blue-500 animate-pulse">${word[i]}</span>`;
-                    } else {
-                        wordHtml += `<span class="text-slate-600 dark:text-slate-300">${word[i]}</span>`;
-                    }
-                }
-                if (typed.length > word.length) {
-                    wordHtml += `<span class="text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30">${typed.slice(word.length)}</span>`;
-                }
-                html += wordHtml + ' ';
-            } else {
-                html += `<span class="text-slate-500 dark:text-slate-400">${word}</span> `;
-            }
-        });
-        
-        display.innerHTML = html;
-    }
-
-    updateStats() {
-        const elapsedTime = (Date.now() - this.startTime) / 1000 / 60;
-        const wpm = Math.round(this.wordsCompleted / Math.max(elapsedTime, 0.01));
-        const accuracy = this.totalChars > 0 ? Math.round((this.correctChars / this.totalChars) * 100) : 100;
-        
-        document.getElementById('typing-wpm').textContent = wpm;
-        document.getElementById('typing-accuracy').textContent = `${accuracy}%`;
+        this.updateCaretPosition();
     }
 
     endGame() {
         this.running = false;
-        clearInterval(this.timerInterval);
+        this.gameEnded = true;
         
-        const input = document.getElementById('typing-input');
-        input.disabled = true;
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
         
-        const elapsedTime = this.timeLimit / 60;
-        const wpm = Math.round(this.wordsCompleted / elapsedTime);
-        const accuracy = this.totalChars > 0 ? Math.round((this.correctChars / this.totalChars) * 100) : 100;
+        const elapsedMinutes = this.timeLimit / 60;
+        const wpm = Math.round((this.correctChars / 5) / elapsedMinutes);
+        const accuracy = this.totalTyped > 0 ? Math.round((this.correctChars / this.totalTyped) * 100) : 100;
         
-        const score = Math.round(wpm * (accuracy / 100));
+        this.input.disabled = true;
+        this.wordsContainer.style.display = 'none';
+        this.statsDiv.classList.add('hidden');
+        this.resultsDiv.classList.remove('hidden');
+        this.caret.style.display = 'none';
         
-        document.getElementById('result-words').textContent = this.wordsCompleted;
         document.getElementById('result-wpm').textContent = wpm;
-        document.getElementById('result-accuracy').textContent = `${accuracy}%`;
-        document.getElementById('typing-results').classList.remove('hidden');
+        document.getElementById('result-accuracy').textContent = accuracy + '%';
+        document.getElementById('result-chars').textContent = `${this.correctChars}/${this.totalTyped}`;
+        document.getElementById('result-time').textContent = this.timeLimit + 's';
         
-        this.onScore(score);
+        this.onScore(wpm);
     }
 }
 
@@ -1449,13 +1670,18 @@ class TetrisGame {
     }
 
     start() {
+        if (this.running) return;
         this.running = true;
         this.lastDrop = Date.now();
-        this.gameLoop();
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
 
     stop() {
         this.running = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
         document.removeEventListener('keydown', this.keyHandler);
     }
 
@@ -1475,7 +1701,7 @@ class TetrisGame {
         }
         
         this.draw();
-        requestAnimationFrame(() => this.gameLoop());
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
 
     movePiece(dx, dy) {
@@ -1723,12 +1949,17 @@ class BreakoutGame {
     }
 
     start() {
+        if (this.running) return;
         this.running = true;
-        this.gameLoop();
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
 
     stop() {
         this.running = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
         document.removeEventListener('keydown', this.keyDownHandler);
         document.removeEventListener('keyup', this.keyUpHandler);
     }
@@ -1741,7 +1972,7 @@ class BreakoutGame {
         }
         this.draw();
         
-        requestAnimationFrame(() => this.gameLoop());
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
 
     update() {
