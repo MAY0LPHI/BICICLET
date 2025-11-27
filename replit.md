@@ -4,12 +4,32 @@
 O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicação web, com versão desktop executável, desenvolvida para gerenciar clientes, bicicletas e controlar o fluxo de entrada e saída em estacionamentos de bicicletas. O objetivo é otimizar as operações de bicicletários através de funcionalidades de cadastro, registro de movimentação, exportação de dados, sistema de auditoria completo e configurações personalizáveis, visando o mercado de lojas locais.
 
 ## Recent Changes
+- **27/11/2025**: User Permissions Interface Reorganization
+  - **New "Dados" (Data) permissions section added:**
+    - Separated from Configuration tab - now has its own dedicated permissions
+    - Dados permissions include: Ver, Exportar, Importar, Exportar Dados, Importar Dados, Exportar Sistema, Importar Sistema
+    - Configuration now only includes: Ver, Gerenciar Usuários, Busca Avançada
+  - **Add User modal redesigned:**
+    - Uses organized checkboxes with Lucide icons instead of toggle switches
+    - Permission sections organized by tab: Clientes, Registros Diários, Dados, Configuração
+    - Each permission has an appropriate icon (eye for Ver, plus-circle for Adicionar, etc.)
+  - **Edit User modal updated:**
+    - Same checkbox-with-icons design as Add User modal
+    - Includes Dados permissions section with fallback for existing users
+  - **User list display updated:**
+    - Now shows 4 permission categories: Clientes, Registros, Dados, Configuração
+    - Grid layout adjusted to accommodate the new column
+  - **Auth module updated:**
+    - getDefaultPermissions() includes complete dados section
+    - Default admin and CELO123 users created with full dados permissions
+    - Clean separation between data operations (dados) and system settings (configuracao)
+
 - **27/11/2025**: New "Dados" (Data Management) tab created
   - All import/export functionality moved from Configuration tab to new dedicated Dados tab
   - Created new DadosManager module (js/dados/dados.js) for data management operations
   - New tab includes: Import/Export by period, Full System Backup Export/Import
   - Clean separation of concerns: Configuration tab now focuses on settings, Dados tab handles data
-  - Tab is permission-controlled (requires 'configuracao' permission to view)
+  - Tab is permission-controlled (requires 'dados' permission to view)
   - Updated app-modular.js to include new tab in navigation and initialization
 
 - **26/11/2025**: Fresh GitHub import setup completed on Replit

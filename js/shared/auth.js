@@ -45,16 +45,19 @@ export class Auth {
             permissoes: {
                 clientes: { ver: true, adicionar: true, editar: true, excluir: true },
                 registros: { ver: true, adicionar: true, editar: true, excluir: true },
-                configuracao: { 
+                dados: { 
                     ver: true, 
                     exportar: true, 
-                    importar: true, 
-                    gerenciarUsuarios: true,
-                    buscaAvancada: true,
+                    importar: true,
                     exportarDados: true,
                     importarDados: true,
                     exportarSistema: true,
                     importarSistema: true
+                },
+                configuracao: { 
+                    ver: true, 
+                    gerenciarUsuarios: true,
+                    buscaAvancada: true
                 }
             },
             ativo: true,
@@ -65,7 +68,7 @@ export class Auth {
         const users = this.getAllUsers();
         users.push(userCelo);
         localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
-        console.log('✅ Usuário CELO123 criado como DONO (username: CELO123, senha: CELO123)');
+        console.log('Usuário CELO123 criado como DONO (username: CELO123, senha: CELO123)');
     }
 
     static async createDefaultAdmin() {
@@ -81,16 +84,19 @@ export class Auth {
             permissoes: {
                 clientes: { ver: true, adicionar: true, editar: true, excluir: true },
                 registros: { ver: true, adicionar: true, editar: true, excluir: true },
-                configuracao: { 
+                dados: { 
                     ver: true, 
                     exportar: true, 
-                    importar: true, 
-                    gerenciarUsuarios: true,
-                    buscaAvancada: true,
+                    importar: true,
                     exportarDados: true,
                     importarDados: true,
                     exportarSistema: true,
                     importarSistema: true
+                },
+                configuracao: { 
+                    ver: true, 
+                    gerenciarUsuarios: true,
+                    buscaAvancada: true
                 }
             },
             ativo: true,
@@ -107,16 +113,19 @@ export class Auth {
             permissoes: {
                 clientes: { ver: true, adicionar: true, editar: true, excluir: true },
                 registros: { ver: true, adicionar: true, editar: true, excluir: true },
-                configuracao: { 
+                dados: { 
                     ver: true, 
                     exportar: true, 
-                    importar: true, 
-                    gerenciarUsuarios: true,
-                    buscaAvancada: true,
+                    importar: true,
                     exportarDados: true,
                     importarDados: true,
                     exportarSistema: true,
                     importarSistema: true
+                },
+                configuracao: { 
+                    ver: true, 
+                    gerenciarUsuarios: true,
+                    buscaAvancada: true
                 }
             },
             ativo: true,
@@ -395,7 +404,16 @@ export class Auth {
         return {
             clientes: { ver: true, adicionar: true, editar: false, excluir: false },
             registros: { ver: true, adicionar: true, editar: false, excluir: false },
-            configuracao: { ver: false, exportar: false, importar: false, gerenciarUsuarios: false }
+            dados: { 
+                ver: false, 
+                exportar: false, 
+                importar: false,
+                exportarDados: false,
+                importarDados: false,
+                exportarSistema: false,
+                importarSistema: false
+            },
+            configuracao: { ver: false, gerenciarUsuarios: false, buscaAvancada: false }
         };
     }
 
