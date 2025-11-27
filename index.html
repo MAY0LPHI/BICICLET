@@ -2,6 +2,8 @@
     <style data-merge-styles="true"></style><style data-merge-styles="true"></style><style data-merge-styles="true"></style><style data-merge-styles="true"></style><style data-merge-styles="true"></style><meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gerenciamento de Bicicletário</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="shortcut icon" type="image/svg+xml" href="favicon.svg">
     <script>
         tailwind = window.tailwind || {};
         tailwind.config = { darkMode: 'class' };
@@ -325,7 +327,8 @@
                                 <input type="file" id="import-file" accept=".xlsx,.xls,.csv" class="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400">
                             </div>
                             <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-md">
-                                <p class="text-xs text-slate-600 dark:text-slate-400"><strong>Formato esperado:</strong> Nome, Número, CPF (nesta ordem)</p>
+                                <p class="text-xs text-slate-600 dark:text-slate-400"><strong>Formato esperado:</strong> Nome, Telefone, CPF, Categoria (nesta ordem)</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-500">A categoria é opcional</p>
                                 <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Os dados serão importados e adicionados aos clientes existentes.</p>
                             </div>
                             <button type="button" id="import-btn" disabled class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -361,8 +364,8 @@
                             </div>
                             
                             <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-md">
-                                <p class="text-xs text-slate-600 dark:text-slate-400"><strong>Conteúdo:</strong> Registros, Clientes e Bicicletas relacionados</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Deixe as datas vazias para exportar todos os dados.</p>
+                                <p class="text-xs text-slate-600 dark:text-slate-400"><strong>Formato:</strong> Nome, Telefone, CPF, Categoria</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Compatível com a função de importar. Deixe as datas vazias para exportar todos os clientes.</p>
                             </div>
                             <div class="flex gap-2">
                                 <button type="button" id="export-excel-btn" class="flex-1 flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
@@ -416,9 +419,25 @@
                             <p class="text-sm text-slate-600 dark:text-slate-400">
                                 Exporte todos os dados do sistema: clientes, bicicletas, registros e usuários.
                             </p>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label for="export-system-data-inicio" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                                        Data Inicial
+                                    </label>
+                                    <input type="date" id="export-system-data-inicio" class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500">
+                                </div>
+                                <div>
+                                    <label for="export-system-data-fim" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                                        Data Final
+                                    </label>
+                                    <input type="date" id="export-system-data-fim" class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500">
+                                </div>
+                            </div>
+                            
                             <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-md">
                                 <p class="text-xs text-slate-600 dark:text-slate-400"><strong>Conteúdo:</strong> Clientes, Bicicletas, Registros, Usuários e Permissões</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Backup completo do sistema.</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Deixe as datas vazias para exportar backup completo do sistema.</p>
                             </div>
                             <div class="flex gap-2">
                                 <button type="button" id="export-system-excel-btn" class="flex-1 flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">

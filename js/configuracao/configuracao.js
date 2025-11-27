@@ -39,6 +39,8 @@ export class ConfiguracaoManager {
             exportDataFim: document.getElementById('export-data-fim'),
             exportSystemExcelBtn: document.getElementById('export-system-excel-btn'),
             exportSystemCsvBtn: document.getElementById('export-system-csv-btn'),
+            exportSystemDataInicio: document.getElementById('export-system-data-inicio'),
+            exportSystemDataFim: document.getElementById('export-system-data-fim'),
             importSystemFile: document.getElementById('import-system-file'),
             importSystemBtn: document.getElementById('import-system-btn'),
             importSystemStatus: document.getElementById('import-system-status'),
@@ -683,6 +685,7 @@ export class ConfiguracaoManager {
 
     processImportData(rows) {
         let imported = 0;
+        const categoriasExistentes = Storage.loadCategorias();
         
         rows.forEach((row, index) => {
             if (index === 0 && (row[0]?.toLowerCase().includes('nome') || row[0]?.toLowerCase().includes('name'))) {
@@ -690,10 +693,22 @@ export class ConfiguracaoManager {
             }
 
             if (row.length >= 3 && row[0] && row[2]) {
-                const nome = String(row[0]).trim();
+                const nome = String(row[0]).trim().toUpperCase();
                 const telefoneRaw = String(row[1] || '').trim();
                 const telefone = telefoneRaw.replace(/\D/g, '');
                 const cpf = String(row[2]).replace(/\D/g, '');
+                const categoriaRaw = row.length >= 4 ? String(row[3] || '').trim().toUpperCase() : '';
+                
+                let categoria = '';
+                if (categoriaRaw) {
+                    if (categoriaRaw in categoriasExistentes) {
+                        categoria = categoriaRaw;
+                    } else {
+                        categoriasExistentes[categoriaRaw] = Storage.getDefaultEmoji(categoriaRaw);
+                        Storage.saveCategorias(categoriasExistentes);
+                        categoria = categoriaRaw;
+                    }
+                }
 
                 if (nome && cpf && Utils.validateCPF(cpf)) {
                     const exists = this.app.data.clients.some(c => c.cpf.replace(/\D/g, '') === cpf);
@@ -704,6 +719,8 @@ export class ConfiguracaoManager {
                             nome: nome,
                             cpf: cpf,
                             telefone: telefone,
+                            categoria: categoria,
+                            comentarios: [],
                             bicicletas: []
                         };
                         this.app.data.clients.push(newClient);
@@ -713,6 +730,7 @@ export class ConfiguracaoManager {
             }
         });
 
+        this.renderCategorias();
         return imported;
     }
 
@@ -727,51 +745,29 @@ export class ConfiguracaoManager {
         const dataInicio = this.elements.exportDataInicio.value;
         const dataFim = this.elements.exportDataFim.value;
         
-        const exportData = this.prepareFilteredExportData(dataInicio, dataFim);
-        const totalRegistros = (exportData.registros && exportData.registros.length > 0) ? exportData.registros.length - 1 : 0;
+        const exportData = this.prepareSimpleExportData(dataInicio, dataFim);
+        const totalClientes = exportData.length - 1;
         
-        if (totalRegistros === 0) {
-            const periodoMsg = dataInicio && dataFim 
-                ? ` entre ${dataInicio} e ${dataFim}` 
-                : dataInicio 
-                    ? ` a partir de ${dataInicio}` 
-                    : dataFim 
-                        ? ` até ${dataFim}` 
-                        : '';
-            Modals.alert(`Nenhum registro encontrado${periodoMsg} para exportar.`, 'Aviso');
+        if (totalClientes === 0) {
+            const periodoMsg = dataInicio || dataFim 
+                ? ` no período selecionado` 
+                : '';
+            Modals.alert(`Nenhum cliente encontrado${periodoMsg} para exportar.`, 'Aviso');
             return;
         }
         
         const wb = XLSX.utils.book_new();
-
-        if (exportData.registros && exportData.registros.length > 1) {
-            const registrosWs = XLSX.utils.aoa_to_sheet(exportData.registros);
-            XLSX.utils.book_append_sheet(wb, registrosWs, "Registros");
-        }
-
-        if (exportData.clientes && exportData.clientes.length > 1) {
-            const clientesWs = XLSX.utils.aoa_to_sheet(exportData.clientes);
-            XLSX.utils.book_append_sheet(wb, clientesWs, "Clientes");
-        }
-
-        if (exportData.bicicletas && exportData.bicicletas.length > 1) {
-            const bicicletasWs = XLSX.utils.aoa_to_sheet(exportData.bicicletas);
-            XLSX.utils.book_append_sheet(wb, bicicletasWs, "Bicicletas");
-        }
-
-        if (exportData.categorias && exportData.categorias.length > 1) {
-            const categoriasWs = XLSX.utils.aoa_to_sheet(exportData.categorias);
-            XLSX.utils.book_append_sheet(wb, categoriasWs, "Categorias");
-        }
+        const ws = XLSX.utils.aoa_to_sheet(exportData);
+        XLSX.utils.book_append_sheet(wb, ws, "Clientes");
 
         const periodoStr = dataInicio && dataFim 
             ? `${dataInicio}_${dataFim}` 
             : new Date().toISOString().split('T')[0];
-        const fileName = `export_dados_${periodoStr}.xlsx`;
+        const fileName = `clientes_${periodoStr}.xlsx`;
         
         XLSX.writeFile(wb, fileName);
         
-        Modals.alert(`Exportação concluída! ${totalRegistros} registro(s) exportado(s).`);
+        Modals.alert(`Exportação concluída! ${totalClientes} cliente(s) exportado(s).`);
     }
 
     exportToCSV() {
@@ -785,47 +781,24 @@ export class ConfiguracaoManager {
         const dataInicio = this.elements.exportDataInicio.value;
         const dataFim = this.elements.exportDataFim.value;
         
-        const exportData = this.prepareFilteredExportData(dataInicio, dataFim);
-        const totalRegistros = (exportData.registros && exportData.registros.length > 0) ? exportData.registros.length - 1 : 0;
+        const exportData = this.prepareSimpleExportData(dataInicio, dataFim);
+        const totalClientes = exportData.length - 1;
         
-        if (totalRegistros === 0) {
-            const periodoMsg = dataInicio && dataFim 
-                ? ` entre ${dataInicio} e ${dataFim}` 
-                : dataInicio 
-                    ? ` a partir de ${dataInicio}` 
-                    : dataFim 
-                        ? ` até ${dataFim}` 
-                        : '';
-            Modals.alert(`Nenhum registro encontrado${periodoMsg} para exportar.`, 'Aviso');
+        if (totalClientes === 0) {
+            const periodoMsg = dataInicio || dataFim 
+                ? ` no período selecionado` 
+                : '';
+            Modals.alert(`Nenhum cliente encontrado${periodoMsg} para exportar.`, 'Aviso');
             return;
         }
-        
-        const sections = [];
-        if (exportData.registros && exportData.registros.length > 1) {
-            sections.push({ name: 'Registros', data: exportData.registros });
-        }
-        if (exportData.clientes && exportData.clientes.length > 1) {
-            sections.push({ name: 'Clientes', data: exportData.clientes });
-        }
-        if (exportData.bicicletas && exportData.bicicletas.length > 1) {
-            sections.push({ name: 'Bicicletas', data: exportData.bicicletas });
-        }
-        if (exportData.categorias && exportData.categorias.length > 1) {
-            sections.push({ name: 'Categorias', data: exportData.categorias });
-        }
 
-        let csvContent = '';
-        sections.forEach((section, index) => {
-            if (index > 0) csvContent += '\n\n';
-            csvContent += `=== ${section.name} ===\n`;
-            csvContent += section.data.map(row => 
-                row.map(cell => {
-                    const cellStr = String(cell);
-                    const escaped = cellStr.replace(/"/g, '""');
-                    return `"${escaped}"`;
-                }).join(',')
-            ).join('\n');
-        });
+        const csvContent = exportData.map(row => 
+            row.map(cell => {
+                const cellStr = String(cell);
+                const escaped = cellStr.replace(/"/g, '""');
+                return `"${escaped}"`;
+            }).join(',')
+        ).join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
@@ -834,7 +807,7 @@ export class ConfiguracaoManager {
         const periodoStr = dataInicio && dataFim 
             ? `${dataInicio}_${dataFim}` 
             : new Date().toISOString().split('T')[0];
-        const fileName = `export_dados_${periodoStr}.csv`;
+        const fileName = `clientes_${periodoStr}.csv`;
         
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
@@ -844,101 +817,39 @@ export class ConfiguracaoManager {
         link.click();
         document.body.removeChild(link);
         
-        Modals.alert(`Exportação concluída! ${totalRegistros} registro(s) exportado(s).`);
+        Modals.alert(`Exportação concluída! ${totalClientes} cliente(s) exportado(s).`);
     }
 
-    prepareFilteredExportData(dataInicio, dataFim) {
-        let filteredRegistros = this.app.data.registros;
+    prepareSimpleExportData(dataInicio, dataFim) {
+        let clientesToExport = this.app.data.clients;
         
-        if (dataInicio && dataFim) {
-            const inicio = new Date(dataInicio);
-            inicio.setHours(0, 0, 0, 0);
-            const fim = new Date(dataFim);
-            fim.setHours(23, 59, 59, 999);
+        if (dataInicio || dataFim) {
+            const inicio = dataInicio ? new Date(dataInicio) : null;
+            const fim = dataFim ? new Date(dataFim) : null;
             
-            filteredRegistros = this.app.data.registros.filter(registro => {
-                const dataEntrada = new Date(registro.dataHoraEntrada);
-                return dataEntrada >= inicio && dataEntrada <= fim;
-            });
-        } else if (dataInicio) {
-            const inicio = new Date(dataInicio);
-            inicio.setHours(0, 0, 0, 0);
+            if (inicio) inicio.setHours(0, 0, 0, 0);
+            if (fim) fim.setHours(23, 59, 59, 999);
             
-            filteredRegistros = this.app.data.registros.filter(registro => {
+            const filteredRegistros = this.app.data.registros.filter(registro => {
                 const dataEntrada = new Date(registro.dataHoraEntrada);
-                return dataEntrada >= inicio;
+                if (inicio && dataEntrada < inicio) return false;
+                if (fim && dataEntrada > fim) return false;
+                return true;
             });
-        } else if (dataFim) {
-            const fim = new Date(dataFim);
-            fim.setHours(23, 59, 59, 999);
             
-            filteredRegistros = this.app.data.registros.filter(registro => {
-                const dataEntrada = new Date(registro.dataHoraEntrada);
-                return dataEntrada <= fim;
-            });
+            const clientIds = new Set(filteredRegistros.map(r => r.clientId));
+            clientesToExport = this.app.data.clients.filter(c => clientIds.has(c.id));
         }
         
-        const clientIds = new Set(filteredRegistros.map(r => r.clientId));
-        const bikeIds = new Set(filteredRegistros.map(r => r.bikeId));
-        
-        const relatedClients = this.app.data.clients.filter(c => clientIds.has(c.id));
-        
-        const clientesHeaders = ['ID', 'Nome', 'CPF', 'Telefone', 'Categoria', 'Comentários', 'Bicicletas'];
-        const clientesRows = relatedClients.map(client => [
-            client.id,
+        const headers = ['Nome', 'Telefone', 'CPF', 'Categoria'];
+        const rows = clientesToExport.map(client => [
             client.nome,
-            client.cpf,
             client.telefone || '',
-            client.categoria || '',
-            client.comentarios ? JSON.stringify(client.comentarios) : '[]',
-            client.bicicletas ? JSON.stringify(client.bicicletas) : '[]'
+            client.cpf,
+            client.categoria || ''
         ]);
 
-        const bicicletasHeaders = ['ID', 'Cliente ID', 'Marca', 'Modelo', 'Cor'];
-        const bicicletasRows = [];
-        relatedClients.forEach(client => {
-            if (client.bicicletas && client.bicicletas.length > 0) {
-                client.bicicletas.forEach(bike => {
-                    if (bikeIds.has(bike.id)) {
-                        bicicletasRows.push([
-                            bike.id,
-                            client.id,
-                            bike.marca,
-                            bike.modelo,
-                            bike.cor
-                        ]);
-                    }
-                });
-            }
-        });
-
-        const categoriasHeaders = ['Nome', 'Emoji'];
-        const categorias = Storage.loadCategorias();
-        const categoriasRows = Object.entries(categorias).map(([nome, emoji]) => [
-            nome,
-            emoji
-        ]);
-
-        const registrosHeaders = ['ID', 'Cliente ID', 'Bicicleta ID', 'Categoria', 'Data Entrada', 'Data Saída', 'Pernoite', 'Acesso Removido', 'Registro Original ID', 'Bike Snapshot'];
-        const registrosRows = filteredRegistros.map(registro => [
-            registro.id,
-            registro.clientId,
-            registro.bikeId,
-            registro.categoria || '',
-            registro.dataHoraEntrada,
-            registro.dataHoraSaida || '',
-            registro.pernoite ? 'Sim' : 'Não',
-            registro.acessoRemovido ? 'Sim' : 'Não',
-            registro.registroOriginalId || '',
-            registro.bikeSnapshot ? JSON.stringify(registro.bikeSnapshot) : '{}'
-        ]);
-
-        return {
-            clientes: [clientesHeaders, ...clientesRows],
-            bicicletas: [bicicletasHeaders, ...bicicletasRows],
-            categorias: [categoriasHeaders, ...categoriasRows],
-            registros: [registrosHeaders, ...registrosRows]
-        };
+        return [headers, ...rows];
     }
 
     getClientRecords(clientId) {
@@ -1338,7 +1249,10 @@ export class ConfiguracaoManager {
             return;
         }
         
-        const systemData = this.prepareSystemExportData();
+        const dataInicio = this.elements.exportSystemDataInicio?.value || '';
+        const dataFim = this.elements.exportSystemDataFim?.value || '';
+        
+        const systemData = this.prepareSystemExportData(dataInicio, dataFim);
         const wb = XLSX.utils.book_new();
 
         if (systemData.clientes && systemData.clientes.length > 1) {
@@ -1366,10 +1280,16 @@ export class ConfiguracaoManager {
             XLSX.utils.book_append_sheet(wb, usuariosWs, "Usuarios");
         }
 
-        const fileName = `backup_sistema_${new Date().toISOString().split('T')[0]}.xlsx`;
+        const periodoStr = dataInicio && dataFim 
+            ? `${dataInicio}_${dataFim}` 
+            : new Date().toISOString().split('T')[0];
+        const fileName = `backup_sistema_${periodoStr}.xlsx`;
         XLSX.writeFile(wb, fileName);
         
-        Modals.alert(`Backup completo exportado com sucesso para ${fileName}`);
+        const periodoMsg = dataInicio || dataFim 
+            ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})` 
+            : '';
+        Modals.alert(`Backup exportado com sucesso${periodoMsg} para ${fileName}`);
     }
 
     exportSystemToCSV() {
@@ -1380,7 +1300,10 @@ export class ConfiguracaoManager {
             return;
         }
         
-        const systemData = this.prepareSystemExportData();
+        const dataInicio = this.elements.exportSystemDataInicio?.value || '';
+        const dataFim = this.elements.exportSystemDataFim?.value || '';
+        
+        const systemData = this.prepareSystemExportData(dataInicio, dataFim);
         
         const sections = [];
         if (systemData.clientes && systemData.clientes.length > 1) {
@@ -1416,7 +1339,10 @@ export class ConfiguracaoManager {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         
-        const fileName = `backup_sistema_${new Date().toISOString().split('T')[0]}.csv`;
+        const periodoStr = dataInicio && dataFim 
+            ? `${dataInicio}_${dataFim}` 
+            : new Date().toISOString().split('T')[0];
+        const fileName = `backup_sistema_${periodoStr}.csv`;
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
@@ -1425,12 +1351,33 @@ export class ConfiguracaoManager {
         link.click();
         document.body.removeChild(link);
         
-        Modals.alert(`Backup completo exportado com sucesso para ${fileName}`);
+        const periodoMsg = dataInicio || dataFim 
+            ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})` 
+            : '';
+        Modals.alert(`Backup exportado com sucesso${periodoMsg} para ${fileName}`);
     }
 
-    prepareSystemExportData() {
+    prepareSystemExportData(dataInicio = '', dataFim = '') {
+        let registrosFiltrados = this.app.data.registros;
+        let clienteIds = new Set();
+        
+        if (dataInicio || dataFim) {
+            registrosFiltrados = this.app.data.registros.filter(registro => {
+                const dataEntrada = Utils.getLocalDateString(registro.dataHoraEntrada);
+                if (dataInicio && dataEntrada < dataInicio) return false;
+                if (dataFim && dataEntrada > dataFim) return false;
+                return true;
+            });
+            
+            registrosFiltrados.forEach(reg => clienteIds.add(reg.clientId));
+        }
+        
+        const clientesFiltrados = (dataInicio || dataFim) 
+            ? this.app.data.clients.filter(c => clienteIds.has(c.id))
+            : this.app.data.clients;
+
         const clientesHeaders = ['ID', 'Nome', 'CPF', 'Telefone', 'Categoria', 'Comentários', 'Bicicletas'];
-        const clientesRows = this.app.data.clients.map(client => [
+        const clientesRows = clientesFiltrados.map(client => [
             client.id,
             client.nome,
             client.cpf,
@@ -1442,7 +1389,7 @@ export class ConfiguracaoManager {
 
         const bicicletasHeaders = ['ID', 'Cliente ID', 'Marca', 'Modelo', 'Cor'];
         const bicicletasRows = [];
-        this.app.data.clients.forEach(client => {
+        clientesFiltrados.forEach(client => {
             if (client.bicicletas && client.bicicletas.length > 0) {
                 client.bicicletas.forEach(bike => {
                     bicicletasRows.push([
@@ -1464,7 +1411,7 @@ export class ConfiguracaoManager {
         ]);
 
         const registrosHeaders = ['ID', 'Cliente ID', 'Bicicleta ID', 'Categoria', 'Data Entrada', 'Data Saída', 'Pernoite', 'Acesso Removido', 'Registro Original ID', 'Bike Snapshot'];
-        const registrosRows = this.app.data.registros.map(registro => [
+        const registrosRows = registrosFiltrados.map(registro => [
             registro.id,
             registro.clientId,
             registro.bikeId,
