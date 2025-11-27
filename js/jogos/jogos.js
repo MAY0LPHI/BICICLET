@@ -938,7 +938,41 @@ class TypingGame {
         this.onScore = onScore;
         this.container = canvas.parentElement;
         
-        this.words = [
+        // Expanded Portuguese word list
+        this.portugueseWords = [
+            // Common words
+            'casa', 'bola', 'vida', 'amor', 'tempo', 'mundo', 'coisa', 'pessoa', 'olho', 'mao',
+            'lugar', 'parte', 'forma', 'lado', 'hora', 'ponto', 'agua', 'nome', 'terra', 'cidade',
+            'trabalho', 'momento', 'governo', 'empresa', 'projeto', 'sistema', 'problema', 'processo',
+            'desenvolvimento', 'informacao', 'tecnologia', 'conhecimento', 'comunicacao', 'educacao',
+            // Day to day words
+            'hoje', 'ontem', 'amanha', 'agora', 'sempre', 'nunca', 'muito', 'pouco', 'mais', 'menos',
+            'bem', 'mal', 'sim', 'nao', 'talvez', 'aqui', 'ali', 'la', 'onde', 'quando',
+            'como', 'porque', 'para', 'com', 'sem', 'sobre', 'entre', 'desde', 'ate', 'apos',
+            // Common verbs
+            'ser', 'estar', 'ter', 'fazer', 'poder', 'dizer', 'dar', 'ver', 'saber', 'querer',
+            'chegar', 'passar', 'ficar', 'deixar', 'parecer', 'levar', 'seguir', 'encontrar', 'chamar', 'vir',
+            'pensar', 'sair', 'voltar', 'tomar', 'conhecer', 'viver', 'sentir', 'criar', 'falar', 'trazer',
+            'lembrar', 'acabar', 'comecar', 'mostrar', 'ouvir', 'continuar', 'aprender', 'entender', 'perder', 'ganhar',
+            // Common nouns
+            'familia', 'amigo', 'crianca', 'homem', 'mulher', 'pai', 'mae', 'filho', 'filha', 'irmao',
+            'escola', 'livro', 'porta', 'janela', 'mesa', 'cadeira', 'carro', 'rua', 'praia', 'sol',
+            'lua', 'estrela', 'flor', 'arvore', 'animal', 'cachorro', 'gato', 'passaro', 'peixe', 'comida',
+            'roupa', 'sapato', 'bolsa', 'telefone', 'computador', 'musica', 'filme', 'jogo', 'festa', 'viagem',
+            // Common adjectives
+            'bom', 'mau', 'grande', 'pequeno', 'novo', 'velho', 'jovem', 'bonito', 'feio', 'forte',
+            'fraco', 'rapido', 'lento', 'alto', 'baixo', 'largo', 'estreito', 'longo', 'curto', 'cheio',
+            'vazio', 'quente', 'frio', 'claro', 'escuro', 'limpo', 'sujo', 'facil', 'dificil', 'certo',
+            'errado', 'feliz', 'triste', 'rico', 'pobre', 'doce', 'amargo', 'salgado', 'azedo', 'macio',
+            // Numbers as words
+            'um', 'dois', 'tres', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez',
+            'cem', 'mil', 'primeiro', 'segundo', 'terceiro', 'ultimo', 'metade', 'dobro', 'triplo', 'zero',
+            // More useful words
+            'banco', 'hospital', 'mercado', 'restaurante', 'hotel', 'aeroporto', 'estacao', 'parque', 'praca', 'igreja',
+            'dinheiro', 'preco', 'conta', 'cartao', 'documento', 'passaporte', 'endereco', 'numero', 'email', 'senha'
+        ];
+        
+        this.englishWords = [
             'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i',
             'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
             'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she',
@@ -948,23 +982,34 @@ class TypingGame {
             'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other',
             'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also',
             'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way',
-            'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us',
-            'casa', 'bola', 'vida', 'amor', 'tempo', 'mundo', 'coisa', 'pessoa', 'olho', 'mao',
-            'lugar', 'parte', 'forma', 'lado', 'hora', 'ponto', 'agua', 'nome', 'terra', 'cidade',
-            'trabalho', 'momento', 'governo', 'empresa', 'projeto', 'sistema', 'problema', 'processo',
-            'desenvolvimento', 'informacao', 'tecnologia', 'conhecimento', 'comunicacao', 'educacao'
+            'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us'
         ];
         
+        this.punctuationMarks = ['.', ',', '!', '?', ';', ':'];
+        this.numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        
+        // Game settings
+        this.language = 'pt'; // 'pt' or 'en'
+        this.includePunctuation = false;
+        this.includeNumbers = false;
+        this.gameMode = 'time'; // 'time' or 'words'
+        this.timeLimit = 30;
+        this.wordLimit = 25;
+        
+        // Game state
         this.running = false;
         this.gameEnded = false;
-        this.timeLimit = 30;
         this.timeLeft = this.timeLimit;
+        this.elapsedTime = 0;
         this.currentWordIndex = 0;
         this.correctChars = 0;
         this.incorrectChars = 0;
+        this.extraChars = 0;
         this.totalTyped = 0;
+        this.wordsCompleted = 0;
         this.wordInputs = [];
         this.timerInterval = null;
+        this.tabPressed = false;
         
         this.createUI();
     }
@@ -977,7 +1022,7 @@ class TypingGame {
         
         typingUI = document.createElement('div');
         typingUI.id = 'typing-game-ui';
-        typingUI.className = 'w-full max-w-3xl mx-auto select-none';
+        typingUI.className = 'w-full max-w-4xl mx-auto select-none';
         typingUI.innerHTML = `
             <style>
                 #typing-game-ui .word { display: inline-block; margin: 0 5px 5px 0; }
@@ -985,48 +1030,119 @@ class TypingGame {
                 #typing-game-ui .letter.correct { color: #22c55e; }
                 #typing-game-ui .letter.incorrect { color: #ef4444; }
                 #typing-game-ui .letter.extra { color: #ef4444; opacity: 0.7; }
-                #typing-game-ui .word.current { border-bottom: 2px solid #646669; }
+                #typing-game-ui .word.current { border-bottom: 2px solid #3b82f6; }
                 #typing-game-ui .caret {
                     position: absolute;
                     width: 2px;
                     height: 1.5em;
-                    background: #e2b714;
-                    animation: blink 1s infinite;
-                    transition: left 0.1s ease-out, top 0.1s ease-out;
+                    background: #3b82f6;
+                    animation: caret-blink 1s infinite;
+                    transition: left 0.08s ease-out, top 0.08s ease-out;
                 }
-                @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+                @keyframes caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
                 #typing-game-ui .typing-input-hidden {
                     position: absolute;
                     opacity: 0;
                     pointer-events: none;
                 }
-                #typing-game-ui .stats-row { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1.5rem; }
+                #typing-game-ui .stats-row { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1rem; }
                 #typing-game-ui .stat-item { text-align: center; }
-                #typing-game-ui .stat-value { font-size: 2rem; font-weight: bold; color: #e2b714; }
-                #typing-game-ui .stat-label { font-size: 0.75rem; color: #646669; text-transform: uppercase; }
-                #typing-game-ui .time-options { display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem; }
-                #typing-game-ui .time-btn { 
-                    padding: 0.25rem 0.75rem; 
-                    border-radius: 0.25rem; 
-                    background: transparent; 
-                    color: #646669; 
+                #typing-game-ui .stat-value { font-size: 2rem; font-weight: bold; color: #3b82f6; }
+                #typing-game-ui .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
+                #typing-game-ui .options-bar { 
+                    display: flex; 
+                    flex-wrap: wrap;
+                    gap: 0.75rem; 
+                    justify-content: center; 
+                    align-items: center;
+                    margin-bottom: 1rem; 
+                    padding: 0.75rem;
+                    background: rgba(30, 41, 59, 0.5);
+                    border-radius: 0.5rem;
+                    border: 1px solid rgba(71, 85, 105, 0.3);
+                }
+                #typing-game-ui .option-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                #typing-game-ui .option-separator {
+                    width: 1px;
+                    height: 24px;
+                    background: #475569;
+                    margin: 0 0.25rem;
+                }
+                #typing-game-ui .toggle-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.35rem;
+                    padding: 0.35rem 0.65rem;
+                    border-radius: 0.375rem;
+                    background: transparent;
+                    color: #64748b;
                     border: none;
                     cursor: pointer;
                     transition: all 0.2s;
+                    font-size: 0.8rem;
+                    font-weight: 500;
                 }
-                #typing-game-ui .time-btn:hover { color: #d1d0c5; }
-                #typing-game-ui .time-btn.active { color: #e2b714; }
+                #typing-game-ui .toggle-btn:hover { color: #94a3b8; }
+                #typing-game-ui .toggle-btn.active { color: #3b82f6; background: rgba(59, 130, 246, 0.15); }
+                #typing-game-ui .mode-btn {
+                    padding: 0.35rem 0.65rem;
+                    border-radius: 0.375rem;
+                    background: transparent;
+                    color: #64748b;
+                    border: none;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                }
+                #typing-game-ui .mode-btn:hover { color: #94a3b8; }
+                #typing-game-ui .mode-btn.active { color: #3b82f6; }
+                #typing-game-ui .value-btn {
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 0.25rem;
+                    background: transparent;
+                    color: #64748b;
+                    border: none;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                }
+                #typing-game-ui .value-btn:hover { color: #94a3b8; }
+                #typing-game-ui .value-btn.active { color: #3b82f6; }
+                #typing-game-ui .lang-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.35rem;
+                    padding: 0.35rem 0.65rem;
+                    border-radius: 0.375rem;
+                    background: transparent;
+                    color: #64748b;
+                    border: none;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                }
+                #typing-game-ui .lang-btn:hover { color: #94a3b8; }
+                #typing-game-ui .lang-btn.active { color: #3b82f6; }
                 #typing-game-ui .words-container {
                     position: relative;
-                    font-size: 1.5rem;
+                    font-size: 1.4rem;
                     line-height: 2;
-                    color: #646669;
-                    font-family: 'Roboto Mono', monospace;
+                    color: #64748b;
+                    font-family: 'Roboto Mono', 'Consolas', monospace;
                     min-height: 150px;
+                    max-height: 180px;
                     overflow: hidden;
                     padding: 1rem;
-                    background: rgba(0,0,0,0.2);
+                    background: rgba(15, 23, 42, 0.6);
                     border-radius: 0.5rem;
+                    border: 1px solid rgba(71, 85, 105, 0.3);
                     cursor: text;
                 }
                 #typing-game-ui .focus-warning {
@@ -1034,46 +1150,165 @@ class TypingGame {
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
-                    background: rgba(0,0,0,0.8);
+                    background: rgba(15, 23, 42, 0.95);
                     padding: 1rem 2rem;
                     border-radius: 0.5rem;
-                    color: #d1d0c5;
-                    font-size: 1rem;
+                    color: #94a3b8;
+                    font-size: 0.95rem;
                     display: none;
                     z-index: 10;
+                    border: 1px solid rgba(71, 85, 105, 0.5);
                 }
-                #typing-game-ui .words-container.blur .words-wrap { filter: blur(5px); }
-                #typing-game-ui .words-container.blur .focus-warning { display: block; }
+                #typing-game-ui .words-container.blur .words-wrap { filter: blur(5px); pointer-events: none; }
+                #typing-game-ui .words-container.blur .focus-warning { display: flex; align-items: center; }
                 #typing-game-ui .result-screen {
                     text-align: center;
                     padding: 2rem;
                 }
-                #typing-game-ui .result-wpm { font-size: 4rem; color: #e2b714; font-weight: bold; }
-                #typing-game-ui .result-label { color: #646669; font-size: 1rem; margin-bottom: 1rem; }
-                #typing-game-ui .result-stats { display: flex; justify-content: center; gap: 3rem; margin-top: 1.5rem; }
-                #typing-game-ui .result-stat-value { font-size: 1.5rem; color: #d1d0c5; }
-                #typing-game-ui .restart-hint { color: #646669; margin-top: 2rem; font-size: 0.875rem; }
+                #typing-game-ui .result-wpm { font-size: 4rem; color: #3b82f6; font-weight: bold; }
+                #typing-game-ui .result-label { color: #64748b; font-size: 1rem; margin-bottom: 0.5rem; text-transform: uppercase; }
+                #typing-game-ui .result-stats { 
+                    display: flex; 
+                    justify-content: center; 
+                    gap: 2.5rem; 
+                    margin-top: 1.5rem;
+                    flex-wrap: wrap;
+                }
+                #typing-game-ui .result-stat-value { font-size: 1.5rem; color: #e2e8f0; font-weight: 600; }
+                #typing-game-ui .result-stat-detail { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+                #typing-game-ui .restart-hint { color: #64748b; margin-top: 2rem; font-size: 0.85rem; }
+                #typing-game-ui .restart-hint kbd {
+                    background: #334155;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 0.25rem;
+                    font-family: inherit;
+                    border: 1px solid #475569;
+                }
+                #typing-game-ui .restart-btn {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.5rem;
+                    margin: 1.5rem auto 0;
+                    padding: 0.6rem 1.5rem;
+                    background: rgba(59, 130, 246, 0.15);
+                    border: 1px solid rgba(59, 130, 246, 0.3);
+                    border-radius: 0.5rem;
+                    color: #3b82f6;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                }
+                #typing-game-ui .restart-btn:hover {
+                    background: rgba(59, 130, 246, 0.25);
+                    border-color: rgba(59, 130, 246, 0.5);
+                }
+                #typing-game-ui .bottom-bar {
+                    display: flex;
+                    justify-content: center;
+                    margin-top: 1rem;
+                }
+                #typing-game-ui .bottom-restart-btn {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0.5rem;
+                    background: transparent;
+                    border: none;
+                    color: #64748b;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    border-radius: 0.375rem;
+                }
+                #typing-game-ui .bottom-restart-btn:hover {
+                    color: #3b82f6;
+                    background: rgba(59, 130, 246, 0.1);
+                }
             </style>
             
-            <div class="bg-slate-900 rounded-xl p-6" style="background: #323437;">
-                <div class="time-options">
-                    <button class="time-btn" data-time="15">15</button>
-                    <button class="time-btn active" data-time="30">30</button>
-                    <button class="time-btn" data-time="60">60</button>
-                    <button class="time-btn" data-time="120">120</button>
-                </div>
-                
-                <div class="stats-row" id="typing-stats">
-                    <div class="stat-item">
-                        <div class="stat-value" id="typing-time">${this.timeLimit}</div>
-                        <div class="stat-label">segundos</div>
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <!-- Options Bar -->
+                <div class="options-bar" id="options-bar">
+                    <!-- Toggles -->
+                    <div class="option-group">
+                        <button class="toggle-btn" id="punctuation-toggle" title="Adicionar pontuação">
+                            <span>@</span>
+                            <span>pontuação</span>
+                        </button>
+                        <button class="toggle-btn" id="numbers-toggle" title="Adicionar números">
+                            <span>#</span>
+                            <span>números</span>
+                        </button>
+                    </div>
+                    
+                    <div class="option-separator"></div>
+                    
+                    <!-- Game Mode -->
+                    <div class="option-group">
+                        <button class="mode-btn active" id="mode-time" data-mode="time">
+                            <i data-lucide="clock" class="w-4 h-4 inline mr-1"></i>tempo
+                        </button>
+                        <button class="mode-btn" id="mode-words" data-mode="words">
+                            <i data-lucide="text" class="w-4 h-4 inline mr-1"></i>palavras
+                        </button>
+                    </div>
+                    
+                    <div class="option-separator"></div>
+                    
+                    <!-- Time/Word Values -->
+                    <div class="option-group" id="time-values">
+                        <button class="value-btn" data-time="15">15</button>
+                        <button class="value-btn active" data-time="30">30</button>
+                        <button class="value-btn" data-time="60">60</button>
+                        <button class="value-btn" data-time="120">120</button>
+                    </div>
+                    <div class="option-group" id="word-values" style="display: none;">
+                        <button class="value-btn" data-words="10">10</button>
+                        <button class="value-btn active" data-words="25">25</button>
+                        <button class="value-btn" data-words="50">50</button>
+                        <button class="value-btn" data-words="100">100</button>
+                    </div>
+                    
+                    <div class="option-separator"></div>
+                    
+                    <!-- Language -->
+                    <div class="option-group">
+                        <button class="lang-btn active" id="lang-pt" data-lang="pt">
+                            <i data-lucide="globe" class="w-4 h-4"></i>
+                            <span>português</span>
+                        </button>
+                        <button class="lang-btn" id="lang-en" data-lang="en">
+                            <span>english</span>
+                        </button>
                     </div>
                 </div>
                 
+                <!-- Live Stats -->
+                <div class="stats-row" id="typing-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="typing-wpm">0</div>
+                        <div class="stat-label">wpm</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="typing-accuracy">100%</div>
+                        <div class="stat-label">precisão</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="typing-time">${this.gameMode === 'time' ? this.timeLimit : '0'}</div>
+                        <div class="stat-label" id="time-label">${this.gameMode === 'time' ? 'segundos' : 'tempo'}</div>
+                    </div>
+                    <div class="stat-item" id="words-progress-item" style="${this.gameMode === 'words' ? '' : 'display: none;'}">
+                        <div class="stat-value" id="typing-words-progress">0/${this.wordLimit}</div>
+                        <div class="stat-label">palavras</div>
+                    </div>
+                </div>
+                
+                <!-- Words Container -->
                 <div class="words-container blur" id="words-container">
                     <div class="focus-warning">
-                        <i data-lucide="mouse-pointer-click" class="w-5 h-5 inline mr-2"></i>
-                        Clique aqui ou pressione qualquer tecla para focar
+                        <i data-lucide="mouse-pointer-click" class="w-5 h-5 mr-2"></i>
+                        <span>Clique aqui ou pressione qualquer tecla para focar</span>
                     </div>
                     <div class="words-wrap" id="words-display"></div>
                     <div class="caret" id="typing-caret" style="display: none;"></div>
@@ -1081,16 +1316,35 @@ class TypingGame {
                 
                 <input type="text" id="typing-input" class="typing-input-hidden" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 
+                <!-- Bottom Bar with Restart -->
+                <div class="bottom-bar" id="bottom-bar">
+                    <button class="bottom-restart-btn" id="restart-btn" title="Reiniciar teste">
+                        <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                
+                <!-- Results Screen -->
                 <div id="typing-results" class="result-screen hidden">
                     <div class="result-label">wpm</div>
                     <div class="result-wpm" id="result-wpm">0</div>
                     <div class="result-stats">
                         <div class="stat-item">
                             <div class="result-stat-value" id="result-accuracy">100%</div>
-                            <div class="stat-label">precisao</div>
+                            <div class="stat-label">precisão</div>
                         </div>
                         <div class="stat-item">
-                            <div class="result-stat-value" id="result-chars">0/0</div>
+                            <div class="result-stat-value" id="result-correct">0</div>
+                            <div class="result-stat-detail">corretos</div>
+                            <div class="stat-label">caracteres</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="result-stat-value" id="result-incorrect">0</div>
+                            <div class="result-stat-detail">incorretos</div>
+                            <div class="stat-label">caracteres</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="result-stat-value" id="result-extra">0</div>
+                            <div class="result-stat-detail">extras</div>
                             <div class="stat-label">caracteres</div>
                         </div>
                         <div class="stat-item">
@@ -1098,8 +1352,12 @@ class TypingGame {
                             <div class="stat-label">tempo</div>
                         </div>
                     </div>
+                    <button class="restart-btn" id="result-restart-btn">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        <span>Reiniciar</span>
+                    </button>
                     <div class="restart-hint">
-                        <kbd style="background: #646669; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Tab</kbd> + <kbd style="background: #646669; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Enter</kbd> - reiniciar teste
+                        <kbd>Tab</kbd> + <kbd>Enter</kbd> - reiniciar teste
                     </div>
                 </div>
             </div>
@@ -1108,31 +1366,132 @@ class TypingGame {
         this.container.appendChild(typingUI);
         lucide.createIcons();
         
+        // Cache DOM elements
         this.wordsContainer = document.getElementById('words-container');
         this.wordsDisplay = document.getElementById('words-display');
         this.input = document.getElementById('typing-input');
         this.caret = document.getElementById('typing-caret');
         this.resultsDiv = document.getElementById('typing-results');
         this.statsDiv = document.getElementById('typing-stats');
+        this.optionsBar = document.getElementById('options-bar');
+        this.bottomBar = document.getElementById('bottom-bar');
         
-        typingUI.querySelectorAll('.time-btn').forEach(btn => {
+        this.setupEventListeners(typingUI);
+        this.generateWords();
+        this.renderWords();
+    }
+    
+    setupEventListeners(typingUI) {
+        // Punctuation toggle
+        const punctToggle = document.getElementById('punctuation-toggle');
+        punctToggle.addEventListener('click', () => {
+            if (this.running) return;
+            this.includePunctuation = !this.includePunctuation;
+            punctToggle.classList.toggle('active', this.includePunctuation);
+            this.reset();
+        });
+        
+        // Numbers toggle
+        const numToggle = document.getElementById('numbers-toggle');
+        numToggle.addEventListener('click', () => {
+            if (this.running) return;
+            this.includeNumbers = !this.includeNumbers;
+            numToggle.classList.toggle('active', this.includeNumbers);
+            this.reset();
+        });
+        
+        // Game mode buttons
+        const modeTime = document.getElementById('mode-time');
+        const modeWords = document.getElementById('mode-words');
+        const timeValues = document.getElementById('time-values');
+        const wordValues = document.getElementById('word-values');
+        
+        modeTime.addEventListener('click', () => {
+            if (this.running) return;
+            this.gameMode = 'time';
+            modeTime.classList.add('active');
+            modeWords.classList.remove('active');
+            timeValues.style.display = '';
+            wordValues.style.display = 'none';
+            this.updateStatsDisplay();
+            this.reset();
+        });
+        
+        modeWords.addEventListener('click', () => {
+            if (this.running) return;
+            this.gameMode = 'words';
+            modeWords.classList.add('active');
+            modeTime.classList.remove('active');
+            wordValues.style.display = '';
+            timeValues.style.display = 'none';
+            this.updateStatsDisplay();
+            this.reset();
+        });
+        
+        // Time value buttons
+        typingUI.querySelectorAll('#time-values .value-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (this.running) return;
-                typingUI.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                typingUI.querySelectorAll('#time-values .value-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.timeLimit = parseInt(btn.dataset.time);
                 this.reset();
             });
         });
         
+        // Word value buttons
+        typingUI.querySelectorAll('#word-values .value-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (this.running) return;
+                typingUI.querySelectorAll('#word-values .value-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.wordLimit = parseInt(btn.dataset.words);
+                this.reset();
+            });
+        });
+        
+        // Language buttons
+        const langPt = document.getElementById('lang-pt');
+        const langEn = document.getElementById('lang-en');
+        
+        langPt.addEventListener('click', () => {
+            if (this.running) return;
+            this.language = 'pt';
+            langPt.classList.add('active');
+            langEn.classList.remove('active');
+            this.reset();
+        });
+        
+        langEn.addEventListener('click', () => {
+            if (this.running) return;
+            this.language = 'en';
+            langEn.classList.add('active');
+            langPt.classList.remove('active');
+            this.reset();
+        });
+        
+        // Restart buttons
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            this.reset();
+            this.focusInput();
+        });
+        
+        document.getElementById('result-restart-btn').addEventListener('click', () => {
+            this.reset();
+            this.focusInput();
+        });
+        
+        // Words container click
         this.wordsContainer.addEventListener('click', () => this.focusInput());
         
+        // Input events
         this.input.addEventListener('input', () => this.handleInput());
         this.input.addEventListener('keydown', (e) => this.handleKeyDown(e));
         this.input.addEventListener('blur', () => this.handleBlur());
         this.input.addEventListener('focus', () => this.handleFocus());
         
-        document.addEventListener('keydown', (e) => {
+        // Tab + Enter restart
+        this.keydownHandler = (e) => {
             if (e.key === 'Tab' && this.gameEnded) {
                 e.preventDefault();
                 this.tabPressed = true;
@@ -1143,14 +1502,32 @@ class TypingGame {
                 this.focusInput();
                 this.tabPressed = false;
             }
-        });
+        };
         
-        document.addEventListener('keyup', (e) => {
+        this.keyupHandler = (e) => {
             if (e.key === 'Tab') this.tabPressed = false;
-        });
+        };
         
-        this.generateWords();
-        this.renderWords();
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
+    }
+    
+    updateStatsDisplay() {
+        const timeEl = document.getElementById('typing-time');
+        const timeLabel = document.getElementById('time-label');
+        const wordsProgressItem = document.getElementById('words-progress-item');
+        const wordsProgress = document.getElementById('typing-words-progress');
+        
+        if (this.gameMode === 'time') {
+            timeEl.textContent = this.timeLimit;
+            timeLabel.textContent = 'segundos';
+            wordsProgressItem.style.display = 'none';
+        } else {
+            timeEl.textContent = '0';
+            timeLabel.textContent = 'tempo';
+            wordsProgressItem.style.display = '';
+            wordsProgress.textContent = `0/${this.wordLimit}`;
+        }
     }
 
     focusInput() {
@@ -1172,11 +1549,13 @@ class TypingGame {
 
     reset() {
         this.timeLeft = this.timeLimit;
+        this.elapsedTime = 0;
         this.currentWordIndex = 0;
-        this.currentCharIndex = 0;
         this.correctChars = 0;
         this.incorrectChars = 0;
+        this.extraChars = 0;
         this.totalTyped = 0;
+        this.wordsCompleted = 0;
         this.running = false;
         this.gameEnded = false;
         this.wordInputs = [];
@@ -1196,19 +1575,61 @@ class TypingGame {
         
         if (this.resultsDiv) this.resultsDiv.classList.add('hidden');
         if (this.statsDiv) this.statsDiv.classList.remove('hidden');
+        if (this.optionsBar) this.optionsBar.classList.remove('hidden');
+        if (this.bottomBar) this.bottomBar.classList.remove('hidden');
         if (this.wordsContainer) {
             this.wordsContainer.style.display = 'block';
             this.wordsContainer.classList.add('blur');
         }
         
+        // Reset live stats
+        const wpmEl = document.getElementById('typing-wpm');
+        const accEl = document.getElementById('typing-accuracy');
         const timeEl = document.getElementById('typing-time');
-        if (timeEl) timeEl.textContent = this.timeLimit;
+        const wordsProgress = document.getElementById('typing-words-progress');
+        
+        if (wpmEl) wpmEl.textContent = '0';
+        if (accEl) accEl.textContent = '100%';
+        
+        if (this.gameMode === 'time') {
+            if (timeEl) timeEl.textContent = this.timeLimit;
+        } else {
+            if (timeEl) timeEl.textContent = '0';
+            if (wordsProgress) wordsProgress.textContent = `0/${this.wordLimit}`;
+        }
+        
+        this.updateStatsDisplay();
+    }
+
+    getWordList() {
+        return this.language === 'pt' ? this.portugueseWords : this.englishWords;
+    }
+
+    generateSingleWord() {
+        const wordList = this.getWordList();
+        let word = wordList[Math.floor(Math.random() * wordList.length)];
+        
+        // Add punctuation randomly
+        if (this.includePunctuation && Math.random() < 0.15) {
+            const punct = this.punctuationMarks[Math.floor(Math.random() * this.punctuationMarks.length)];
+            word = word + punct;
+        }
+        
+        // Add numbers randomly
+        if (this.includeNumbers && Math.random() < 0.1) {
+            const num = Math.floor(Math.random() * 100).toString();
+            word = Math.random() < 0.5 ? num + word : word + num;
+        }
+        
+        return word;
     }
 
     generateWords() {
+        const wordCount = this.gameMode === 'words' ? this.wordLimit : 150;
+        
         this.testWords = [];
-        for (let i = 0; i < 100; i++) {
-            this.testWords.push(this.words[Math.floor(Math.random() * this.words.length)]);
+        for (let i = 0; i < wordCount; i++) {
+            this.testWords.push(this.generateSingleWord());
         }
         this.wordInputs = this.testWords.map(() => '');
     }
@@ -1311,15 +1732,45 @@ class TypingGame {
         
         this.timerInterval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-            this.timeLeft = Math.max(0, this.timeLimit - elapsed);
+            this.elapsedTime = elapsed;
             
             const timeEl = document.getElementById('typing-time');
-            if (timeEl) timeEl.textContent = this.timeLeft;
             
-            if (this.timeLeft <= 0) {
-                this.endGame();
+            if (this.gameMode === 'time') {
+                this.timeLeft = Math.max(0, this.timeLimit - elapsed);
+                if (timeEl) timeEl.textContent = this.timeLeft;
+                
+                if (this.timeLeft <= 0) {
+                    this.endGame();
+                }
+            } else {
+                // Words mode - count up
+                if (timeEl) timeEl.textContent = elapsed;
             }
+            
+            // Update live WPM and accuracy
+            this.updateLiveStats();
         }, 100);
+    }
+    
+    updateLiveStats() {
+        const wpmEl = document.getElementById('typing-wpm');
+        const accEl = document.getElementById('typing-accuracy');
+        const wordsProgress = document.getElementById('typing-words-progress');
+        
+        // Calculate live WPM
+        const elapsedMinutes = this.elapsedTime / 60;
+        const liveWpm = elapsedMinutes > 0 ? Math.round((this.correctChars / 5) / elapsedMinutes) : 0;
+        
+        // Calculate live accuracy
+        const liveAccuracy = this.totalTyped > 0 ? Math.round((this.correctChars / this.totalTyped) * 100) : 100;
+        
+        if (wpmEl) wpmEl.textContent = liveWpm;
+        if (accEl) accEl.textContent = liveAccuracy + '%';
+        
+        if (this.gameMode === 'words' && wordsProgress) {
+            wordsProgress.textContent = `${this.wordsCompleted}/${this.wordLimit}`;
+        }
     }
 
     stop() {
@@ -1328,6 +1779,15 @@ class TypingGame {
             clearInterval(this.timerInterval);
             this.timerInterval = null;
         }
+        
+        // Remove event listeners
+        if (this.keydownHandler) {
+            document.removeEventListener('keydown', this.keydownHandler);
+        }
+        if (this.keyupHandler) {
+            document.removeEventListener('keyup', this.keyupHandler);
+        }
+        
         const typingUI = document.getElementById('typing-game-ui');
         if (typingUI) typingUI.remove();
         this.canvas.style.display = 'block';
@@ -1357,21 +1817,46 @@ class TypingGame {
             this.wordInputs[this.currentWordIndex] = wordTyped;
             
             const currentWord = this.testWords[this.currentWordIndex];
+            
+            // Count correct, incorrect, and extra characters
             for (let i = 0; i < Math.max(wordTyped.length, currentWord.length); i++) {
                 this.totalTyped++;
-                if (i < currentWord.length && i < wordTyped.length && wordTyped[i] === currentWord[i]) {
-                    this.correctChars++;
+                if (i < currentWord.length && i < wordTyped.length) {
+                    if (wordTyped[i] === currentWord[i]) {
+                        this.correctChars++;
+                    } else {
+                        this.incorrectChars++;
+                    }
+                } else if (i >= currentWord.length) {
+                    // Extra characters - only count as extra, not as incorrect
+                    this.extraChars++;
                 } else {
+                    // Missing characters
                     this.incorrectChars++;
                 }
             }
             
+            this.wordsCompleted++;
             this.currentWordIndex++;
             this.input.value = '';
             
+            // Check if words mode is complete
+            if (this.gameMode === 'words' && this.wordsCompleted >= this.wordLimit) {
+                this.endGame();
+                return;
+            }
+            
+            // Generate more words if needed
             if (this.currentWordIndex >= this.testWords.length) {
-                this.generateWords();
-                this.currentWordIndex = 0;
+                if (this.gameMode === 'time') {
+                    // In time mode, regenerate words using helper method
+                    const additionalWords = [];
+                    for (let i = 0; i < 50; i++) {
+                        additionalWords.push(this.generateSingleWord());
+                    }
+                    this.testWords = this.testWords.concat(additionalWords);
+                    this.wordInputs = this.wordInputs.concat(additionalWords.map(() => ''));
+                }
             }
             
             this.renderWords();
@@ -1381,6 +1866,7 @@ class TypingGame {
         }
         
         this.updateCaretPosition();
+        this.updateLiveStats();
     }
 
     endGame() {
@@ -1392,20 +1878,37 @@ class TypingGame {
             this.timerInterval = null;
         }
         
-        const elapsedMinutes = this.timeLimit / 60;
-        const wpm = Math.round((this.correctChars / 5) / elapsedMinutes);
+        // Calculate final stats
+        let elapsedMinutes;
+        if (this.gameMode === 'time') {
+            elapsedMinutes = this.timeLimit / 60;
+        } else {
+            elapsedMinutes = this.elapsedTime / 60;
+        }
+        
+        const wpm = elapsedMinutes > 0 ? Math.round((this.correctChars / 5) / elapsedMinutes) : 0;
         const accuracy = this.totalTyped > 0 ? Math.round((this.correctChars / this.totalTyped) * 100) : 100;
         
         this.input.disabled = true;
         this.wordsContainer.style.display = 'none';
         this.statsDiv.classList.add('hidden');
+        this.optionsBar.classList.add('hidden');
+        this.bottomBar.classList.add('hidden');
         this.resultsDiv.classList.remove('hidden');
         this.caret.style.display = 'none';
         
+        // Update result display
         document.getElementById('result-wpm').textContent = wpm;
         document.getElementById('result-accuracy').textContent = accuracy + '%';
-        document.getElementById('result-chars').textContent = `${this.correctChars}/${this.totalTyped}`;
-        document.getElementById('result-time').textContent = this.timeLimit + 's';
+        document.getElementById('result-correct').textContent = this.correctChars;
+        document.getElementById('result-incorrect').textContent = this.incorrectChars;
+        document.getElementById('result-extra').textContent = this.extraChars;
+        
+        if (this.gameMode === 'time') {
+            document.getElementById('result-time').textContent = this.timeLimit + 's';
+        } else {
+            document.getElementById('result-time').textContent = this.elapsedTime + 's';
+        }
         
         this.onScore(wpm);
     }
