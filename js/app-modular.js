@@ -3,6 +3,7 @@ import { BicicletasManager } from './cadastros/bicicletas.js';
 import { RegistrosManager } from './registros/registros-diarios.js';
 import { ConfiguracaoManager } from './configuracao/configuracao.js';
 import { DadosManager } from './dados/dados.js';
+import { JogosManager } from './jogos/jogos.js';
 import { Storage } from './shared/storage.js';
 import { Debug } from './shared/debug.js';
 import { Auth } from './shared/auth.js';
@@ -24,10 +25,12 @@ class App {
             registrosDiariosTab: document.getElementById('registros-diarios-tab'),
             dadosTab: document.getElementById('dados-tab'),
             configuracaoTab: document.getElementById('configuracao-tab'),
+            jogosTab: document.getElementById('jogos-tab'),
             clientesTabContent: document.getElementById('clientes-tab-content'),
             registrosDiariosTabContent: document.getElementById('registros-diarios-tab-content'),
             dadosTabContent: document.getElementById('dados-tab-content'),
             configuracaoTabContent: document.getElementById('configuracao-tab-content'),
+            jogosTabContent: document.getElementById('jogos-tab-content'),
         };
     }
 
@@ -54,6 +57,7 @@ class App {
         this.registrosManager = new RegistrosManager(this);
         this.configuracaoManager = new ConfiguracaoManager(this);
         this.dadosManager = new DadosManager(this);
+        this.jogosManager = new JogosManager(this);
         this.usuariosManager = Usuarios;
         
         this.clientesManager.renderClientList();
@@ -125,6 +129,15 @@ class App {
             }
         }
 
+        const jogosTab = document.getElementById('jogos-tab');
+        if (jogosTab) {
+            if (Auth.hasPermission('jogos', 'ver')) {
+                jogosTab.classList.remove('hidden');
+            } else {
+                jogosTab.classList.add('hidden');
+            }
+        }
+
         this.selectFirstVisibleTab();
 
         if (this.clientesManager) {
@@ -142,13 +155,14 @@ class App {
     }
 
     selectFirstVisibleTab() {
-        const tabs = ['clientes', 'registros-diarios', 'dados', 'configuracao', 'usuarios'];
+        const tabs = ['clientes', 'registros-diarios', 'dados', 'configuracao', 'usuarios', 'jogos'];
         const permissions = {
             'clientes': () => Auth.hasPermission('clientes', 'ver'),
             'registros-diarios': () => Auth.hasPermission('registros', 'ver'),
             'dados': () => Auth.hasPermission('configuracao', 'ver'),
             'configuracao': () => Auth.hasPermission('configuracao', 'ver'),
-            'usuarios': () => Auth.hasPermission('configuracao', 'gerenciarUsuarios')
+            'usuarios': () => Auth.hasPermission('configuracao', 'gerenciarUsuarios'),
+            'jogos': () => Auth.hasPermission('jogos', 'ver')
         };
 
         for (const tabName of tabs) {
@@ -173,6 +187,10 @@ class App {
         const usuariosTab = document.getElementById('usuarios-tab');
         if (usuariosTab) {
             usuariosTab.addEventListener('click', () => this.switchTab('usuarios'));
+        }
+
+        if (this.elements.jogosTab) {
+            this.elements.jogosTab.addEventListener('click', () => this.switchTab('jogos'));
         }
 
         const logoutBtn = document.getElementById('logout-btn');
@@ -312,6 +330,7 @@ class App {
             'dados': { btn: this.elements.dadosTab, content: this.elements.dadosTabContent },
             'configuracao': { btn: this.elements.configuracaoTab, content: this.elements.configuracaoTabContent },
             'usuarios': { btn: document.getElementById('usuarios-tab'), content: document.getElementById('usuarios-tab-content') },
+            'jogos': { btn: this.elements.jogosTab, content: this.elements.jogosTabContent },
         };
 
         Object.values(tabs).forEach(tab => {
@@ -335,6 +354,9 @@ class App {
             lucide.createIcons();
         } else if (tabName === 'usuarios') {
             this.usuariosManager.init();
+        } else if (tabName === 'jogos') {
+            this.jogosManager.init();
+            lucide.createIcons();
         }
     }
 

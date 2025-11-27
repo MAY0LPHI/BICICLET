@@ -4,6 +4,33 @@
 O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicação web, com versão desktop executável, desenvolvida para gerenciar clientes, bicicletas e controlar o fluxo de entrada e saída em estacionamentos de bicicletas. O objetivo é otimizar as operações de bicicletários através de funcionalidades de cadastro, registro de movimentação, exportação de dados, sistema de auditoria completo e configurações personalizáveis, visando o mercado de lojas locais.
 
 ## Recent Changes
+- **27/11/2025**: Games Tab (Aba Jogos) Integration
+  - **New "Jogos" (Games) tab added to navigation bar:**
+    - Located after "Configuração" tab with gamepad icon
+    - Permission-controlled visibility (requires 'jogos.ver' permission)
+  - **6 Complete Games with Ranking System:**
+    - Snake (Jogo da Cobrinha) - with phases and difficulty levels
+    - Pac-Man - classic ghost chase game
+    - Typing Test (Teste de Digitação) - MonkeyType-style speed test
+    - Memory Game (Jogo da Memória) - card matching game
+    - Tetris - classic block stacking game
+    - Breakout - brick-breaking game
+  - **Games Features:**
+    - Global ranking system tracking scores by username
+    - Multiple difficulty levels per game
+    - Phase/level progression
+    - Personal best score display per game
+    - Canvas-based game rendering
+  - **Permission System Integration:**
+    - Added 'jogos: { ver: true }' permission to all user types (dono, admin, funcionário)
+    - Permission check in applyPermissions() shows/hides jogos tab
+    - Included in selectFirstVisibleTab() for fallback tab selection
+  - **Files Modified:**
+    - index.html: Added jogos-tab button and jogos-tab-content section
+    - js/app-modular.js: Imported JogosManager, added tab elements and switching logic
+    - js/shared/auth.js: Added jogos permission to createCeloUser, createDefaultAdmin, getDefaultPermissions
+    - js/jogos/jogos.js: Complete games module (1890 lines) with all 6 games
+
 - **27/11/2025**: User Permissions Interface Reorganization
   - **New "Dados" (Data) permissions section added:**
     - Separated from Configuration tab - now has its own dedicated permissions

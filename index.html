@@ -87,6 +87,10 @@
                         <button id="configuracao-tab" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:border-slate-600">
                           Configuração
                         </button>
+                        <button id="jogos-tab" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:border-slate-600">
+                          <i data-lucide="gamepad-2" class="w-4 h-4 inline mr-1"></i>
+                          Jogos
+                        </button>
                     </nav>
                 </div>
             </header>
@@ -582,6 +586,85 @@
 
                     <div id="audit-logs-list" class="overflow-x-auto">
                         <p class="text-center text-slate-500 dark:text-slate-400 py-8">Carregando logs...</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <div id="jogos-tab-content" class="hidden">
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center">
+                        <i data-lucide="gamepad-2" class="mr-3 h-7 w-7 text-blue-600 dark:text-blue-400"></i>
+                        Central de Jogos
+                    </h1>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Divirta-se com jogos leves e compita no ranking!</p>
+                </div>
+
+                <div id="games-menu-section">
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 mb-8 text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-bold mb-2">Ranking Global</h2>
+                                <p class="text-blue-100 text-sm">Compita com outros funcionarios e suba no ranking!</p>
+                            </div>
+                            <div class="text-center">
+                                <i data-lucide="trophy" class="w-12 h-12 mx-auto mb-2 text-yellow-300"></i>
+                                <p class="text-sm text-blue-100">Pontuacoes salvas por usuario</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
+                        <i data-lucide="grid-3x3" class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"></i>
+                        Escolha um Jogo
+                    </h2>
+
+                    <div id="games-menu" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    </div>
+                </div>
+
+                <div id="game-container" class="hidden">
+                    <div class="mb-4 flex items-center justify-between">
+                        <button id="back-to-games-btn" class="flex items-center px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                            Voltar aos Jogos
+                        </button>
+                        <div class="flex items-center gap-4">
+                            <div class="text-center">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Pontuacao</p>
+                                <p id="game-score" class="text-2xl font-bold text-blue-600 dark:text-blue-400">0</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Info</p>
+                                <p id="game-phase" class="text-lg font-semibold text-slate-700 dark:text-slate-300">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2">
+                            <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                                <h3 id="current-game-title" class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4"></h3>
+                                <div class="flex justify-center">
+                                    <canvas id="game-canvas" class="rounded-lg border-2 border-slate-200 dark:border-slate-600"></canvas>
+                                </div>
+                                <div class="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                                    <p>Use as setas do teclado ou WASD para controlar</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-1">
+                            <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
+                                    <i data-lucide="trophy" class="w-5 h-5 mr-2 text-yellow-500"></i>
+                                    Ranking
+                                </h3>
+                                <div id="ranking-list" class="space-y-2 max-h-[400px] overflow-y-auto">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>

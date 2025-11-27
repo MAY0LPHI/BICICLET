@@ -58,7 +58,8 @@ export class Auth {
                     ver: true, 
                     gerenciarUsuarios: true,
                     buscaAvancada: true
-                }
+                },
+                jogos: { ver: true }
             },
             ativo: true,
             requirePasswordChange: false,
@@ -97,7 +98,8 @@ export class Auth {
                     ver: true, 
                     gerenciarUsuarios: true,
                     buscaAvancada: true
-                }
+                },
+                jogos: { ver: true }
             },
             ativo: true,
             requirePasswordChange: true,
@@ -126,7 +128,8 @@ export class Auth {
                     ver: true, 
                     gerenciarUsuarios: true,
                     buscaAvancada: true
-                }
+                },
+                jogos: { ver: true }
             },
             ativo: true,
             requirePasswordChange: false,
@@ -413,7 +416,8 @@ export class Auth {
                 exportarSistema: false,
                 importarSistema: false
             },
-            configuracao: { ver: false, gerenciarUsuarios: false, buscaAvancada: false }
+            configuracao: { ver: false, gerenciarUsuarios: false, buscaAvancada: false },
+            jogos: { ver: true }
         };
     }
 
