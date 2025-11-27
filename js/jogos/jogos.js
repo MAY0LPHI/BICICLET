@@ -57,7 +57,7 @@ export class JogosManager {
         const achievementNames = {
             'first_win': 'Primeira Vitória',
             'snake_master': 'Mestre da Cobrinha',
-            'ghost_hunter': 'Caça-Fantasmas',
+            'doom_slayer': 'Exterminador do Doom',
             'elephant_memory': 'Memória de Elefante',
             'destroyer': 'Destruidor',
             'galaxy_defender': 'Defensor da Galáxia'
@@ -166,7 +166,7 @@ export class JogosManager {
 
         const games = [
             { id: 'snake', name: 'Jogo da Cobrinha', icon: 'zap', description: 'Com 5 fases, obstáculos e power-ups!' },
-            { id: 'pacman', name: 'Pac-Man', icon: 'ghost', description: '3 níveis com IA melhorada e frutas bônus!' },
+            { id: 'doom', name: 'Doom', icon: 'crosshair', description: '3 níveis em primeira pessoa com inimigos!' },
             { id: 'typing', name: 'Teste de Digitação', icon: 'keyboard', description: 'Teste sua velocidade de digitação!' },
             { id: 'memory', name: 'Jogo da Memória', icon: 'brain', description: '3 níveis de dificuldade com ícones de bicicleta!' },
             { id: 'spaceinvaders', name: 'Invasores Espaciais', icon: 'rocket', description: 'Defenda a Terra dos invasores espaciais!' },
@@ -228,7 +228,7 @@ export class JogosManager {
         const allAchievements = [
             { id: 'first_win', name: 'Primeira Vitória', icon: 'award', description: 'Complete qualquer jogo' },
             { id: 'snake_master', name: 'Mestre da Cobrinha', icon: 'zap', description: 'Alcance fase 5 no Snake' },
-            { id: 'ghost_hunter', name: 'Caça-Fantasmas', icon: 'ghost', description: 'Complete todos os níveis do Pac-Man' },
+            { id: 'doom_slayer', name: 'Exterminador do Doom', icon: 'crosshair', description: 'Complete todos os níveis do Doom' },
             { id: 'elephant_memory', name: 'Memória de Elefante', icon: 'brain', description: 'Complete o modo difícil da memória' },
             { id: 'destroyer', name: 'Destruidor', icon: 'square', description: 'Complete todas as fases do Breakout' },
             { id: 'galaxy_defender', name: 'Defensor da Galáxia', icon: 'rocket', description: 'Derrote o boss do Space Invaders' }
@@ -334,7 +334,7 @@ export class JogosManager {
 
         const games = {
             snake: { name: 'Jogo da Cobrinha', class: SnakeGame },
-            pacman: { name: 'Pac-Man', class: PacmanGame },
+            doom: { name: 'Doom', class: DoomGame },
             typing: { name: 'Teste de Digitação', class: TypingGame },
             memory: { name: 'Jogo da Memória', class: MemoryGame },
             spaceinvaders: { name: 'Invasores Espaciais', class: SpaceInvadersGame },
@@ -446,12 +446,12 @@ class SnakeGame {
         this.snake = [{ x: 10, y: 10 }];
         this.direction = { x: 0, y: 0 };
         this.nextDirection = { x: 0, y: 0 };
+        this.obstacles = [];
         this.food = this.generateFood();
         this.specialFood = null;
         this.powerUp = null;
         this.activePowerUp = null;
         this.powerUpTimer = 0;
-        this.obstacles = [];
         this.score = 0;
         this.phase = 1;
         this.phaseProgress = 0;
@@ -914,177 +914,119 @@ class SnakeGame {
     }
 }
 
-class PacmanGame {
+class DoomGame {
     constructor(canvas, onScore, manager) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.onScore = onScore;
         this.manager = manager;
-        this.tileSize = 20;
         this.canvas.width = 400;
         this.canvas.height = 400;
         
-        // 3 different maps for levels
-        this.maps = [
-            // Level 1 - Original map
-            [
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-                [1,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,1],
-                [1,2,1,1,2,1,1,1,2,1,1,2,1,1,1,2,1,1,2,1],
-                [1,3,1,1,2,1,1,1,2,1,1,2,1,1,1,2,1,1,3,1],
-                [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-                [1,2,1,1,2,1,2,1,1,1,1,1,1,2,1,2,1,1,2,1],
-                [1,2,2,2,2,1,2,2,2,1,1,2,2,2,1,2,2,2,2,1],
-                [1,1,1,1,2,1,1,1,0,1,1,0,1,1,1,2,1,1,1,1],
-                [0,0,0,1,2,1,0,0,0,0,0,0,0,0,1,2,1,0,0,0],
-                [1,1,1,1,2,1,0,1,1,0,0,1,1,0,1,2,1,1,1,1],
-                [0,0,0,0,2,0,0,1,0,0,0,0,1,0,0,2,0,0,0,0],
-                [1,1,1,1,2,1,0,1,1,1,1,1,1,0,1,2,1,1,1,1],
-                [0,0,0,1,2,1,0,0,0,0,0,0,0,0,1,2,1,0,0,0],
-                [1,1,1,1,2,1,0,1,1,1,1,1,1,0,1,2,1,1,1,1],
-                [1,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,1],
-                [1,2,1,1,2,1,1,1,2,1,1,2,1,1,1,2,1,1,2,1],
-                [1,3,2,1,2,2,2,2,2,2,2,2,2,2,2,2,1,2,3,1],
-                [1,1,2,1,2,1,2,1,1,1,1,1,1,2,1,2,1,2,1,1],
-                [1,2,2,2,2,1,2,2,2,1,1,2,2,2,1,2,2,2,2,1],
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-            ],
-            // Level 2 - More complex maze
-            [
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-                [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-                [1,2,1,1,1,2,1,1,1,2,2,1,1,1,2,1,1,1,2,1],
-                [1,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,1],
-                [1,2,1,2,1,1,2,1,1,1,1,1,1,2,1,1,2,1,2,1],
-                [1,2,1,2,2,2,2,2,2,1,1,2,2,2,2,2,2,1,2,1],
-                [1,2,1,1,1,2,1,2,2,1,1,2,2,1,2,1,1,1,2,1],
-                [1,2,2,2,2,2,1,2,0,0,0,0,2,1,2,2,2,2,2,1],
-                [1,1,1,2,1,2,1,2,0,1,1,0,2,1,2,1,2,1,1,1],
-                [0,0,0,2,1,2,2,2,0,0,0,0,2,2,2,1,2,0,0,0],
-                [0,0,0,2,1,2,2,2,0,0,0,0,2,2,2,1,2,0,0,0],
-                [1,1,1,2,1,2,1,2,1,1,1,1,2,1,2,1,2,1,1,1],
-                [1,2,2,2,2,2,1,2,2,2,2,2,2,1,2,2,2,2,2,1],
-                [1,2,1,1,1,2,1,1,1,2,2,1,1,1,2,1,1,1,2,1],
-                [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-                [1,2,1,2,1,1,1,2,1,1,1,1,2,1,1,1,2,1,2,1],
-                [1,3,1,2,2,2,2,2,2,1,1,2,2,2,2,2,2,1,3,1],
-                [1,2,1,1,2,1,1,1,2,1,1,2,1,1,1,2,1,1,2,1],
-                [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-            ],
-            // Level 3 - Most complex maze
-            [
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-                [1,3,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,3,1],
-                [1,2,1,1,2,1,1,1,2,1,1,2,1,1,1,2,1,1,2,1],
-                [1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1],
-                [1,2,2,2,1,1,2,1,1,1,1,1,1,2,1,1,2,2,2,1],
-                [1,2,1,2,2,2,2,2,2,1,1,2,2,2,2,2,2,1,2,1],
-                [1,2,1,1,1,2,1,1,2,1,1,2,1,1,2,1,1,1,2,1],
-                [1,2,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,2,1],
-                [1,1,1,2,1,2,1,0,0,1,1,0,0,1,2,1,2,1,1,1],
-                [0,0,0,2,1,2,2,0,0,0,0,0,0,2,2,1,2,0,0,0],
-                [0,0,0,2,1,2,2,0,0,0,0,0,0,2,2,1,2,0,0,0],
-                [1,1,1,2,1,2,1,1,1,1,1,1,1,1,2,1,2,1,1,1],
-                [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-                [1,2,1,1,1,2,1,1,1,1,1,1,1,1,2,1,1,1,2,1],
-                [1,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,1],
-                [1,2,1,2,1,1,1,2,1,1,1,1,2,1,1,1,2,1,2,1],
-                [1,3,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,3,1],
-                [1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1],
-                [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-            ]
-        ];
-        
-        // Bonus fruits
-        this.fruitTypes = [
-            { name: 'cherry', color: '#ef4444', points: 100 },
-            { name: 'strawberry', color: '#ec4899', points: 200 },
-            { name: 'orange', color: '#f97316', points: 300 }
-        ];
+        this.player = { x: 2, y: 2, angle: 0, health: 100, ammo: 50 };
+        this.moveSpeed = 0.08;
+        this.rotSpeed = 0.05;
         
         this.level = 1;
         this.maxLevel = 3;
+        this.score = 0;
+        this.kills = 0;
+        this.gameOver = false;
+        this.won = false;
         this.running = false;
+        
+        this.maps = [
+            [[1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,0,1],[1,0,1,1,0,1,1,0,0,1],[1,0,1,0,0,0,1,0,0,1],[1,0,0,0,1,0,0,0,0,1],[1,0,1,0,1,0,1,1,0,1],[1,0,1,0,0,0,0,0,0,1],[1,0,0,0,1,1,0,1,0,1],[1,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1]],
+            [[1,1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,0,1],[1,0,1,0,1,0,1,1,0,1],[1,0,1,0,0,0,0,1,0,1],[1,0,1,1,1,1,0,0,0,1],[1,0,0,0,0,1,0,1,0,1],[1,1,1,0,0,0,0,1,0,1],[1,0,0,0,1,1,0,1,0,1],[1,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1]],
+            [[1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,0,1],[1,0,1,1,1,1,1,0,0,1],[1,0,1,0,0,0,0,0,0,1],[1,0,1,0,1,1,1,1,0,1],[1,0,0,0,1,0,0,0,0,1],[1,0,1,0,1,0,1,1,0,1],[1,0,1,0,0,0,0,1,0,1],[1,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1]]
+        ];
+        
+        this.keys = { w: false, s: false, a: false, d: false, left: false, right: false, shoot: false };
+        this.bullets = [];
+        this.enemies = [];
+        this.pickups = [];
+        this.lastShot = 0;
+        this.shootCooldown = 300;
+        
         this.reset();
         this.setupControls();
     }
 
     reset() {
         this.map = this.maps[this.level - 1].map(row => [...row]);
-        this.pacman = { x: 10, y: 15, direction: 0, nextDirection: 0, mouthOpen: 0 };
-        
-        // Ghost speed increases with level
-        const ghostSpeedMultiplier = 1 + (this.level - 1) * 0.15;
-        this.ghosts = [
-            { x: 9, y: 9, color: '#ef4444', direction: 0, mode: 'scatter', speed: ghostSpeedMultiplier, behavior: 'chase' },
-            { x: 10, y: 9, color: '#ec4899', direction: 0, mode: 'scatter', speed: ghostSpeedMultiplier, behavior: 'ambush' },
-            { x: 9, y: 10, color: '#06b6d4', direction: 0, mode: 'scatter', speed: ghostSpeedMultiplier, behavior: 'random' },
-            { x: 10, y: 10, color: '#f97316', direction: 0, mode: 'scatter', speed: ghostSpeedMultiplier, behavior: 'patrol' }
-        ];
-        
+        this.player = { x: 2, y: 2, angle: 0, health: 100, ammo: 50 };
         this.score = this.score || 0;
-        this.lives = 3;
+        this.kills = 0;
         this.gameOver = false;
         this.won = false;
-        this.powerMode = false;
-        this.powerTimer = 0;
-        this.fruit = null;
-        this.fruitTimer = 0;
-        this.fruitSpawnTimer = 200;
-        this.dots = [];
+        this.bullets = [];
+        this.enemies = [];
+        this.pickups = [];
         
-        for (let y = 0; y < this.map.length; y++) {
-            for (let x = 0; x < this.map[y].length; x++) {
-                if (this.map[y][x] === 2) {
-                    this.dots.push({ x, y, type: 'normal' });
-                } else if (this.map[y][x] === 3) {
-                    this.dots.push({ x, y, type: 'power' });
-                }
-            }
-        }
-        
+        const enemyCount = 3 + (this.level - 1) * 2;
+        for (let i = 0; i < enemyCount; i++) this.spawnEnemy();
+        this.spawnPickups();
         this.updateScoreDisplay();
     }
 
+    spawnEnemy() {
+        let x, y;
+        do {
+            x = 1 + Math.random() * (this.map[0].length - 2);
+            y = 1 + Math.random() * (this.map.length - 2);
+        } while (this.map[Math.floor(y)][Math.floor(x)] === 1 || (Math.abs(x - this.player.x) < 3 && Math.abs(y - this.player.y) < 3));
+        this.enemies.push({ x, y, health: 30 + this.level * 10, speed: 0.02 + this.level * 0.005, lastShot: 0, shootCooldown: 2000 - this.level * 300, type: Math.random() < 0.3 ? 'boss' : 'normal' });
+    }
+
+    spawnPickups() {
+        for (let i = 0; i < 3; i++) {
+            let x, y;
+            do {
+                x = 1 + Math.random() * (this.map[0].length - 2);
+                y = 1 + Math.random() * (this.map.length - 2);
+            } while (this.map[Math.floor(y)][Math.floor(x)] === 1);
+            this.pickups.push({ x, y, type: Math.random() < 0.5 ? 'health' : 'ammo' });
+        }
+    }
+
     setupControls() {
-        this.keyHandler = (e) => {
-            switch (e.key) {
-                case 'ArrowUp':
-                case 'w':
-                    this.pacman.nextDirection = 3;
-                    break;
-                case 'ArrowDown':
-                case 's':
-                    this.pacman.nextDirection = 1;
-                    break;
-                case 'ArrowLeft':
-                case 'a':
-                    this.pacman.nextDirection = 2;
-                    break;
-                case 'ArrowRight':
-                case 'd':
-                    this.pacman.nextDirection = 0;
-                    break;
-                case ' ':
-                    if (this.gameOver || this.won) {
-                        this.level = 1;
-                        this.score = 0;
-                        this.reset();
-                        this.start();
-                    }
-                    break;
+        this.keyDownHandler = (e) => {
+            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') this.keys.w = true;
+            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') this.keys.s = true;
+            if (e.key === 'a' || e.key === 'A') this.keys.a = true;
+            if (e.key === 'd' || e.key === 'D') this.keys.d = true;
+            if (e.key === 'ArrowLeft') this.keys.left = true;
+            if (e.key === 'ArrowRight') this.keys.right = true;
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (this.gameOver || this.won) {
+                    this.level = 1;
+                    this.score = 0;
+                    this.reset();
+                    this.start();
+                } else {
+                    this.keys.shoot = true;
+                }
             }
         };
-        document.addEventListener('keydown', this.keyHandler);
+        this.keyUpHandler = (e) => {
+            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') this.keys.w = false;
+            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') this.keys.s = false;
+            if (e.key === 'a' || e.key === 'A') this.keys.a = false;
+            if (e.key === 'd' || e.key === 'D') this.keys.d = false;
+            if (e.key === 'ArrowLeft') this.keys.left = false;
+            if (e.key === 'ArrowRight') this.keys.right = false;
+            if (e.key === ' ') this.keys.shoot = false;
+        };
+        document.addEventListener('keydown', this.keyDownHandler);
+        document.addEventListener('keyup', this.keyUpHandler);
     }
 
     start() {
         if (this.running) return;
         this.running = true;
-        this.lastUpdate = 0;
-        this.animationId = requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
+        this.lastUpdate = Date.now();
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
 
     stop() {
@@ -1093,431 +1035,263 @@ class PacmanGame {
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
         }
-        document.removeEventListener('keydown', this.keyHandler);
+        document.removeEventListener('keydown', this.keyDownHandler);
+        document.removeEventListener('keyup', this.keyUpHandler);
     }
 
-    gameLoop(timestamp) {
+    gameLoop() {
         if (!this.running) return;
-
-        const speed = 150 - (this.level - 1) * 10; // Faster on higher levels
-        
-        if (timestamp - this.lastUpdate >= speed) {
-            if (!this.gameOver && !this.won) {
-                this.update();
-            }
-            this.lastUpdate = timestamp;
-        }
-        
+        if (!this.gameOver && !this.won) this.update();
         this.draw();
-        this.animationId = requestAnimationFrame((ts) => this.gameLoop(ts));
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
 
     canMove(x, y) {
-        if (x < 0 || x >= 20 || y < 0 || y >= 20) return false;
-        return this.map[y][x] !== 1;
+        const m = 0.2;
+        return this.map[Math.floor(y - m)] && this.map[Math.floor(y + m)] && this.map[Math.floor(y - m)][Math.floor(x - m)] !== 1 && this.map[Math.floor(y - m)][Math.floor(x + m)] !== 1 && this.map[Math.floor(y + m)][Math.floor(x - m)] !== 1 && this.map[Math.floor(y + m)][Math.floor(x + m)] !== 1;
     }
 
-    // Improved ghost AI
-    getGhostTarget(ghost) {
-        const directions = [
-            { x: 1, y: 0 },
-            { x: 0, y: 1 },
-            { x: -1, y: 0 },
-            { x: 0, y: -1 }
-        ];
-        
-        if (this.powerMode) {
-            // Run away from pacman when frightened
-            return {
-                x: this.pacman.x > 10 ? 0 : 19,
-                y: this.pacman.y > 10 ? 0 : 19
-            };
-        }
-        
-        switch (ghost.behavior) {
-            case 'chase':
-                // Directly chase pacman
-                return { x: this.pacman.x, y: this.pacman.y };
-            case 'ambush':
-                // Try to get ahead of pacman
-                const dir = directions[this.pacman.direction];
-                return {
-                    x: this.pacman.x + dir.x * 4,
-                    y: this.pacman.y + dir.y * 4
-                };
-            case 'patrol':
-                // Patrol corners
-                const corners = [[1, 1], [18, 1], [1, 18], [18, 18]];
-                const corner = corners[Math.floor(Date.now() / 5000) % 4];
-                return { x: corner[0], y: corner[1] };
-            default:
-                return { x: Math.random() * 20, y: Math.random() * 20 };
-        }
-    }
-
-    moveGhostTowardsTarget(ghost, target) {
-        const directions = [
-            { x: 1, y: 0 },
-            { x: 0, y: 1 },
-            { x: -1, y: 0 },
-            { x: 0, y: -1 }
-        ];
-        
-        const validDirs = [];
-        directions.forEach((d, i) => {
-            if (this.canMove(ghost.x + d.x, ghost.y + d.y) && i !== (ghost.direction + 2) % 4) {
-                const newX = ghost.x + d.x;
-                const newY = ghost.y + d.y;
-                const dist = Math.abs(newX - target.x) + Math.abs(newY - target.y);
-                validDirs.push({ dir: i, dist });
-            }
-        });
-        
-        if (validDirs.length > 0) {
-            // Sort by distance to target (closest first for chase, farthest for flee)
-            validDirs.sort((a, b) => this.powerMode ? b.dist - a.dist : a.dist - b.dist);
-            
-            // Add some randomness to make it less predictable
-            if (Math.random() < 0.2 && validDirs.length > 1) {
-                ghost.direction = validDirs[1].dir;
-            } else {
-                ghost.direction = validDirs[0].dir;
-            }
-        }
-    }
-
-    spawnFruit() {
-        if (!this.fruit && Math.random() < 0.1) {
-            const fruitType = this.fruitTypes[Math.min(this.level - 1, this.fruitTypes.length - 1)];
-            // Find empty spot for fruit
-            const emptySpots = [];
-            for (let y = 0; y < 20; y++) {
-                for (let x = 0; x < 20; x++) {
-                    if (this.map[y][x] === 0 || this.map[y][x] === 2) {
-                        emptySpots.push({ x, y });
-                    }
-                }
-            }
-            if (emptySpots.length > 0) {
-                const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
-                this.fruit = {
-                    x: spot.x,
-                    y: spot.y,
-                    ...fruitType,
-                    timer: 200
-                };
-            }
-        }
+    shoot() {
+        const now = Date.now();
+        if (now - this.lastShot < this.shootCooldown || this.player.ammo <= 0) return;
+        this.lastShot = now;
+        this.player.ammo--;
+        this.bullets.push({ x: this.player.x, y: this.player.y, dx: Math.cos(this.player.angle) * 0.3, dy: Math.sin(this.player.angle) * 0.3, isEnemy: false });
+        this.updateScoreDisplay();
     }
 
     update() {
-        this.pacman.mouthOpen = (this.pacman.mouthOpen + 0.3) % (Math.PI * 2);
-
-        const directions = [
-            { x: 1, y: 0 },
-            { x: 0, y: 1 },
-            { x: -1, y: 0 },
-            { x: 0, y: -1 }
-        ];
-
-        const nextDir = directions[this.pacman.nextDirection];
-        if (this.canMove(this.pacman.x + nextDir.x, this.pacman.y + nextDir.y)) {
-            this.pacman.direction = this.pacman.nextDirection;
-        }
-
-        const dir = directions[this.pacman.direction];
-        const newX = this.pacman.x + dir.x;
-        const newY = this.pacman.y + dir.y;
-
-        if (this.canMove(newX, newY)) {
-            this.pacman.x = newX;
-            this.pacman.y = newY;
-        }
-
-        // Tunnel wrap
-        if (this.pacman.x < 0) this.pacman.x = 19;
-        if (this.pacman.x > 19) this.pacman.x = 0;
-
-        // Collect dots
-        const dotIndex = this.dots.findIndex(d => d.x === this.pacman.x && d.y === this.pacman.y);
-        if (dotIndex !== -1) {
-            const dot = this.dots[dotIndex];
-            if (dot.type === 'power') {
-                this.score += 50;
-                this.powerMode = true;
-                this.powerTimer = 80 - (this.level - 1) * 10; // Shorter power mode on higher levels
-                this.ghosts.forEach(g => g.mode = 'frightened');
-            } else {
-                this.score += 10;
-            }
-            this.dots.splice(dotIndex, 1);
-            this.updateScoreDisplay();
-
-            // Check level complete
-            if (this.dots.length === 0) {
-                if (this.level < this.maxLevel) {
-                    this.level++;
-                    this.reset();
-                } else {
-                    this.won = true;
-                    this.onScore(this.score);
-                    if (this.manager) {
-                        this.manager.unlockAchievement('ghost_hunter');
-                    }
-                }
-                return;
-            }
-        }
-
-        // Collect fruit
-        if (this.fruit && this.pacman.x === this.fruit.x && this.pacman.y === this.fruit.y) {
-            this.score += this.fruit.points;
-            this.fruit = null;
-            this.updateScoreDisplay();
-        }
-
-        // Power mode timer
-        if (this.powerMode) {
-            this.powerTimer--;
-            if (this.powerTimer <= 0) {
-                this.powerMode = false;
-                this.ghosts.forEach(g => g.mode = 'scatter');
-            }
-        }
-
-        // Fruit spawning and timer
-        this.fruitSpawnTimer--;
-        if (this.fruitSpawnTimer <= 0) {
-            this.spawnFruit();
-            this.fruitSpawnTimer = 200 + Math.random() * 200;
-        }
-        if (this.fruit) {
-            this.fruit.timer--;
-            if (this.fruit.timer <= 0) {
-                this.fruit = null;
-            }
-        }
-
-        // Update ghosts with improved AI
-        this.ghosts.forEach(ghost => {
-            const target = this.getGhostTarget(ghost);
-            this.moveGhostTowardsTarget(ghost, target);
-
-            const gDir = directions[ghost.direction];
-            const gNewX = ghost.x + gDir.x;
-            const gNewY = ghost.y + gDir.y;
-
-            if (this.canMove(gNewX, gNewY)) {
-                ghost.x = gNewX;
-                ghost.y = gNewY;
-            } else {
-                // Try to find any valid direction
-                const validDirs = [];
-                directions.forEach((d, i) => {
-                    if (this.canMove(ghost.x + d.x, ghost.y + d.y)) {
-                        validDirs.push(i);
-                    }
-                });
-                if (validDirs.length > 0) {
-                    ghost.direction = validDirs[Math.floor(Math.random() * validDirs.length)];
-                }
-            }
-
-            // Ghost tunnel wrap
-            if (ghost.x < 0) ghost.x = 19;
-            if (ghost.x > 19) ghost.x = 0;
-
-            // Collision with pacman
-            if (ghost.x === this.pacman.x && ghost.y === this.pacman.y) {
-                if (this.powerMode) {
-                    this.score += 200;
-                    ghost.x = 10;
-                    ghost.y = 9;
-                    this.updateScoreDisplay();
-                } else {
-                    this.lives--;
-                    if (this.lives <= 0) {
-                        this.endGame();
-                    } else {
-                        this.pacman.x = 10;
-                        this.pacman.y = 15;
-                        this.updateScoreDisplay();
+        if (this.keys.left) this.player.angle -= this.rotSpeed;
+        if (this.keys.right) this.player.angle += this.rotSpeed;
+        
+        let dx = 0, dy = 0;
+        if (this.keys.w) { dx += Math.cos(this.player.angle) * this.moveSpeed; dy += Math.sin(this.player.angle) * this.moveSpeed; }
+        if (this.keys.s) { dx -= Math.cos(this.player.angle) * this.moveSpeed; dy -= Math.sin(this.player.angle) * this.moveSpeed; }
+        if (this.keys.a) { dx += Math.cos(this.player.angle - Math.PI/2) * this.moveSpeed; dy += Math.sin(this.player.angle - Math.PI/2) * this.moveSpeed; }
+        if (this.keys.d) { dx += Math.cos(this.player.angle + Math.PI/2) * this.moveSpeed; dy += Math.sin(this.player.angle + Math.PI/2) * this.moveSpeed; }
+        
+        if (this.canMove(this.player.x + dx, this.player.y)) this.player.x += dx;
+        if (this.canMove(this.player.x, this.player.y + dy)) this.player.y += dy;
+        
+        if (this.keys.shoot) this.shoot();
+        
+        this.bullets = this.bullets.filter(bullet => {
+            bullet.x += bullet.dx; bullet.y += bullet.dy;
+            if (this.map[Math.floor(bullet.y)] && this.map[Math.floor(bullet.y)][Math.floor(bullet.x)] === 1) return false;
+            if (!bullet.isEnemy) {
+                for (let i = this.enemies.length - 1; i >= 0; i--) {
+                    const enemy = this.enemies[i];
+                    if (Math.sqrt((bullet.x - enemy.x) ** 2 + (bullet.y - enemy.y) ** 2) < 0.5) {
+                        enemy.health -= 20;
+                        if (enemy.health <= 0) {
+                            this.score += (enemy.type === 'boss' ? 200 : 100) * this.level;
+                            this.kills++;
+                            this.enemies.splice(i, 1);
+                            this.updateScoreDisplay();
+                            if (this.enemies.length === 0) {
+                                if (this.level < this.maxLevel) { this.level++; this.reset(); }
+                                else { this.won = true; this.onScore(this.score); if (this.manager) this.manager.unlockAchievement('doom_slayer'); }
+                            }
+                        }
+                        return false;
                     }
                 }
             }
+            if (bullet.isEnemy && Math.sqrt((bullet.x - this.player.x) ** 2 + (bullet.y - this.player.y) ** 2) < 0.3) {
+                this.player.health -= 10; this.updateScoreDisplay(); if (this.player.health <= 0) this.endGame(); return false;
+            }
+            return bullet.x > 0 && bullet.x < this.map[0].length && bullet.y > 0 && bullet.y < this.map.length;
+        });
+        
+        const now = Date.now();
+        this.enemies.forEach(enemy => {
+            const angle = Math.atan2(this.player.y - enemy.y, this.player.x - enemy.x);
+            const newX = enemy.x + Math.cos(angle) * enemy.speed;
+            const newY = enemy.y + Math.sin(angle) * enemy.speed;
+            if (this.canMove(newX, enemy.y)) enemy.x = newX;
+            if (this.canMove(enemy.x, newY)) enemy.y = newY;
+            const dist = Math.sqrt((enemy.x - this.player.x) ** 2 + (enemy.y - this.player.y) ** 2);
+            if (dist < 5 && now - enemy.lastShot > enemy.shootCooldown) {
+                enemy.lastShot = now;
+                this.bullets.push({ x: enemy.x, y: enemy.y, dx: Math.cos(angle) * 0.15, dy: Math.sin(angle) * 0.15, isEnemy: true });
+            }
+            if (dist < 0.4) { this.player.health -= 1; this.updateScoreDisplay(); if (this.player.health <= 0) this.endGame(); }
+        });
+        
+        this.pickups = this.pickups.filter(pickup => {
+            if (Math.sqrt((pickup.x - this.player.x) ** 2 + (pickup.y - this.player.y) ** 2) < 0.5) {
+                if (pickup.type === 'health') this.player.health = Math.min(100, this.player.health + 25);
+                else this.player.ammo += 20;
+                this.updateScoreDisplay();
+                return false;
+            }
+            return true;
         });
     }
 
     draw() {
-        const isDark = document.documentElement.classList.contains('dark');
+        this.ctx.fillStyle = '#1a1a2e';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height / 2);
+        this.ctx.fillStyle = '#3d3d5c';
+        this.ctx.fillRect(0, this.canvas.height / 2, this.canvas.width, this.canvas.height / 2);
         
-        // Background with gradient
-        const bgGradient = this.ctx.createLinearGradient(0, 0, this.canvas.width, this.canvas.height);
-        bgGradient.addColorStop(0, isDark ? '#0f172a' : '#1e293b');
-        bgGradient.addColorStop(1, isDark ? '#1e293b' : '#334155');
-        this.ctx.fillStyle = bgGradient;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Draw maze with gradient walls
-        for (let y = 0; y < this.map.length; y++) {
-            for (let x = 0; x < this.map[y].length; x++) {
-                if (this.map[y][x] === 1) {
-                    const wallGradient = this.ctx.createLinearGradient(
-                        x * this.tileSize, y * this.tileSize,
-                        (x + 1) * this.tileSize, (y + 1) * this.tileSize
-                    );
-                    wallGradient.addColorStop(0, '#3b82f6');
-                    wallGradient.addColorStop(1, '#a855f7');
-                    this.ctx.fillStyle = wallGradient;
-                    this.ctx.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
-                }
+        const fov = Math.PI / 3;
+        const numRays = 80;
+        for (let i = 0; i < numRays; i++) {
+            const rayAngle = this.player.angle - fov / 2 + i * (fov / numRays);
+            const result = this.castRay(rayAngle);
+            if (result.distance > 0) {
+                const wallHeight = Math.min(this.canvas.height, (this.canvas.height / result.distance) * 0.8);
+                const wallTop = (this.canvas.height - wallHeight) / 2;
+                const brightness = Math.max(0.2, 1 - result.distance / 8);
+                const r = Math.floor(result.side ? 100 * brightness : 80 * brightness);
+                const g = Math.floor(result.side ? 50 * brightness : 40 * brightness);
+                const b = Math.floor(result.side ? 150 * brightness : 120 * brightness);
+                this.ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                this.ctx.fillRect(i * (this.canvas.width / numRays), wallTop, (this.canvas.width / numRays) + 1, wallHeight);
             }
         }
-
-        // Draw dots
-        this.dots.forEach(dot => {
-            if (dot.type === 'power') {
-                this.ctx.fillStyle = '#fbbf24';
+        
+        this.enemies.forEach(enemy => {
+            const dx = enemy.x - this.player.x, dy = enemy.y - this.player.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            let angle = Math.atan2(dy, dx) - this.player.angle;
+            while (angle < -Math.PI) angle += Math.PI * 2;
+            while (angle > Math.PI) angle -= Math.PI * 2;
+            if (Math.abs(angle) < fov / 2 + 0.2) {
+                const screenX = this.canvas.width / 2 + (angle / (fov / 2)) * (this.canvas.width / 2);
+                const size = Math.min(200, (this.canvas.height / dist) * 0.6);
+                const screenY = (this.canvas.height - size) / 2;
+                this.ctx.fillStyle = enemy.type === 'boss' ? '#dc2626' : '#ef4444';
                 this.ctx.beginPath();
-                this.ctx.arc(
-                    dot.x * this.tileSize + this.tileSize / 2,
-                    dot.y * this.tileSize + this.tileSize / 2,
-                    6 + Math.sin(Date.now() / 200) * 2,
-                    0,
-                    Math.PI * 2
-                );
+                this.ctx.arc(screenX, screenY + size * 0.4, size * 0.3, 0, Math.PI * 2);
                 this.ctx.fill();
-            } else {
-                this.ctx.fillStyle = '#f1f5f9';
+                this.ctx.fillStyle = enemy.type === 'boss' ? '#b91c1c' : '#dc2626';
                 this.ctx.beginPath();
-                this.ctx.arc(
-                    dot.x * this.tileSize + this.tileSize / 2,
-                    dot.y * this.tileSize + this.tileSize / 2,
-                    2,
-                    0,
-                    Math.PI * 2
-                );
+                this.ctx.arc(screenX, screenY + size * 0.15, size * 0.2, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.fillStyle = '#fff';
+                this.ctx.beginPath();
+                this.ctx.arc(screenX - size * 0.08, screenY + size * 0.12, size * 0.05, 0, Math.PI * 2);
+                this.ctx.arc(screenX + size * 0.08, screenY + size * 0.12, size * 0.05, 0, Math.PI * 2);
                 this.ctx.fill();
             }
         });
-
-        // Draw fruit
-        if (this.fruit) {
-            this.ctx.fillStyle = this.fruit.color;
-            this.ctx.beginPath();
-            this.ctx.arc(
-                this.fruit.x * this.tileSize + this.tileSize / 2,
-                this.fruit.y * this.tileSize + this.tileSize / 2,
-                8,
-                0,
-                Math.PI * 2
-            );
-            this.ctx.fill();
-            
-            // Fruit stem
-            this.ctx.fillStyle = '#22c55e';
-            this.ctx.fillRect(
-                this.fruit.x * this.tileSize + this.tileSize / 2 - 1,
-                this.fruit.y * this.tileSize + 2,
-                2,
-                4
-            );
-        }
-
-        // Draw pacman
-        this.ctx.fillStyle = '#facc15';
+        
+        this.pickups.forEach(pickup => {
+            const dx = pickup.x - this.player.x, dy = pickup.y - this.player.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            let angle = Math.atan2(dy, dx) - this.player.angle;
+            while (angle < -Math.PI) angle += Math.PI * 2;
+            while (angle > Math.PI) angle -= Math.PI * 2;
+            if (Math.abs(angle) < fov / 2) {
+                const screenX = this.canvas.width / 2 + (angle / (fov / 2)) * (this.canvas.width / 2);
+                const size = Math.min(50, (30 / dist));
+                this.ctx.fillStyle = pickup.type === 'health' ? '#22c55e' : '#3b82f6';
+                this.ctx.beginPath();
+                this.ctx.arc(screenX, this.canvas.height / 2 + 20, size, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        });
+        
+        this.ctx.fillStyle = '#4a4a4a';
+        this.ctx.fillRect(this.canvas.width / 2 - 20, this.canvas.height - 80, 40, 80);
+        this.ctx.fillStyle = '#2a2a2a';
+        this.ctx.fillRect(this.canvas.width / 2 - 5, this.canvas.height - 100, 10, 30);
+        
+        this.ctx.strokeStyle = '#fff';
+        this.ctx.lineWidth = 2;
         this.ctx.beginPath();
-        const mouthAngle = Math.abs(Math.sin(this.pacman.mouthOpen)) * 0.5;
-        const startAngle = this.pacman.direction * Math.PI / 2 + mouthAngle;
-        const endAngle = this.pacman.direction * Math.PI / 2 + Math.PI * 2 - mouthAngle;
-        this.ctx.arc(
-            this.pacman.x * this.tileSize + this.tileSize / 2,
-            this.pacman.y * this.tileSize + this.tileSize / 2,
-            this.tileSize / 2 - 2,
-            startAngle,
-            endAngle
-        );
-        this.ctx.lineTo(this.pacman.x * this.tileSize + this.tileSize / 2, this.pacman.y * this.tileSize + this.tileSize / 2);
-        this.ctx.fill();
-
-        // Draw ghosts
-        this.ghosts.forEach(ghost => {
-            // Ghost body
-            if (this.powerMode) {
-                this.ctx.fillStyle = this.powerTimer < 20 && Math.floor(Date.now() / 200) % 2 === 0 ? '#fff' : '#3b82f6';
-            } else {
-                this.ctx.fillStyle = ghost.color;
-            }
-            this.ctx.beginPath();
-            this.ctx.arc(
-                ghost.x * this.tileSize + this.tileSize / 2,
-                ghost.y * this.tileSize + this.tileSize / 2 - 2,
-                this.tileSize / 2 - 2,
-                Math.PI,
-                0
-            );
-            this.ctx.lineTo(ghost.x * this.tileSize + this.tileSize - 2, ghost.y * this.tileSize + this.tileSize - 2);
-            for (let i = 0; i < 3; i++) {
-                const waveX = ghost.x * this.tileSize + 2 + (this.tileSize - 4) / 3 * (i + 0.5);
-                this.ctx.lineTo(waveX, ghost.y * this.tileSize + this.tileSize - 6);
-                this.ctx.lineTo(ghost.x * this.tileSize + 2 + (this.tileSize - 4) / 3 * (i + 1), ghost.y * this.tileSize + this.tileSize - 2);
-            }
-            this.ctx.closePath();
-            this.ctx.fill();
-
-            // Ghost eyes
-            this.ctx.fillStyle = '#fff';
-            this.ctx.beginPath();
-            this.ctx.arc(ghost.x * this.tileSize + 7, ghost.y * this.tileSize + 8, 3, 0, Math.PI * 2);
-            this.ctx.arc(ghost.x * this.tileSize + 13, ghost.y * this.tileSize + 8, 3, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            this.ctx.fillStyle = this.powerMode ? '#fff' : '#000';
-            this.ctx.beginPath();
-            this.ctx.arc(ghost.x * this.tileSize + 7, ghost.y * this.tileSize + 8, 1.5, 0, Math.PI * 2);
-            this.ctx.arc(ghost.x * this.tileSize + 13, ghost.y * this.tileSize + 8, 1.5, 0, Math.PI * 2);
-            this.ctx.fill();
-        });
-
-        // Draw lives
-        for (let i = 0; i < this.lives; i++) {
-            this.ctx.fillStyle = '#facc15';
-            this.ctx.beginPath();
-            this.ctx.arc(20 + i * 25, this.canvas.height - 15, 8, 0.25 * Math.PI, 1.75 * Math.PI);
-            this.ctx.lineTo(20 + i * 25, this.canvas.height - 15);
-            this.ctx.fill();
-        }
-
-        // Draw level indicator
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'right';
-        this.ctx.fillText(`Nível ${this.level}/${this.maxLevel}`, this.canvas.width - 10, this.canvas.height - 8);
-
-        // Game over / Won screen
+        this.ctx.moveTo(this.canvas.width / 2 - 10, this.canvas.height / 2);
+        this.ctx.lineTo(this.canvas.width / 2 + 10, this.canvas.height / 2);
+        this.ctx.moveTo(this.canvas.width / 2, this.canvas.height / 2 - 10);
+        this.ctx.lineTo(this.canvas.width / 2, this.canvas.height / 2 + 10);
+        this.ctx.stroke();
+        
+        this.drawHUD();
+        this.drawMinimap();
+        
         if (this.gameOver || this.won) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 24px Arial';
+            this.ctx.font = 'bold 28px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? 'VOCÊ VENCEU!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 10);
-            
+            this.ctx.fillText(this.won ? 'VITÓRIA!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
             this.ctx.font = '18px Arial';
-            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 20);
-            
+            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 5);
+            this.ctx.fillText(`Nível: ${this.level}/${this.maxLevel}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
             this.ctx.font = '14px Arial';
             this.ctx.fillStyle = '#94a3b8';
-            this.ctx.fillText('Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 55);
+            this.ctx.fillText('Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 70);
         }
+    }
+
+    castRay(angle) {
+        const cos = Math.cos(angle), sin = Math.sin(angle);
+        let x = this.player.x, y = this.player.y;
+        for (let i = 0; i < 100; i++) {
+            x += cos * 0.05; y += sin * 0.05;
+            const mapX = Math.floor(x), mapY = Math.floor(y);
+            if (mapY >= 0 && mapY < this.map.length && mapX >= 0 && mapX < this.map[0].length && this.map[mapY][mapX] === 1) {
+                const distance = Math.sqrt((x - this.player.x) ** 2 + (y - this.player.y) ** 2) * Math.cos(angle - this.player.angle);
+                return { distance, side: Math.abs(x - mapX - 0.5) > Math.abs(y - mapY - 0.5) };
+            }
+        }
+        return { distance: 0, side: false };
+    }
+
+    drawHUD() {
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        this.ctx.fillRect(10, this.canvas.height - 30, 104, 20);
+        this.ctx.fillStyle = this.player.health > 30 ? '#22c55e' : '#ef4444';
+        this.ctx.fillRect(12, this.canvas.height - 28, this.player.health, 16);
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = '12px Arial';
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(`HP: ${this.player.health}`, 15, this.canvas.height - 15);
+        this.ctx.font = 'bold 14px Arial';
+        this.ctx.textAlign = 'right';
+        this.ctx.fillText(`Munição: ${this.player.ammo}`, this.canvas.width - 10, this.canvas.height - 15);
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(`Nível ${this.level}/${this.maxLevel}`, 10, 20);
+        this.ctx.fillText(`Inimigos: ${this.enemies.length}`, 10, 38);
+    }
+
+    drawMinimap() {
+        const mapSize = 60, tileSize = mapSize / this.map.length;
+        const offsetX = this.canvas.width - mapSize - 10, offsetY = 10;
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        this.ctx.fillRect(offsetX - 2, offsetY - 2, mapSize + 4, mapSize + 4);
+        for (let y = 0; y < this.map.length; y++) {
+            for (let x = 0; x < this.map[y].length; x++) {
+                this.ctx.fillStyle = this.map[y][x] === 1 ? '#666' : '#333';
+                this.ctx.fillRect(offsetX + x * tileSize, offsetY + y * tileSize, tileSize, tileSize);
+            }
+        }
+        this.ctx.fillStyle = '#ef4444';
+        this.enemies.forEach(e => {
+            this.ctx.beginPath();
+            this.ctx.arc(offsetX + e.x * tileSize, offsetY + e.y * tileSize, 2, 0, Math.PI * 2);
+            this.ctx.fill();
+        });
+        this.ctx.fillStyle = '#22c55e';
+        this.ctx.beginPath();
+        this.ctx.arc(offsetX + this.player.x * tileSize, offsetY + this.player.y * tileSize, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#22c55e';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(offsetX + this.player.x * tileSize, offsetY + this.player.y * tileSize);
+        this.ctx.lineTo(offsetX + (this.player.x + Math.cos(this.player.angle) * 1.5) * tileSize, offsetY + (this.player.y + Math.sin(this.player.angle) * 1.5) * tileSize);
+        this.ctx.stroke();
     }
 
     updateScoreDisplay() {
         const scoreEl = document.getElementById('game-score');
-        const livesEl = document.getElementById('game-phase');
+        const infoEl = document.getElementById('game-phase');
         if (scoreEl) scoreEl.textContent = this.score;
-        if (livesEl) livesEl.textContent = `Vidas: ${this.lives} | Nível ${this.level}`;
+        if (infoEl) infoEl.textContent = `HP: ${this.player.health} | Munição: ${this.player.ammo} | Nível ${this.level}`;
     }
 
     endGame() {
