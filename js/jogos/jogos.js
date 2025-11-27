@@ -171,7 +171,9 @@ export class JogosManager {
             { id: 'memory', name: 'Jogo da Memória', icon: 'brain', description: '3 níveis de dificuldade com ícones de bicicleta!' },
             { id: 'spaceinvaders', name: 'Invasores Espaciais', icon: 'rocket', description: 'Defenda a Terra dos invasores espaciais!' },
             { id: 'breakout', name: 'Breakout', icon: 'square', description: '5 fases com power-ups e tijolos resistentes!' },
-            { id: 'termo', name: 'Termo Bike', icon: 'type', description: 'Adivinhe a palavra de 5 letras sobre bicicletas!' }
+            { id: 'termo', name: 'Termo Bike', icon: 'type', description: 'Adivinhe a palavra de 5 letras sobre bicicletas!' },
+            { id: 'termo2', name: 'Termo Dueto', icon: 'columns', description: 'Adivinhe 2 palavras ao mesmo tempo!' },
+            { id: 'termo4', name: 'Termo Quarteto', icon: 'layout-grid', description: 'Adivinhe 4 palavras ao mesmo tempo!' }
         ];
 
         // Stats and Achievements Section
@@ -341,7 +343,9 @@ export class JogosManager {
             memory: { name: 'Jogo da Memória', class: MemoryGame },
             spaceinvaders: { name: 'Invasores Espaciais', class: SpaceInvadersGame },
             breakout: { name: 'Breakout', class: BreakoutGame },
-            termo: { name: 'Termo Bike', class: TermoGame }
+            termo: { name: 'Termo Bike', class: TermoGame },
+            termo2: { name: 'Termo Dueto', class: TermoDuoGame },
+            termo4: { name: 'Termo Quarteto', class: TermoQuartetGame }
         };
 
         const game = games[gameId];
@@ -4093,8 +4097,11 @@ class TermoGame {
             }
         }
         
-        // Draw virtual keyboard
-        this.drawKeyboard(startY + gridHeight + 25, isDark);
+        // Draw helper text (without virtual keyboard)
+        this.ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+        this.ctx.font = '11px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('Use o teclado para digitar • ENTER para confirmar • BACKSPACE para apagar', this.canvas.width / 2, startY + gridHeight + 25);
         
         // Draw message
         if (this.messageTimer > 0) {
@@ -4136,85 +4143,780 @@ class TermoGame {
         }
     }
 
-    drawKeyboard(startY, isDark) {
-        const rows = [
-            ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-            ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+    updateScoreDisplay() {
+        const scoreEl = document.getElementById('game-score');
+        const infoEl = document.getElementById('game-phase');
+        if (scoreEl) scoreEl.textContent = this.score;
+        if (infoEl) infoEl.textContent = `Tentativa ${Math.min(this.attempts.length + 1, this.maxAttempts)}/${this.maxAttempts}`;
+    }
+}
+
+class TermoDuoGame {
+    constructor(canvas, onScore, manager) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.onScore = onScore;
+        this.manager = manager;
+        
+        this.canvas.width = 650;
+        this.canvas.height = 500;
+        
+        // Bicycle-themed 5-letter Portuguese words
+        this.words = [
+            'PEDAL', 'RODAS', 'SELIM', 'FREIO', 'RAIOS',
+            'PNEUS', 'GARFO', 'EIXOS', 'JANTE', 'GUIAO',
+            'CABOS', 'COROA', 'CICLO', 'LIGAS', 'MOLAS',
+            'TUBOS', 'LUVAS', 'PISTA', 'PEGAS', 'TITAN',
+            'FIBRA', 'FAROL', 'TROCA', 'MARCA', 'CARGA',
+            'VOLTS', 'RACER', 'RISCO', 'PECAS', 'SPORT',
+            'TURBO', 'LENTO', 'VELOZ', 'BANCO', 'SINAL',
+            'CURVA', 'RAMPA', 'SUBIR', 'DESCI', 'PASEO',
+            'URBAN', 'RURAL', 'ATIVA', 'LIDER', 'METAL',
+            'ROLAR', 'GIRAR', 'ANDAR', 'PARAR', 'BARRA'
         ];
         
-        const keyWidth = 32;
-        const keyHeight = 40;
-        const keyGap = 4;
+        this.numWords = 2;
+        this.maxAttempts = 7;
+        this.wordLength = 5;
+        this.running = false;
         
-        // Get letter statuses from all attempts
-        const letterStatuses = {};
-        this.attempts.forEach(attempt => {
+        this.reset();
+        this.setupControls();
+    }
+
+    reset() {
+        // Select random words (ensure they're different)
+        const shuffled = [...this.words].sort(() => Math.random() - 0.5);
+        this.targetWords = shuffled.slice(0, this.numWords).map(w => w.toUpperCase());
+        this.solvedWords = new Array(this.numWords).fill(false);
+        this.attempts = [];
+        this.currentAttempt = '';
+        this.gameOver = false;
+        this.won = false;
+        this.score = 0;
+        this.shake = false;
+        this.shakeTimer = 0;
+        this.revealIndex = -1;
+        this.message = '';
+        this.messageTimer = 0;
+        
+        this.updateScoreDisplay();
+    }
+
+    setupControls() {
+        this.keyHandler = (e) => {
+            if (this.gameOver || this.won) {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    this.reset();
+                    this.start();
+                }
+                return;
+            }
+
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                this.currentAttempt = this.currentAttempt.slice(0, -1);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                this.submitAttempt();
+            } else if (/^[a-zA-ZçÇ]$/.test(e.key) && this.currentAttempt.length < this.wordLength) {
+                let letter = e.key.toUpperCase();
+                letter = letter.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                if (letter === 'Ç') letter = 'C';
+                this.currentAttempt += letter;
+            }
+        };
+        
+        document.addEventListener('keydown', this.keyHandler);
+    }
+
+    submitAttempt() {
+        if (this.currentAttempt.length !== this.wordLength) {
+            this.showMessage('Palavra incompleta!');
+            this.shake = true;
+            this.shakeTimer = 300;
+            return;
+        }
+
+        const attempt = this.currentAttempt.toUpperCase();
+        this.attempts.push(attempt);
+        this.currentAttempt = '';
+        
+        // Check if any word was solved
+        for (let i = 0; i < this.numWords; i++) {
+            if (!this.solvedWords[i] && attempt === this.targetWords[i]) {
+                this.solvedWords[i] = true;
+            }
+        }
+        
+        // Start reveal animation
+        this.revealIndex = 0;
+        this.revealTimer = setInterval(() => {
+            this.revealIndex++;
+            if (this.revealIndex >= this.wordLength) {
+                clearInterval(this.revealTimer);
+                this.checkGameEnd();
+            }
+        }, 100);
+    }
+
+    checkGameEnd() {
+        const allSolved = this.solvedWords.every(s => s);
+        
+        if (allSolved) {
+            this.won = true;
+            const baseScore = 2000;
+            const attemptBonus = (this.maxAttempts - this.attempts.length + 1) * 300;
+            this.score = baseScore + attemptBonus;
+            this.onScore(this.score);
+            this.showMessage('Parabéns! 🎉');
+        } else if (this.attempts.length >= this.maxAttempts) {
+            this.gameOver = true;
+            this.score = 0;
+            this.onScore(this.score);
+            const unsolved = this.targetWords.filter((_, i) => !this.solvedWords[i]);
+            this.showMessage(`Faltou: ${unsolved.join(', ')}`);
+        }
+        
+        this.updateScoreDisplay();
+    }
+
+    showMessage(msg) {
+        this.message = msg;
+        this.messageTimer = 2000;
+    }
+
+    start() {
+        if (this.running) return;
+        this.running = true;
+        this.lastUpdate = Date.now();
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
+    }
+
+    stop() {
+        this.running = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        if (this.revealTimer) {
+            clearInterval(this.revealTimer);
+        }
+        document.removeEventListener('keydown', this.keyHandler);
+    }
+
+    gameLoop() {
+        if (!this.running) return;
+
+        const now = Date.now();
+        const delta = now - this.lastUpdate;
+        
+        if (this.shake) {
+            this.shakeTimer -= delta;
+            if (this.shakeTimer <= 0) this.shake = false;
+        }
+        
+        if (this.messageTimer > 0) this.messageTimer -= delta;
+        
+        this.draw();
+        this.lastUpdate = now;
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
+    }
+
+    getLetterStatus(letter, index, attempt, targetWord) {
+        if (targetWord[index] === letter) {
+            return 'correct';
+        } else if (targetWord.includes(letter)) {
+            let letterCount = 0;
+            let matchedCount = 0;
+            
+            for (let i = 0; i < targetWord.length; i++) {
+                if (targetWord[i] === letter) letterCount++;
+            }
+            
             for (let i = 0; i < attempt.length; i++) {
-                const letter = attempt[i];
-                const status = this.getLetterStatus(letter, i, attempt);
-                
-                // Only upgrade status (absent < present < correct)
-                if (!letterStatuses[letter] || 
-                    (letterStatuses[letter] === 'absent' && status !== 'absent') ||
-                    (letterStatuses[letter] === 'present' && status === 'correct')) {
-                    letterStatuses[letter] = status;
+                if (attempt[i] === letter && targetWord[i] === letter) {
+                    matchedCount++;
                 }
             }
-        });
-        
-        rows.forEach((row, rowIndex) => {
-            const rowWidth = row.length * keyWidth + (row.length - 1) * keyGap;
-            const rowStartX = (this.canvas.width - rowWidth) / 2;
-            const y = startY + rowIndex * (keyHeight + keyGap);
             
-            row.forEach((key, keyIndex) => {
-                const x = rowStartX + keyIndex * (keyWidth + keyGap);
+            let wrongSpotCount = 0;
+            for (let i = 0; i < index; i++) {
+                if (attempt[i] === letter && targetWord[i] !== letter && targetWord.includes(letter)) {
+                    wrongSpotCount++;
+                }
+            }
+            
+            if (wrongSpotCount < letterCount - matchedCount) {
+                return 'present';
+            }
+        }
+        
+        return 'absent';
+    }
+
+    draw() {
+        const isDark = document.documentElement.classList.contains('dark');
+        
+        // Background
+        this.ctx.fillStyle = isDark ? '#0f172a' : '#f1f5f9';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Title
+        this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
+        this.ctx.font = 'bold 24px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('TERMO DUETO', this.canvas.width / 2, 35);
+        
+        // Subtitle
+        this.ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+        this.ctx.font = '12px Arial';
+        this.ctx.fillText('Adivinhe 2 palavras ao mesmo tempo!', this.canvas.width / 2, 55);
+        
+        // Grid settings
+        const tileSize = 48;
+        const gap = 5;
+        const gridWidth = this.wordLength * tileSize + (this.wordLength - 1) * gap;
+        const gridHeight = this.maxAttempts * tileSize + (this.maxAttempts - 1) * gap;
+        const gridSpacing = 40;
+        const totalWidth = this.numWords * gridWidth + (this.numWords - 1) * gridSpacing;
+        const startX = (this.canvas.width - totalWidth) / 2;
+        const startY = 70;
+        
+        // Draw grids for each word
+        for (let wordIdx = 0; wordIdx < this.numWords; wordIdx++) {
+            const gridStartX = startX + wordIdx * (gridWidth + gridSpacing);
+            const targetWord = this.targetWords[wordIdx];
+            const isSolved = this.solvedWords[wordIdx];
+            
+            // Draw word indicator
+            this.ctx.fillStyle = isSolved ? '#22c55e' : (isDark ? '#64748b' : '#94a3b8');
+            this.ctx.font = 'bold 14px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(isSolved ? '✓' : `${wordIdx + 1}`, gridStartX + gridWidth / 2, startY - 10);
+            
+            for (let row = 0; row < this.maxAttempts; row++) {
+                const isCurrentRow = row === this.attempts.length && !this.gameOver && !this.won;
+                const isCompletedRow = row < this.attempts.length;
+                const attempt = isCompletedRow ? this.attempts[row] : (isCurrentRow ? this.currentAttempt : '');
                 
-                let bgColor, textColor;
-                const status = letterStatuses[key];
-                
-                if (status === 'correct') {
-                    bgColor = '#22c55e';
-                    textColor = '#ffffff';
-                } else if (status === 'present') {
-                    bgColor = '#eab308';
-                    textColor = '#ffffff';
-                } else if (status === 'absent') {
-                    bgColor = isDark ? '#334155' : '#94a3b8';
-                    textColor = isDark ? '#94a3b8' : '#ffffff';
-                } else {
-                    bgColor = isDark ? '#475569' : '#e2e8f0';
-                    textColor = isDark ? '#e2e8f0' : '#1e293b';
+                let rowOffsetX = 0;
+                if (isCurrentRow && this.shake) {
+                    rowOffsetX = Math.sin(Date.now() / 20) * 5;
                 }
                 
-                // Draw key background
-                this.ctx.fillStyle = bgColor;
-                this.ctx.beginPath();
-                this.ctx.roundRect(x, y, keyWidth, keyHeight, 4);
-                this.ctx.fill();
-                
-                // Draw key letter
-                this.ctx.fillStyle = textColor;
-                this.ctx.font = 'bold 14px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(key, x + keyWidth / 2, y + keyHeight / 2);
-            });
-        });
+                for (let col = 0; col < this.wordLength; col++) {
+                    const x = gridStartX + col * (tileSize + gap) + rowOffsetX;
+                    const y = startY + row * (tileSize + gap);
+                    const letter = attempt[col] || '';
+                    
+                    let bgColor, borderColor, textColor;
+                    
+                    if (isSolved && row >= this.attempts.findIndex(a => a === targetWord)) {
+                        // Word is solved, show all green from solve row onwards
+                        if (row === this.attempts.findIndex(a => a === targetWord)) {
+                            bgColor = '#22c55e';
+                            borderColor = '#16a34a';
+                            textColor = '#ffffff';
+                        } else {
+                            bgColor = isDark ? '#1e293b' : '#ffffff';
+                            borderColor = isDark ? '#334155' : '#e2e8f0';
+                            textColor = isDark ? '#e2e8f0' : '#1e293b';
+                        }
+                    } else if (isCompletedRow) {
+                        const isRevealed = row < this.attempts.length - 1 || col <= this.revealIndex;
+                        
+                        if (isRevealed) {
+                            const status = this.getLetterStatus(letter, col, attempt, targetWord);
+                            
+                            if (status === 'correct') {
+                                bgColor = '#22c55e';
+                                borderColor = '#16a34a';
+                            } else if (status === 'present') {
+                                bgColor = '#eab308';
+                                borderColor = '#ca8a04';
+                            } else {
+                                bgColor = isDark ? '#475569' : '#94a3b8';
+                                borderColor = isDark ? '#334155' : '#64748b';
+                            }
+                            textColor = '#ffffff';
+                        } else {
+                            bgColor = isDark ? '#1e293b' : '#ffffff';
+                            borderColor = isDark ? '#475569' : '#cbd5e1';
+                            textColor = isDark ? '#e2e8f0' : '#1e293b';
+                        }
+                    } else if (isCurrentRow && letter) {
+                        bgColor = isDark ? '#1e293b' : '#ffffff';
+                        borderColor = isDark ? '#64748b' : '#94a3b8';
+                        textColor = isDark ? '#e2e8f0' : '#1e293b';
+                    } else {
+                        bgColor = isDark ? '#1e293b' : '#ffffff';
+                        borderColor = isDark ? '#334155' : '#e2e8f0';
+                        textColor = isDark ? '#e2e8f0' : '#1e293b';
+                    }
+                    
+                    this.ctx.fillStyle = bgColor;
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(x, y, tileSize, tileSize, 4);
+                    this.ctx.fill();
+                    
+                    this.ctx.strokeStyle = borderColor;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+                    
+                    if (letter) {
+                        this.ctx.fillStyle = textColor;
+                        this.ctx.font = 'bold 22px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.textBaseline = 'middle';
+                        this.ctx.fillText(letter, x + tileSize / 2, y + tileSize / 2 + 2);
+                    }
+                }
+            }
+        }
         
         // Draw helper text
         this.ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
         this.ctx.font = '11px Arial';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText('Use o teclado para digitar • ENTER para confirmar • BACKSPACE para apagar', this.canvas.width / 2, startY + 3 * (keyHeight + keyGap) + 15);
+        this.ctx.fillText('Use o teclado para digitar • ENTER para confirmar • BACKSPACE para apagar', this.canvas.width / 2, startY + gridHeight + 25);
+        
+        // Draw message
+        if (this.messageTimer > 0) {
+            const alpha = Math.min(1, this.messageTimer / 500);
+            this.ctx.fillStyle = `rgba(0, 0, 0, ${0.8 * alpha})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 120, startY + gridHeight / 2 - 20, 240, 40, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            this.ctx.font = 'bold 16px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(this.message, this.canvas.width / 2, startY + gridHeight / 2);
+        }
+        
+        // Game over / Won overlay
+        if (this.gameOver || this.won) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 28px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 40);
+            
+            this.ctx.font = '18px Arial';
+            if (this.won) {
+                this.ctx.fillText(`Você acertou em ${this.attempts.length} tentativas!`, this.canvas.width / 2, this.canvas.height / 2);
+            } else {
+                const unsolved = this.targetWords.filter((_, i) => !this.solvedWords[i]);
+                this.ctx.fillText(`Palavras: ${unsolved.join(', ')}`, this.canvas.width / 2, this.canvas.height / 2);
+            }
+            
+            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
+            
+            this.ctx.font = '14px Arial';
+            this.ctx.fillStyle = '#94a3b8';
+            this.ctx.fillText('Pressione ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 70);
+        }
     }
 
     updateScoreDisplay() {
         const scoreEl = document.getElementById('game-score');
         const infoEl = document.getElementById('game-phase');
         if (scoreEl) scoreEl.textContent = this.score;
-        if (infoEl) infoEl.textContent = `Tentativa ${Math.min(this.attempts.length + 1, this.maxAttempts)}/${this.maxAttempts}`;
+        const solved = this.solvedWords.filter(s => s).length;
+        if (infoEl) infoEl.textContent = `Tentativa ${Math.min(this.attempts.length + 1, this.maxAttempts)}/${this.maxAttempts} | ${solved}/${this.numWords}`;
+    }
+}
+
+class TermoQuartetGame {
+    constructor(canvas, onScore, manager) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.onScore = onScore;
+        this.manager = manager;
+        
+        this.canvas.width = 700;
+        this.canvas.height = 520;
+        
+        // Bicycle-themed 5-letter Portuguese words
+        this.words = [
+            'PEDAL', 'RODAS', 'SELIM', 'FREIO', 'RAIOS',
+            'PNEUS', 'GARFO', 'EIXOS', 'JANTE', 'GUIAO',
+            'CABOS', 'COROA', 'CICLO', 'LIGAS', 'MOLAS',
+            'TUBOS', 'LUVAS', 'PISTA', 'PEGAS', 'TITAN',
+            'FIBRA', 'FAROL', 'TROCA', 'MARCA', 'CARGA',
+            'VOLTS', 'RACER', 'RISCO', 'PECAS', 'SPORT',
+            'TURBO', 'LENTO', 'VELOZ', 'BANCO', 'SINAL',
+            'CURVA', 'RAMPA', 'SUBIR', 'DESCI', 'PASEO',
+            'URBAN', 'RURAL', 'ATIVA', 'LIDER', 'METAL',
+            'ROLAR', 'GIRAR', 'ANDAR', 'PARAR', 'BARRA'
+        ];
+        
+        this.numWords = 4;
+        this.maxAttempts = 9;
+        this.wordLength = 5;
+        this.running = false;
+        
+        this.reset();
+        this.setupControls();
+    }
+
+    reset() {
+        const shuffled = [...this.words].sort(() => Math.random() - 0.5);
+        this.targetWords = shuffled.slice(0, this.numWords).map(w => w.toUpperCase());
+        this.solvedWords = new Array(this.numWords).fill(false);
+        this.attempts = [];
+        this.currentAttempt = '';
+        this.gameOver = false;
+        this.won = false;
+        this.score = 0;
+        this.shake = false;
+        this.shakeTimer = 0;
+        this.revealIndex = -1;
+        this.message = '';
+        this.messageTimer = 0;
+        
+        this.updateScoreDisplay();
+    }
+
+    setupControls() {
+        this.keyHandler = (e) => {
+            if (this.gameOver || this.won) {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    this.reset();
+                    this.start();
+                }
+                return;
+            }
+
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                this.currentAttempt = this.currentAttempt.slice(0, -1);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                this.submitAttempt();
+            } else if (/^[a-zA-ZçÇ]$/.test(e.key) && this.currentAttempt.length < this.wordLength) {
+                let letter = e.key.toUpperCase();
+                letter = letter.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                if (letter === 'Ç') letter = 'C';
+                this.currentAttempt += letter;
+            }
+        };
+        
+        document.addEventListener('keydown', this.keyHandler);
+    }
+
+    submitAttempt() {
+        if (this.currentAttempt.length !== this.wordLength) {
+            this.showMessage('Palavra incompleta!');
+            this.shake = true;
+            this.shakeTimer = 300;
+            return;
+        }
+
+        const attempt = this.currentAttempt.toUpperCase();
+        this.attempts.push(attempt);
+        this.currentAttempt = '';
+        
+        for (let i = 0; i < this.numWords; i++) {
+            if (!this.solvedWords[i] && attempt === this.targetWords[i]) {
+                this.solvedWords[i] = true;
+            }
+        }
+        
+        this.revealIndex = 0;
+        this.revealTimer = setInterval(() => {
+            this.revealIndex++;
+            if (this.revealIndex >= this.wordLength) {
+                clearInterval(this.revealTimer);
+                this.checkGameEnd();
+            }
+        }, 80);
+    }
+
+    checkGameEnd() {
+        const allSolved = this.solvedWords.every(s => s);
+        
+        if (allSolved) {
+            this.won = true;
+            const baseScore = 4000;
+            const attemptBonus = (this.maxAttempts - this.attempts.length + 1) * 400;
+            this.score = baseScore + attemptBonus;
+            this.onScore(this.score);
+            this.showMessage('Parabéns! 🎉');
+        } else if (this.attempts.length >= this.maxAttempts) {
+            this.gameOver = true;
+            this.score = 0;
+            this.onScore(this.score);
+            const unsolved = this.targetWords.filter((_, i) => !this.solvedWords[i]);
+            this.showMessage(`Faltou: ${unsolved.slice(0, 2).join(', ')}...`);
+        }
+        
+        this.updateScoreDisplay();
+    }
+
+    showMessage(msg) {
+        this.message = msg;
+        this.messageTimer = 2000;
+    }
+
+    start() {
+        if (this.running) return;
+        this.running = true;
+        this.lastUpdate = Date.now();
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
+    }
+
+    stop() {
+        this.running = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        if (this.revealTimer) {
+            clearInterval(this.revealTimer);
+        }
+        document.removeEventListener('keydown', this.keyHandler);
+    }
+
+    gameLoop() {
+        if (!this.running) return;
+
+        const now = Date.now();
+        const delta = now - this.lastUpdate;
+        
+        if (this.shake) {
+            this.shakeTimer -= delta;
+            if (this.shakeTimer <= 0) this.shake = false;
+        }
+        
+        if (this.messageTimer > 0) this.messageTimer -= delta;
+        
+        this.draw();
+        this.lastUpdate = now;
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
+    }
+
+    getLetterStatus(letter, index, attempt, targetWord) {
+        if (targetWord[index] === letter) {
+            return 'correct';
+        } else if (targetWord.includes(letter)) {
+            let letterCount = 0;
+            let matchedCount = 0;
+            
+            for (let i = 0; i < targetWord.length; i++) {
+                if (targetWord[i] === letter) letterCount++;
+            }
+            
+            for (let i = 0; i < attempt.length; i++) {
+                if (attempt[i] === letter && targetWord[i] === letter) {
+                    matchedCount++;
+                }
+            }
+            
+            let wrongSpotCount = 0;
+            for (let i = 0; i < index; i++) {
+                if (attempt[i] === letter && targetWord[i] !== letter && targetWord.includes(letter)) {
+                    wrongSpotCount++;
+                }
+            }
+            
+            if (wrongSpotCount < letterCount - matchedCount) {
+                return 'present';
+            }
+        }
+        
+        return 'absent';
+    }
+
+    draw() {
+        const isDark = document.documentElement.classList.contains('dark');
+        
+        // Background
+        this.ctx.fillStyle = isDark ? '#0f172a' : '#f1f5f9';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Title
+        this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
+        this.ctx.font = 'bold 22px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('TERMO QUARTETO', this.canvas.width / 2, 30);
+        
+        // Subtitle
+        this.ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+        this.ctx.font = '11px Arial';
+        this.ctx.fillText('Adivinhe 4 palavras ao mesmo tempo!', this.canvas.width / 2, 48);
+        
+        // Grid settings - 2x2 layout
+        const tileSize = 38;
+        const gap = 4;
+        const gridWidth = this.wordLength * tileSize + (this.wordLength - 1) * gap;
+        const gridHeight = this.maxAttempts * tileSize + (this.maxAttempts - 1) * gap;
+        const gridSpacingX = 25;
+        const gridSpacingY = 20;
+        const totalWidth = 2 * gridWidth + gridSpacingX;
+        const startX = (this.canvas.width - totalWidth) / 2;
+        const startY = 60;
+        
+        // Draw grids in 2x2 layout
+        for (let wordIdx = 0; wordIdx < this.numWords; wordIdx++) {
+            const gridCol = wordIdx % 2;
+            const gridRow = Math.floor(wordIdx / 2);
+            const gridStartX = startX + gridCol * (gridWidth + gridSpacingX);
+            const gridStartY = startY + gridRow * (gridHeight / 2 + gridSpacingY);
+            const targetWord = this.targetWords[wordIdx];
+            const isSolved = this.solvedWords[wordIdx];
+            
+            // Only show half the attempts per grid in 2x2 layout
+            const attemptsPerGrid = Math.ceil(this.maxAttempts / 2);
+            const rowOffset = gridRow * attemptsPerGrid;
+            
+            for (let row = 0; row < attemptsPerGrid; row++) {
+                const actualRow = row + rowOffset;
+                if (actualRow >= this.maxAttempts) continue;
+                
+                const isCurrentRow = actualRow === this.attempts.length && !this.gameOver && !this.won;
+                const isCompletedRow = actualRow < this.attempts.length;
+                const attempt = isCompletedRow ? this.attempts[actualRow] : (isCurrentRow ? this.currentAttempt : '');
+                
+                let rowOffsetX = 0;
+                if (isCurrentRow && this.shake) {
+                    rowOffsetX = Math.sin(Date.now() / 20) * 3;
+                }
+                
+                for (let col = 0; col < this.wordLength; col++) {
+                    const x = gridStartX + col * (tileSize + gap) + rowOffsetX;
+                    const y = gridStartY + row * (tileSize + gap);
+                    const letter = attempt[col] || '';
+                    
+                    let bgColor, borderColor, textColor;
+                    
+                    if (isSolved && actualRow >= this.attempts.findIndex(a => a === targetWord)) {
+                        if (actualRow === this.attempts.findIndex(a => a === targetWord)) {
+                            bgColor = '#22c55e';
+                            borderColor = '#16a34a';
+                            textColor = '#ffffff';
+                        } else {
+                            bgColor = isDark ? '#1e293b' : '#ffffff';
+                            borderColor = isDark ? '#334155' : '#e2e8f0';
+                            textColor = isDark ? '#e2e8f0' : '#1e293b';
+                        }
+                    } else if (isCompletedRow) {
+                        const isRevealed = actualRow < this.attempts.length - 1 || col <= this.revealIndex;
+                        
+                        if (isRevealed) {
+                            const status = this.getLetterStatus(letter, col, attempt, targetWord);
+                            
+                            if (status === 'correct') {
+                                bgColor = '#22c55e';
+                                borderColor = '#16a34a';
+                            } else if (status === 'present') {
+                                bgColor = '#eab308';
+                                borderColor = '#ca8a04';
+                            } else {
+                                bgColor = isDark ? '#475569' : '#94a3b8';
+                                borderColor = isDark ? '#334155' : '#64748b';
+                            }
+                            textColor = '#ffffff';
+                        } else {
+                            bgColor = isDark ? '#1e293b' : '#ffffff';
+                            borderColor = isDark ? '#475569' : '#cbd5e1';
+                            textColor = isDark ? '#e2e8f0' : '#1e293b';
+                        }
+                    } else if (isCurrentRow && letter) {
+                        bgColor = isDark ? '#1e293b' : '#ffffff';
+                        borderColor = isDark ? '#64748b' : '#94a3b8';
+                        textColor = isDark ? '#e2e8f0' : '#1e293b';
+                    } else {
+                        bgColor = isDark ? '#1e293b' : '#ffffff';
+                        borderColor = isDark ? '#334155' : '#e2e8f0';
+                        textColor = isDark ? '#e2e8f0' : '#1e293b';
+                    }
+                    
+                    this.ctx.fillStyle = bgColor;
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(x, y, tileSize, tileSize, 3);
+                    this.ctx.fill();
+                    
+                    this.ctx.strokeStyle = borderColor;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+                    
+                    if (letter) {
+                        this.ctx.fillStyle = textColor;
+                        this.ctx.font = 'bold 18px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.textBaseline = 'middle';
+                        this.ctx.fillText(letter, x + tileSize / 2, y + tileSize / 2 + 1);
+                    }
+                }
+            }
+            
+            // Draw solved indicator
+            if (isSolved) {
+                this.ctx.fillStyle = '#22c55e';
+                this.ctx.font = 'bold 12px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('✓', gridStartX + gridWidth + 8, gridStartY + attemptsPerGrid * (tileSize + gap) / 2);
+            }
+        }
+        
+        // Draw helper text at bottom
+        this.ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+        this.ctx.font = '10px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('Use o teclado para digitar • ENTER para confirmar • BACKSPACE para apagar', this.canvas.width / 2, this.canvas.height - 10);
+        
+        // Draw message
+        if (this.messageTimer > 0) {
+            const alpha = Math.min(1, this.messageTimer / 500);
+            this.ctx.fillStyle = `rgba(0, 0, 0, ${0.8 * alpha})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 120, this.canvas.height / 2 - 20, 240, 40, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            this.ctx.font = 'bold 14px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(this.message, this.canvas.width / 2, this.canvas.height / 2);
+        }
+        
+        // Game over / Won overlay
+        if (this.gameOver || this.won) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 26px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 50);
+            
+            this.ctx.font = '16px Arial';
+            if (this.won) {
+                this.ctx.fillText(`Você acertou em ${this.attempts.length} tentativas!`, this.canvas.width / 2, this.canvas.height / 2 - 10);
+            } else {
+                const unsolved = this.targetWords.filter((_, i) => !this.solvedWords[i]);
+                this.ctx.fillText(`Palavras: ${unsolved.join(', ')}`, this.canvas.width / 2, this.canvas.height / 2 - 10);
+            }
+            
+            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 20);
+            
+            this.ctx.font = '13px Arial';
+            this.ctx.fillStyle = '#94a3b8';
+            this.ctx.fillText('Pressione ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 60);
+        }
+    }
+
+    updateScoreDisplay() {
+        const scoreEl = document.getElementById('game-score');
+        const infoEl = document.getElementById('game-phase');
+        if (scoreEl) scoreEl.textContent = this.score;
+        const solved = this.solvedWords.filter(s => s).length;
+        if (infoEl) infoEl.textContent = `Tentativa ${Math.min(this.attempts.length + 1, this.maxAttempts)}/${this.maxAttempts} | ${solved}/${this.numWords}`;
     }
 }
 
