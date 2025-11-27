@@ -2,6 +2,7 @@ import { ClientesManager } from './cadastros/clientes.js';
 import { BicicletasManager } from './cadastros/bicicletas.js';
 import { RegistrosManager } from './registros/registros-diarios.js';
 import { ConfiguracaoManager } from './configuracao/configuracao.js';
+import { DadosManager } from './dados/dados.js';
 import { Storage } from './shared/storage.js';
 import { Debug } from './shared/debug.js';
 import { Auth } from './shared/auth.js';
@@ -21,9 +22,11 @@ class App {
         this.elements = {
             clientesTab: document.getElementById('clientes-tab'),
             registrosDiariosTab: document.getElementById('registros-diarios-tab'),
+            dadosTab: document.getElementById('dados-tab'),
             configuracaoTab: document.getElementById('configuracao-tab'),
             clientesTabContent: document.getElementById('clientes-tab-content'),
             registrosDiariosTabContent: document.getElementById('registros-diarios-tab-content'),
+            dadosTabContent: document.getElementById('dados-tab-content'),
             configuracaoTabContent: document.getElementById('configuracao-tab-content'),
         };
     }
@@ -50,6 +53,7 @@ class App {
         this.bicicletasManager = new BicicletasManager(this);
         this.registrosManager = new RegistrosManager(this);
         this.configuracaoManager = new ConfiguracaoManager(this);
+        this.dadosManager = new DadosManager(this);
         this.usuariosManager = Usuarios;
         
         this.clientesManager.renderClientList();
@@ -102,6 +106,11 @@ class App {
             registrosDiariosTab.classList.add('hidden');
         }
 
+        const dadosTab = document.getElementById('dados-tab');
+        if (dadosTab && !Auth.hasPermission('configuracao', 'ver')) {
+            dadosTab.classList.add('hidden');
+        }
+
         const configuracaoTab = document.getElementById('configuracao-tab');
         if (configuracaoTab && !Auth.hasPermission('configuracao', 'ver')) {
             configuracaoTab.classList.add('hidden');
@@ -127,13 +136,17 @@ class App {
         if (this.configuracaoManager) {
             this.configuracaoManager.applyPermissionsToUI();
         }
+        if (this.dadosManager) {
+            this.dadosManager.applyPermissionsToUI();
+        }
     }
 
     selectFirstVisibleTab() {
-        const tabs = ['clientes', 'registros-diarios', 'configuracao', 'usuarios'];
+        const tabs = ['clientes', 'registros-diarios', 'dados', 'configuracao', 'usuarios'];
         const permissions = {
             'clientes': () => Auth.hasPermission('clientes', 'ver'),
             'registros-diarios': () => Auth.hasPermission('registros', 'ver'),
+            'dados': () => Auth.hasPermission('configuracao', 'ver'),
             'configuracao': () => Auth.hasPermission('configuracao', 'ver'),
             'usuarios': () => Auth.hasPermission('configuracao', 'gerenciarUsuarios')
         };
@@ -154,6 +167,7 @@ class App {
     addEventListeners() {
         this.elements.clientesTab.addEventListener('click', () => this.switchTab('clientes'));
         this.elements.registrosDiariosTab.addEventListener('click', () => this.switchTab('registros-diarios'));
+        this.elements.dadosTab.addEventListener('click', () => this.switchTab('dados'));
         this.elements.configuracaoTab.addEventListener('click', () => this.switchTab('configuracao'));
         
         const usuariosTab = document.getElementById('usuarios-tab');
@@ -295,6 +309,7 @@ class App {
         const tabs = {
             clientes: { btn: this.elements.clientesTab, content: this.elements.clientesTabContent },
             'registros-diarios': { btn: this.elements.registrosDiariosTab, content: this.elements.registrosDiariosTabContent },
+            'dados': { btn: this.elements.dadosTab, content: this.elements.dadosTabContent },
             'configuracao': { btn: this.elements.configuracaoTab, content: this.elements.configuracaoTabContent },
             'usuarios': { btn: document.getElementById('usuarios-tab'), content: document.getElementById('usuarios-tab-content') },
         };
@@ -316,6 +331,8 @@ class App {
 
         if (tabName === 'registros-diarios') {
             this.registrosManager.renderDailyRecords();
+        } else if (tabName === 'dados') {
+            lucide.createIcons();
         } else if (tabName === 'usuarios') {
             this.usuariosManager.init();
         }

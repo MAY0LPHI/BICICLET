@@ -4,6 +4,14 @@
 O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicação web, com versão desktop executável, desenvolvida para gerenciar clientes, bicicletas e controlar o fluxo de entrada e saída em estacionamentos de bicicletas. O objetivo é otimizar as operações de bicicletários através de funcionalidades de cadastro, registro de movimentação, exportação de dados, sistema de auditoria completo e configurações personalizáveis, visando o mercado de lojas locais.
 
 ## Recent Changes
+- **27/11/2025**: New "Dados" (Data Management) tab created
+  - All import/export functionality moved from Configuration tab to new dedicated Dados tab
+  - Created new DadosManager module (js/dados/dados.js) for data management operations
+  - New tab includes: Import/Export by period, Full System Backup Export/Import
+  - Clean separation of concerns: Configuration tab now focuses on settings, Dados tab handles data
+  - Tab is permission-controlled (requires 'configuracao' permission to view)
+  - Updated app-modular.js to include new tab in navigation and initialization
+
 - **26/11/2025**: Fresh GitHub import setup completed on Replit
   - Python 3.12 module confirmed installed (already available in environment)
   - Workflow "Web Application" configured to execute `python3 server.py` on port 5000
@@ -103,7 +111,8 @@ O sistema adota uma arquitetura modular baseada em Vanilla JavaScript (ES6+ Modu
     -   **Cadastros**: Gerencia clientes e bicicletas (adição, busca, edição, validação de CPF, prevenção de duplicidade, cadastro múltiplo por cliente, histórico).
     -   **Registros Diários**: Controla registros de entrada/saída, "Pernoite", e edição de registros. Inclui coluna de categoria e estatísticas por categoria.
     -   **Usuários**: Gerenciamento de perfis de funcionários com permissões granulares e relatório completo de auditoria com filtros, exportação em CSV e PDF.
-    -   **Configuração**: Permite seleção de tema, busca avançada global, importação/exportação de dados completos do sistema (CSV, Excel) com mesclagem inteligente, exportação de registros de acesso por cliente (PDF, Excel) e visualização de histórico organizado de registros e estatísticas por categoria.
+    -   **Dados**: Gerenciamento centralizado de importação/exportação de dados (js/dados/dados.js). Inclui: importação de clientes por arquivo, exportação por período (Excel/CSV), backup completo do sistema (exportar/importar com mesclagem inteligente).
+    -   **Configuração**: Permite seleção de tema, busca avançada global, gerenciamento de categorias, exportação de registros de acesso por cliente (PDF, Excel) e visualização de histórico organizado de registros.
     -   **Shared**: Contém utilitários (formatação, validação de CPF, UUID), funções para gerenciamento e migração de dados, e sistema de auditoria (AuditLogger).
     -   **Sistema de Permissões**: Controle de acesso granular com perfis (dono, admin, funcionário) e proteção de UI e runtime.
     -   **Sistema de Comentários**: Modal unificada para adicionar e gerenciar comentários de clientes, sincronizada entre todas as abas.
