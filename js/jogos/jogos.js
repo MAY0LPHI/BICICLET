@@ -1270,13 +1270,15 @@ class DoomGame {
         const dx = enemy.x - this.player.x;
         const dy = enemy.y - this.player.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const stepX = dx / (dist * 20);
-        const stepY = dy / (dist * 20);
+        const RAY_STEPS_PER_UNIT = 20; // Number of ray steps per map unit for visibility check
+        const OBJECT_PROXIMITY_THRESHOLD = 0.3; // Distance threshold to consider reaching the object
+        const stepX = dx / (dist * RAY_STEPS_PER_UNIT);
+        const stepY = dy / (dist * RAY_STEPS_PER_UNIT);
         
         let x = this.player.x;
         let y = this.player.y;
         
-        for (let i = 0; i < dist * 20; i++) {
+        for (let i = 0; i < dist * RAY_STEPS_PER_UNIT; i++) {
             x += stepX;
             y += stepY;
             const mapX = Math.floor(x);
@@ -1288,7 +1290,7 @@ class DoomGame {
                 }
             }
             
-            if (Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2) < 0.3) {
+            if (Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2) < OBJECT_PROXIMITY_THRESHOLD) {
                 return true;
             }
         }
