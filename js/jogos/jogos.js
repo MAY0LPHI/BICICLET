@@ -998,12 +998,30 @@ class DoomGame {
 
     setupControls() {
         this.keyDownHandler = (e) => {
-            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') this.keys.w = true;
-            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') this.keys.s = true;
-            if (e.key === 'a' || e.key === 'A') this.keys.a = true;
-            if (e.key === 'd' || e.key === 'D') this.keys.d = true;
-            if (e.key === 'ArrowLeft') this.keys.left = true;
-            if (e.key === 'ArrowRight') this.keys.right = true;
+            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.keys.w = true;
+            }
+            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                this.keys.s = true;
+            }
+            if (e.key === 'a' || e.key === 'A') {
+                e.preventDefault();
+                this.keys.a = true;
+            }
+            if (e.key === 'd' || e.key === 'D') {
+                e.preventDefault();
+                this.keys.d = true;
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.keys.left = true;
+            }
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.keys.right = true;
+            }
             if (e.key === ' ') {
                 e.preventDefault();
                 if (this.gameOver || this.won) {
@@ -1165,7 +1183,7 @@ class DoomGame {
             let angle = Math.atan2(dy, dx) - this.player.angle;
             while (angle < -Math.PI) angle += Math.PI * 2;
             while (angle > Math.PI) angle -= Math.PI * 2;
-            if (Math.abs(angle) < fov / 2 + 0.2) {
+            if (Math.abs(angle) < fov / 2 + 0.2 && this.isEnemyVisible(enemy)) {
                 const screenX = this.canvas.width / 2 + (angle / (fov / 2)) * (this.canvas.width / 2);
                 const size = Math.min(200, (this.canvas.height / dist) * 0.6);
                 const screenY = (this.canvas.height - size) / 2;
@@ -1191,7 +1209,7 @@ class DoomGame {
             let angle = Math.atan2(dy, dx) - this.player.angle;
             while (angle < -Math.PI) angle += Math.PI * 2;
             while (angle > Math.PI) angle -= Math.PI * 2;
-            if (Math.abs(angle) < fov / 2) {
+            if (Math.abs(angle) < fov / 2 && this.isEnemyVisible(pickup)) {
                 const screenX = this.canvas.width / 2 + (angle / (fov / 2)) * (this.canvas.width / 2);
                 const size = Math.min(50, (30 / dist));
                 this.ctx.fillStyle = pickup.type === 'health' ? '#22c55e' : '#3b82f6';
@@ -1246,6 +1264,35 @@ class DoomGame {
             }
         }
         return { distance: 0, side: false };
+    }
+
+    isEnemyVisible(enemy) {
+        const dx = enemy.x - this.player.x;
+        const dy = enemy.y - this.player.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const stepX = dx / (dist * 20);
+        const stepY = dy / (dist * 20);
+        
+        let x = this.player.x;
+        let y = this.player.y;
+        
+        for (let i = 0; i < dist * 20; i++) {
+            x += stepX;
+            y += stepY;
+            const mapX = Math.floor(x);
+            const mapY = Math.floor(y);
+            
+            if (mapY >= 0 && mapY < this.map.length && mapX >= 0 && mapX < this.map[0].length) {
+                if (this.map[mapY][mapX] === 1) {
+                    return false;
+                }
+            }
+            
+            if (Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2) < 0.3) {
+                return true;
+            }
+        }
+        return true;
     }
 
     drawHUD() {
