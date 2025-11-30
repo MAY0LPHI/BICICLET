@@ -3,6 +3,29 @@
 ## Overview
 O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicação web, com versão desktop executável, desenvolvida para gerenciar clientes, bicicletas e controlar o fluxo de entrada e saída em estacionamentos de bicicletas. O objetivo é otimizar as operações de bicicletários através de funcionalidades de cadastro, registro de movimentação, exportação de dados, sistema de auditoria completo e configurações personalizáveis, visando o mercado de lojas locais. O projeto inclui um sistema de ranking global para jogos e um robusto sistema de permissões de usuário.
 
+## Replit Setup (30/11/2025)
+- **Environment**: Python 3.11 installed for web server
+- **Workflow**: Configured to run `python3 server.py` on port 5000 with webview output
+- **Deployment**: Set to autoscale deployment target for production
+- **Server Configuration**:
+  - Main web server: `http://0.0.0.0:5000/` (serves the frontend)
+  - Storage API: `http://localhost:5001/` (handles file-based storage)
+  - Data storage path: `dados/navegador/` for web version
+- **Access**: Click the "Run" button to start the server, then access via the webview
+- **Default Credentials**: 
+  - Admin: `admin` / `admin123`
+  - Dono (Owner): `CELO123` / `CELO123`
+
+## Desktop Version (Electron)
+- **Setup**: Run `npm install` to install Electron dependencies
+- **Run**: Execute `npm start` to launch the desktop application
+- **Build**: Run `npm run build` to compile executable for Windows
+- **Data Storage**: Desktop version saves data in `dados/desktop/` folder
+- **Features**: 
+  - Standalone executable application
+  - Local file-based storage (no server required)
+  - Full offline functionality
+
 ## Recent Changes (29/11/2025)
 - **Clickable Category Stats:** Adicionada funcionalidade para clicar nas estatísticas de categorias em Configuração > Gerenciar Categorias. Ao clicar em uma categoria, abre um modal mostrando todos os clientes daquela categoria com botão de editar (lápis) ao lado de cada um.
 - **Client ID Normalization:** Adicionada normalização automática de IDs de clientes para garantir que todos os registros tenham um identificador único.
