@@ -247,7 +247,7 @@ export class ConfiguracaoManager {
                     const iconName = this.getIconForEmoji(emoji);
                     const percentual = totalClientes > 0 ? ((count / totalClientes) * 100).toFixed(1) : '0.0';
                     return `
-                        <div class="flex items-center justify-between">
+                        <div class="categoria-stats-row flex items-center justify-between p-2 -mx-2 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors" data-categoria="${nome}">
                             <div class="flex items-center gap-2">
                                 <i data-lucide="${iconName}" class="w-4 h-4 text-slate-700 dark:text-slate-300"></i>
                                 <span class="text-sm font-medium text-slate-700 dark:text-slate-300">${nome}</span>
@@ -263,7 +263,7 @@ export class ConfiguracaoManager {
 
             const semCategoriaPercentual = totalClientes > 0 ? ((semCategoria / totalClientes) * 100).toFixed(1) : '0.0';
             semCategoriaHTML = `
-                <div class="flex items-center justify-between pt-2 mt-2 border-t border-slate-300 dark:border-slate-600">
+                <div class="categoria-stats-row flex items-center justify-between p-2 -mx-2 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors pt-2 mt-2 border-t border-slate-300 dark:border-slate-600" data-categoria="">
                     <div class="flex items-center gap-2">
                         <i data-lucide="settings" class="w-4 h-4 text-slate-700 dark:text-slate-300"></i>
                         <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Sem categoria</span>
@@ -276,7 +276,7 @@ export class ConfiguracaoManager {
             `;
         } else {
             semCategoriaHTML = `
-                <div class="flex items-center justify-between">
+                <div class="categoria-stats-row flex items-center justify-between p-2 -mx-2 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors" data-categoria="">
                     <div class="flex items-center gap-2">
                         <i data-lucide="settings" class="w-4 h-4 text-slate-700 dark:text-slate-300"></i>
                         <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Sem categoria</span>
@@ -297,6 +297,101 @@ export class ConfiguracaoManager {
         `;
         
         lucide.createIcons();
+
+        statsContainer.querySelectorAll('.categoria-stats-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const categoria = row.dataset.categoria;
+                this.showClientsByCategory(categoria);
+            });
+        });
+    }
+
+    showClientsByCategory(categoria) {
+        const clientes = Storage.loadClientsSync();
+        const categorias = Storage.loadCategorias();
+        
+        const clientesFiltrados = clientes.filter(cliente => {
+            const clienteCategoria = cliente.categoria || '';
+            if (categoria === '') {
+                return !clienteCategoria || !(clienteCategoria in categorias);
+            }
+            return clienteCategoria === categoria;
+        });
+
+        const titulo = categoria ? `Clientes: ${categoria}` : 'Clientes: Sem Categoria';
+        const iconName = categoria ? this.getIconForEmoji(categorias[categoria]) : 'settings';
+        
+        let listaHTML = '';
+        
+        if (clientesFiltrados.length === 0) {
+            listaHTML = `
+                <div class="text-center py-8 text-slate-500 dark:text-slate-400">
+                    <i data-lucide="users" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                    <p>Nenhum cliente nesta categoria</p>
+                </div>
+            `;
+        } else {
+            listaHTML = `
+                <div class="space-y-2 max-h-[400px] overflow-y-auto">
+                    ${clientesFiltrados.map(cliente => `
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">${cliente.nome}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">${Utils.formatCPF(cliente.cpf)} • ${Utils.formatTelefone(cliente.telefone)}</p>
+                            </div>
+                            <button class="edit-client-categoria-btn p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" data-client-id="${cliente.id}" title="Editar cliente">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        const content = `
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                        <i data-lucide="${iconName}" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-lg font-semibold text-slate-800 dark:text-slate-200">${categoria || 'Sem Categoria'}</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">${clientesFiltrados.length} cliente${clientesFiltrados.length !== 1 ? 's' : ''}</p>
+                    </div>
+                </div>
+                ${listaHTML}
+                <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <button type="button" id="close-clients-categoria-btn" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg transition-colors">Fechar</button>
+                </div>
+            </div>
+        `;
+
+        Modals.show(titulo, content);
+
+        const self = this;
+        setTimeout(() => {
+            lucide.createIcons();
+
+            document.querySelectorAll('.edit-client-categoria-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const clientId = btn.getAttribute('data-client-id');
+                    if (!clientId) return;
+                    
+                    Modals.close();
+                    setTimeout(() => {
+                        if (self.app && self.app.clientesManager) {
+                            self.app.clientesManager.openEditClientModal(clientId);
+                        }
+                    }, 350);
+                });
+            });
+
+            const closeBtn = document.getElementById('close-clients-categoria-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => Modals.close());
+            }
+        }, 50);
     }
 
     addCategoria() {

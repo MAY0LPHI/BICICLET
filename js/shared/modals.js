@@ -131,6 +131,14 @@ export const Modals = {
                 modal.querySelector('.modal-content').classList.add('scale-100');
             }, 10);
         });
+    },
+
+    confirm(message, title = 'Confirmação', onConfirm) {
+        this.showConfirm(message, title).then((confirmed) => {
+            if (confirmed && typeof onConfirm === 'function') {
+                onConfirm();
+            }
+        });
     }
 };
 

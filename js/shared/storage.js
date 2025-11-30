@@ -1,4 +1,5 @@
 import { FileStorage } from './file-storage.js';
+import { Utils } from './utils.js';
 
 const isElectron = typeof window !== 'undefined' && window.electron;
 
@@ -20,6 +21,17 @@ async function checkFileStorage() {
 
 checkFileStorage();
 
+function normalizeClients(clients) {
+    let needsSave = false;
+    clients.forEach(client => {
+        if (!client.id) {
+            client.id = Utils.generateUUID();
+            needsSave = true;
+        }
+    });
+    return { clients, needsSave };
+}
+
 export const Storage = {
     async saveClients(clients) {
         if (isElectron) {
@@ -39,21 +51,32 @@ export const Storage = {
     },
 
     async loadClients() {
+        let clients = [];
+        
         if (isElectron) {
-            return await window.electron.loadClients();
+            clients = await window.electron.loadClients();
         } else {
             if (fileStorageAvailable) {
                 try {
-                    const clients = await FileStorage.loadAllClients();
+                    clients = await FileStorage.loadAllClients();
                     localStorage.setItem('bicicletario_clients', JSON.stringify(clients));
-                    return clients;
                 } catch (error) {
                     console.warn('Erro ao carregar clientes de arquivo:', error);
+                    const data = localStorage.getItem('bicicletario_clients');
+                    clients = data ? JSON.parse(data) : [];
                 }
+            } else {
+                const data = localStorage.getItem('bicicletario_clients');
+                clients = data ? JSON.parse(data) : [];
             }
-            const data = localStorage.getItem('bicicletario_clients');
-            return data ? JSON.parse(data) : [];
         }
+        
+        const { clients: normalizedClients, needsSave } = normalizeClients(clients);
+        if (needsSave) {
+            await this.saveClients(normalizedClients);
+        }
+        
+        return normalizedClients;
     },
 
     async saveClient(client) {
@@ -91,7 +114,16 @@ export const Storage = {
 
     loadClientsSync() {
         const data = localStorage.getItem('bicicletario_clients');
-        return data ? JSON.parse(data) : [];
+        if (!data) return [];
+        
+        const clients = JSON.parse(data);
+        const { clients: normalizedClients, needsSave } = normalizeClients(clients);
+        
+        if (needsSave) {
+            localStorage.setItem('bicicletario_clients', JSON.stringify(normalizedClients));
+        }
+        
+        return normalizedClients;
     },
 
     async deleteClient(cpf) {

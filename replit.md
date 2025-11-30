@@ -3,6 +3,11 @@
 ## Overview
 O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicação web, com versão desktop executável, desenvolvida para gerenciar clientes, bicicletas e controlar o fluxo de entrada e saída em estacionamentos de bicicletas. O objetivo é otimizar as operações de bicicletários através de funcionalidades de cadastro, registro de movimentação, exportação de dados, sistema de auditoria completo e configurações personalizáveis, visando o mercado de lojas locais. O projeto inclui um sistema de ranking global para jogos e um robusto sistema de permissões de usuário.
 
+## Recent Changes (29/11/2025)
+- **Clickable Category Stats:** Adicionada funcionalidade para clicar nas estatísticas de categorias em Configuração > Gerenciar Categorias. Ao clicar em uma categoria, abre um modal mostrando todos os clientes daquela categoria com botão de editar (lápis) ao lado de cada um.
+- **Client ID Normalization:** Adicionada normalização automática de IDs de clientes para garantir que todos os registros tenham um identificador único.
+- **Category Removal Fix:** Corrigido bug na função de remover categoria em Configuração > Gerenciar Categorias. Adicionado método `Modals.confirm()` que faltava no módulo de modais.
+
 ## Recent Changes (27/11/2025)
 - **Typing Game Redesign (MonkeyType Style):**
   - Nova interface minimalista escura inspirada no MonkeyType

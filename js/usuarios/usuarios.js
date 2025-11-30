@@ -321,6 +321,21 @@ export class Usuarios {
                                 </label>
                             </div>
                         </div>
+                        
+                        <!-- Jogos -->
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center">
+                                <i data-lucide="gamepad-2" class="w-4 h-4 mr-2"></i>
+                                Jogos
+                            </p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="perm-jogos-ver" checked class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                    <span>Ver</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -379,6 +394,9 @@ export class Usuarios {
                     ver: document.getElementById('perm-configuracao-ver').checked,
                     gerenciarUsuarios: document.getElementById('perm-configuracao-gerenciarUsuarios').checked,
                     buscaAvancada: document.getElementById('perm-configuracao-buscaAvancada').checked
+                },
+                jogos: {
+                    ver: document.getElementById('perm-jogos-ver').checked
                 }
             }
         };
@@ -557,6 +575,21 @@ export class Usuarios {
                                 </label>
                             </div>
                         </div>
+                        
+                        <!-- Jogos -->
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center">
+                                <i data-lucide="gamepad-2" class="w-4 h-4 mr-2"></i>
+                                Jogos
+                            </p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-jogos-ver" ${user.permissoes.jogos?.ver ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                    <span>Ver</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -615,6 +648,9 @@ export class Usuarios {
                     ver: document.getElementById('edit-perm-configuracao-ver').checked,
                     gerenciarUsuarios: document.getElementById('edit-perm-configuracao-gerenciarUsuarios').checked,
                     buscaAvancada: document.getElementById('edit-perm-configuracao-buscaAvancada').checked
+                },
+                jogos: {
+                    ver: document.getElementById('edit-perm-jogos-ver').checked
                 }
             }
         };
