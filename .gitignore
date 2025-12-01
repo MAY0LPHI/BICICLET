@@ -26,3 +26,19 @@ npm-debug.log*
 # Temporary files
 *.tmp
 *.temp
+
+# Android/Capacitor
+android/.gradle/
+android/app/build/
+android/build/
+android/captures/
+android/*.iml
+android/local.properties
+
+# Keystore (keep private!)
+*.keystore
+*.jks
+keystore.properties
+
+# Capacitor generated (can be regenerated)
+# android/  # Uncomment to ignore entire android folder
