@@ -1,9 +1,18 @@
 <html lang="pt-BR" class="dark"><head><style data-merge-styles="true"></style>
     <style data-merge-styles="true"></style><style data-merge-styles="true"></style><style data-merge-styles="true"></style><style data-merge-styles="true"></style><style data-merge-styles="true"></style><meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Sistema de Gerenciamento de Bicicletário</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="shortcut icon" type="image/svg+xml" href="favicon.svg">
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bicicletário">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.svg">
+    <!-- Platform Detection -->
+    <script src="js/shared/platform.js"></script>
     <script>
         tailwind = window.tailwind || {};
         tailwind.config = { darkMode: 'class' };
@@ -1069,6 +1078,17 @@
             window.registroCategoriaDropdown = new CustomDropdown('registro-categoria-dropdown', 'registro-categoria');
             window.editClientCategoriaDropdown = new CustomDropdown('edit-client-categoria-dropdown', 'edit-client-categoria');
             window.editRegistroCategoriaDropdown = new CustomDropdown('edit-registro-categoria-dropdown', 'edit-registro-categoria');
+            
+            // Register Service Worker for PWA
+            if ('serviceWorker' in navigator && window.APP_PLATFORM === 'web') {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('[PWA] Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.error('[PWA] Service Worker registration failed:', error);
+                    });
+            }
         });
     </script>
 

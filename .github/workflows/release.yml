@@ -1,0 +1,137 @@
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-desktop-release:
+    name: Build Desktop Release (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Electron app for release
+        run: npm run build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Desktop Release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows-release
+          path: dist/*.exe
+          retention-days: 30
+
+  build-mobile-release:
+    name: Build Mobile Release (Android)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Initialize Capacitor (if needed)
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap init "Gestão de Bicicletário" com.bicicletario.app --web-dir=.
+            npx cap add android
+          fi
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build Android Release APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Build Android AAB (App Bundle)
+        run: |
+          cd android
+          ./gradlew bundleRelease
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      - name: Upload Android AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-desktop-release, build-mobile-release]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Desktop artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: desktop-windows-release
+          path: release-assets/desktop
+
+      - name: Download Android APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-apk
+          path: release-assets/android-apk
+
+      - name: Download Android AAB artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-aab
+          path: release-assets/android-aab
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-assets/desktop/*
+            release-assets/android-apk/*
+            release-assets/android-aab/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

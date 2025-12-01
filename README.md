@@ -2,6 +2,8 @@
 
 **Sistema completo para gestão de estacionamento de bicicletas** | Versão 3.0
 
+[![CI](https://github.com/MAY0LPHI/BICICLETARIO/actions/workflows/ci.yml/badge.svg)](https://github.com/MAY0LPHI/BICICLETARIO/actions/workflows/ci.yml)
+[![Release](https://github.com/MAY0LPHI/BICICLETARIO/actions/workflows/release.yml/badge.svg)](https://github.com/MAY0LPHI/BICICLETARIO/actions/workflows/release.yml)
 [![Replit](https://img.shields.io/badge/Executar-Replit-blue)](https://replit.com)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -22,6 +24,8 @@ Sistema web profissional para gerenciamento de bicicletários, desenvolvido para
 - ✅ **Tema Claro/Escuro** - Interface responsiva e moderna
 - ✅ **Categorias Personalizadas** - Organize clientes por tipo de serviço
 - ✅ **Sistema de Pernoite** - Controle especial para bikes que ficam durante a noite
+- ✅ **Versão Mobile (Android)** - Aplicativo nativo via Capacitor
+- ✅ **PWA** - Instalável como aplicativo no navegador
 
 ---
 
@@ -123,9 +127,14 @@ bicicletario/
 - **[BUILD-WINDOWS.md](docs/BUILD-WINDOWS.md)** - Compilar para Windows
 - **[DESKTOP-TROUBLESHOOTING.md](docs/DESKTOP-TROUBLESHOOTING.md)** - Soluções de problemas
 
+### 📱 Versão Mobile
+
+- **[MOBILE-APP.md](docs/MOBILE-APP.md)** - Guia completo para build Android
+- **[CI-CD.md](docs/CI-CD.md)** - Documentação de CI/CD com GitHub Actions
+
 ### 🗄️ Armazenamento de Dados
 
-O sistema possui **duas estratégias de armazenamento**:
+O sistema possui **três estratégias de armazenamento**:
 
 1. **Versão Web (Replit)**:
    - Armazena em `dados/navegador/` (via API Python)
@@ -133,6 +142,10 @@ O sistema possui **duas estratégias de armazenamento**:
 
 2. **Versão Desktop (Electron)**:
    - Armazena em `dados/desktop/` (arquivos JSON locais)
+
+3. **Versão Mobile (Capacitor)**:
+   - Armazena via Capacitor Storage API
+   - Suporte offline nativo
 
 ---
 
@@ -144,7 +157,9 @@ O sistema possui **duas estratégias de armazenamento**:
 - **Backend**: Python 3.12 (HTTP Server)
 - **Planilhas**: SheetJS (xlsx)
 - **Desktop**: Electron + Electron Builder
+- **Mobile**: Capacitor 5.x
 - **Armazenamento**: LocalStorage + File System (JSON)
+- **CI/CD**: GitHub Actions
 
 ---
 
