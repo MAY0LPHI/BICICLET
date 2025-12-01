@@ -1079,8 +1079,12 @@
             window.editClientCategoriaDropdown = new CustomDropdown('edit-client-categoria-dropdown', 'edit-client-categoria');
             window.editRegistroCategoriaDropdown = new CustomDropdown('edit-registro-categoria-dropdown', 'edit-registro-categoria');
             
-            // Register Service Worker for PWA
-            if ('serviceWorker' in navigator && window.APP_PLATFORM === 'web') {
+            // Register Service Worker for PWA (only on web platform)
+            // Check if platform.js has loaded and we're on web, or if platform detection is not available
+            const platform = window.APP_PLATFORM || 'web';
+            const isNativePlatform = platform === 'electron' || platform === 'android' || platform === 'ios';
+            
+            if ('serviceWorker' in navigator && !isNativePlatform) {
                 navigator.serviceWorker.register('/sw.js')
                     .then((registration) => {
                         console.log('[PWA] Service Worker registered with scope:', registration.scope);

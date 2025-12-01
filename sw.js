@@ -122,7 +122,8 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // Network failed and no cache available
             // Return offline fallback for HTML requests
-            if (request.headers.get('accept').includes('text/html')) {
+            const acceptHeader = request.headers.get('accept');
+            if (acceptHeader && acceptHeader.includes('text/html')) {
               return caches.match('/index.html');
             }
             return new Response('Offline', { status: 503 });
