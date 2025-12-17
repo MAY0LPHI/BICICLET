@@ -24,6 +24,19 @@ export class ConfiguracaoManager {
         '☕': 'coffee'
     };
 
+    sanitizeCategory(value) {
+        if (typeof value !== 'string') return value;
+        let sanitized = value.trim();
+        sanitized = sanitized.replace(/^["']+|["']+$/g, '');
+        sanitized = sanitized.replace(/["']/g, '');
+        return sanitized.trim();
+    }
+
+    escapeHtmlAttr(str) {
+        if (typeof str !== 'string') return str;
+        return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
     constructor(app) {
         this.app = app;
         this.elements = {
@@ -53,11 +66,68 @@ export class ConfiguracaoManager {
     }
 
     init() {
+        this.cleanupCategoriesWithQuotes();
         this.addEventListeners();
         this.setupSystemThemeListener();
         this.loadThemePreference();
         this.renderHistoricoOrganizado();
         this.renderCategorias();
+    }
+
+    cleanupCategoriesWithQuotes() {
+        const categorias = Storage.loadCategorias();
+        const clientes = Storage.loadClientsSync();
+        let categoriasChanged = false;
+        let clientesChanged = false;
+        
+        const newCategorias = {};
+        Object.entries(categorias).forEach(([nome, emoji]) => {
+            const cleanName = this.sanitizeCategory(nome);
+            if (cleanName && cleanName !== nome) {
+                newCategorias[cleanName] = emoji;
+                categoriasChanged = true;
+            } else if (cleanName) {
+                newCategorias[cleanName] = emoji;
+            }
+        });
+        
+        if (categoriasChanged) {
+            Storage.saveCategorias(newCategorias);
+        }
+        
+        const updatedClientes = clientes.map(cliente => {
+            let updatedClient = { ...cliente };
+            let changed = false;
+            
+            if (cliente.nome) {
+                const cleanNome = this.sanitizeCategory(cliente.nome);
+                if (cleanNome !== cliente.nome) {
+                    updatedClient.nome = cleanNome;
+                    changed = true;
+                }
+            }
+            
+            if (cliente.categoria) {
+                const cleanCategoria = this.sanitizeCategory(cliente.categoria);
+                if (cleanCategoria !== cliente.categoria) {
+                    updatedClient.categoria = cleanCategoria;
+                    changed = true;
+                }
+            }
+            
+            if (changed) {
+                clientesChanged = true;
+                return updatedClient;
+            }
+            return cliente;
+        });
+        
+        if (clientesChanged) {
+            Storage.saveClients(updatedClientes);
+            if (this.app && this.app.data) {
+                this.app.data.clients = updatedClientes;
+            }
+        }
     }
 
     loadThemePreference() {
@@ -162,6 +232,7 @@ export class ConfiguracaoManager {
 
         categoriasList.innerHTML = Object.entries(categorias).map(([nome, emoji]) => {
             const iconName = this.getIconForEmoji(emoji);
+            const escapedNome = this.escapeHtmlAttr(nome);
             return `
             <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
                 <div class="flex items-center gap-2">
@@ -169,10 +240,10 @@ export class ConfiguracaoManager {
                     <span class="text-sm font-medium text-slate-800 dark:text-slate-200">${nome}</span>
                 </div>
                 <div class="flex gap-2">
-                    <button class="edit-categoria-btn text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" data-categoria="${nome}">
+                    <button class="edit-categoria-btn text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" data-categoria="${escapedNome}">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
                     </button>
-                    <button class="delete-categoria-btn text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors" data-categoria="${nome}">
+                    <button class="delete-categoria-btn text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-blue-300 transition-colors" data-categoria="${escapedNome}">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -246,8 +317,9 @@ export class ConfiguracaoManager {
                     const emoji = categorias[nome];
                     const iconName = this.getIconForEmoji(emoji);
                     const percentual = totalClientes > 0 ? ((count / totalClientes) * 100).toFixed(1) : '0.0';
+                    const escapedNome = this.escapeHtmlAttr(nome);
                     return `
-                        <div class="categoria-stats-row flex items-center justify-between p-2 -mx-2 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors" data-categoria="${nome}">
+                        <div class="categoria-stats-row flex items-center justify-between p-2 -mx-2 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors" data-categoria="${escapedNome}">
                             <div class="flex items-center gap-2">
                                 <i data-lucide="${iconName}" class="w-4 h-4 text-slate-700 dark:text-slate-300"></i>
                                 <span class="text-sm font-medium text-slate-700 dark:text-slate-300">${nome}</span>
@@ -788,11 +860,13 @@ export class ConfiguracaoManager {
             }
 
             if (row.length >= 3 && row[0] && row[2]) {
-                const nome = String(row[0]).trim().toUpperCase();
+                const nomeRaw = String(row[0]).trim().toUpperCase();
+                const nome = this.sanitizeCategory(nomeRaw);
                 const telefoneRaw = String(row[1] || '').trim();
                 const telefone = telefoneRaw.replace(/\D/g, '');
                 const cpf = String(row[2]).replace(/\D/g, '');
-                const categoriaRaw = row.length >= 4 ? String(row[3] || '').trim().toUpperCase() : '';
+                const categoriaRawValue = row.length >= 4 ? String(row[3] || '').trim().toUpperCase() : '';
+                const categoriaRaw = this.sanitizeCategory(categoriaRawValue);
                 
                 let categoria = '';
                 if (categoriaRaw) {

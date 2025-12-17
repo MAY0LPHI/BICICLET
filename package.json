@@ -1,36 +1,20 @@
 {
   "name": "bicicletario-desktop",
   "version": "2.2.0",
-  "description": "Sistema de Gerenciamento de Bicicletário - Versão Desktop e Mobile",
+  "description": "Sistema de Gerenciamento de Bicicletário - Versão Desktop",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win --x64",
-    "build:dir": "electron-builder --win --x64 --dir",
-    "cap:init": "npx cap init 'Gestão de Bicicletário' com.bicicletario.app --web-dir=.",
-    "cap:add:android": "npx cap add android",
-    "cap:sync": "npx cap sync",
-    "cap:open:android": "npx cap open android",
-    "build:android": "npx cap sync android && cd android && ./gradlew assembleDebug",
-    "build:android:release": "npx cap sync android && cd android && ./gradlew assembleRelease"
+    "build:dir": "electron-builder --win --x64 --dir"
   },
   "keywords": [
     "bicicletario",
     "gestao",
-    "desktop",
-    "mobile",
-    "pwa"
+    "desktop"
   ],
   "author": "BICICLETARIO SHOP. BOULEVARD V.V.",
   "license": "MIT",
-  "dependencies": {
-    "@capacitor/android": "^5.7.0",
-    "@capacitor/app": "^5.0.7",
-    "@capacitor/cli": "^5.7.0",
-    "@capacitor/core": "^5.7.0",
-    "@capacitor/splash-screen": "^5.0.7",
-    "@capacitor/status-bar": "^5.0.7"
-  },
   "devDependencies": {
     "electron": "^28.3.3",
     "electron-builder": "^24.13.3"
