@@ -165,15 +165,23 @@ export class JogosManager {
         if (!container) return;
 
         const games = [
-            { id: 'snake', name: 'Jogo da Cobrinha', icon: 'zap', description: 'Com 5 fases, obstáculos e power-ups!' },
-            { id: 'doom', name: 'Doom', icon: 'crosshair', description: '3 níveis em primeira pessoa com inimigos!' },
-            { id: 'typing', name: 'Teste de Digitação', icon: 'keyboard', description: 'Teste sua velocidade de digitação!' },
-            { id: 'memory', name: 'Jogo da Memória', icon: 'brain', description: '3 níveis de dificuldade com ícones de bicicleta!' },
-            { id: 'spaceinvaders', name: 'Invasores Espaciais', icon: 'rocket', description: 'Defenda a Terra dos invasores espaciais!' },
-            { id: 'breakout', name: 'Breakout', icon: 'square', description: '5 fases com power-ups e tijolos resistentes!' },
-            { id: 'termo', name: 'Termo', icon: 'type', description: 'Adivinhe a palavra de 5 letras!' },
-            { id: 'termo2', name: 'Termo Dueto', icon: 'columns', description: 'Adivinhe 2 palavras aleatórias ao mesmo tempo!' },
-            { id: 'termo4', name: 'Termo Quarteto', icon: 'layout-grid', description: 'Adivinhe 4 palavras aleatórias ao mesmo tempo!' }
+            { id: 'snake', name: 'Jogo da Cobrinha', icon: 'zap', description: 'Com 5 fases, obstáculos e power-ups!', category: 'acao' },
+            { id: 'doom', name: 'Doom', icon: 'crosshair', description: '3 níveis em primeira pessoa com inimigos!', category: 'acao' },
+            { id: 'spaceinvaders', name: 'Invasores Espaciais', icon: 'rocket', description: 'Defenda a Terra dos invasores espaciais!', category: 'acao' },
+            { id: 'breakout', name: 'Breakout', icon: 'square', description: '5 fases com power-ups e tijolos resistentes!', category: 'acao' },
+            { id: 'typing', name: 'Teste de Digitação', icon: 'keyboard', description: 'Teste sua velocidade de digitação!', category: 'palavras' },
+            { id: 'termo', name: 'Termo', icon: 'type', description: 'Adivinhe a palavra de 5 letras!', category: 'palavras' },
+            { id: 'termo2', name: 'Termo Dueto', icon: 'columns', description: 'Adivinhe 2 palavras ao mesmo tempo!', category: 'palavras' },
+            { id: 'termo4', name: 'Termo Quarteto', icon: 'layout-grid', description: 'Adivinhe 4 palavras de 4 letras!', category: 'palavras' },
+            { id: 'memory', name: 'Jogo da Memória', icon: 'brain', description: '3 níveis de dificuldade!', category: 'diversos' },
+            { id: 'wordsearch', name: 'Caça Palavras', icon: 'search', description: 'Encontre as palavras escondidas!', category: 'diversos' },
+            { id: 'crossword', name: 'Cruzadinha', icon: 'grid', description: 'Preencha as palavras cruzadas!', category: 'diversos' }
+        ];
+        
+        const categories = [
+            { id: 'acao', name: 'Jogos de Ação', icon: 'gamepad-2' },
+            { id: 'palavras', name: 'Jogos de Palavras', icon: 'text' },
+            { id: 'diversos', name: 'Jogos Diversos', icon: 'puzzle' }
         ];
 
         // Stats and Achievements Section
@@ -207,7 +215,7 @@ export class JogosManager {
             </div>
         `;
 
-        container.innerHTML = games.map(game => `
+        const renderGameCard = (game) => `
             <div class="game-card bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg hover:border-blue-400 dark:hover:border-blue-500 transition-all transform hover:-translate-y-1" data-game="${game.id}">
                 <div class="flex items-center justify-between mb-4">
                     <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -221,7 +229,24 @@ export class JogosManager {
                 <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">${game.name}</h3>
                 <p class="text-sm text-slate-500 dark:text-slate-400">${game.description}</p>
             </div>
-        `).join('') + statsHtml;
+        `;
+        
+        const gamesByCategory = categories.map(cat => {
+            const catGames = games.filter(g => g.category === cat.id);
+            return `
+                <div class="col-span-full">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+                        <i data-lucide="${cat.icon}" class="w-5 h-5 text-blue-500"></i>
+                        ${cat.name}
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+                        ${catGames.map(renderGameCard).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = gamesByCategory + statsHtml;
 
         lucide.createIcons();
         this.setupEventListeners();
@@ -345,7 +370,9 @@ export class JogosManager {
             breakout: { name: 'Breakout', class: BreakoutGame },
             termo: { name: 'Termo', class: TermoGame },
             termo2: { name: 'Termo Dueto', class: TermoDuoGame },
-            termo4: { name: 'Termo Quarteto', class: TermoQuartetGame }
+            termo4: { name: 'Termo Quarteto', class: TermoQuartetGame },
+            wordsearch: { name: 'Caça Palavras', class: WordSearchGame },
+            crossword: { name: 'Cruzadinha', class: CrosswordGame }
         };
 
         const game = games[gameId];
@@ -927,12 +954,14 @@ class DoomGame {
         this.ctx = canvas.getContext('2d');
         this.onScore = onScore;
         this.manager = manager;
-        this.canvas.width = 400;
-        this.canvas.height = 400;
+        this.canvas.width = 600;
+        this.canvas.height = 450;
         
-        this.player = { x: 2, y: 2, angle: 0, health: 100, ammo: 50 };
+        this.player = { x: 1.5, y: 1.5, angle: 0, health: 100, ammo: 50 };
         this.moveSpeed = 0.08;
         this.rotSpeed = 0.05;
+        this.mouseSensitivity = 0.003;
+        this.isPointerLocked = false;
         
         this.level = 1;
         this.maxLevel = 3;
@@ -961,7 +990,7 @@ class DoomGame {
 
     reset() {
         this.map = this.maps[this.level - 1].map(row => [...row]);
-        this.player = { x: 2, y: 2, angle: 0, health: 100, ammo: 50 };
+        this.player = { x: 1.5, y: 1.5, angle: 0, health: 100, ammo: 50 };
         this.score = this.score || 0;
         this.kills = 0;
         this.gameOver = false;
@@ -1043,8 +1072,31 @@ class DoomGame {
             if (e.key === 'ArrowRight') this.keys.right = false;
             if (e.key === ' ') this.keys.shoot = false;
         };
+        
+        this.mouseMoveHandler = (e) => {
+            if (this.isPointerLocked) {
+                this.player.angle += e.movementX * this.mouseSensitivity;
+            }
+        };
+        
+        this.mouseClickHandler = (e) => {
+            if (!this.isPointerLocked && !this.gameOver && !this.won) {
+                this.canvas.requestPointerLock();
+            } else if (this.isPointerLocked) {
+                this.keys.shoot = true;
+                setTimeout(() => { this.keys.shoot = false; }, 100);
+            }
+        };
+        
+        this.pointerLockChangeHandler = () => {
+            this.isPointerLocked = document.pointerLockElement === this.canvas;
+        };
+        
         document.addEventListener('keydown', this.keyDownHandler);
         document.addEventListener('keyup', this.keyUpHandler);
+        document.addEventListener('mousemove', this.mouseMoveHandler);
+        this.canvas.addEventListener('click', this.mouseClickHandler);
+        document.addEventListener('pointerlockchange', this.pointerLockChangeHandler);
     }
 
     start() {
@@ -1062,6 +1114,13 @@ class DoomGame {
         }
         document.removeEventListener('keydown', this.keyDownHandler);
         document.removeEventListener('keyup', this.keyUpHandler);
+        document.removeEventListener('mousemove', this.mouseMoveHandler);
+        this.canvas.removeEventListener('click', this.mouseClickHandler);
+        document.removeEventListener('pointerlockchange', this.pointerLockChangeHandler);
+        if (document.pointerLockElement === this.canvas) {
+            document.exitPointerLock();
+        }
+        this.keys = { w: false, s: false, a: false, d: false, left: false, right: false, shoot: false };
     }
 
     gameLoop() {
@@ -1465,9 +1524,12 @@ class TypingGame {
                 }
                 @keyframes caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
                 #typing-game-ui .typing-input-hidden {
-                    position: absolute;
-                    opacity: 0;
-                    pointer-events: none;
+                    position: fixed;
+                    left: -9999px;
+                    top: 0;
+                    width: 1px;
+                    height: 1px;
+                    opacity: 0.01;
                 }
                 #typing-game-ui .stats-row { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1rem; }
                 #typing-game-ui .stat-item { text-align: center; }
@@ -4834,161 +4896,45 @@ class TermoQuartetGame {
         this.manager = manager;
         
         this.canvas.width = 700;
-        this.canvas.height = 520;
+        this.canvas.height = 600;
         
-        // General Portuguese 5-letter words (similar to term.ooo)
+        // Portuguese 4-letter words for Quarteto mode
         this.words = [
-            'ABRIR', 'ACASO', 'ACIMA', 'ADEUS', 'AGORA',
-            'AINDA', 'ACHAR', 'ALUNO', 'AMBOS', 'AMIGO',
-            'ANDAR', 'ANTES', 'APOIO', 'AREIA', 'ATUAL',
-            'AVIAO', 'BAIXO', 'BANCO', 'BARCO', 'BEBER',
-            'BEIJO', 'BELOS', 'BOLSA', 'BORDA', 'BRACO',
-            'BREVE', 'BRUXA', 'CALMA', 'CALOR', 'CAMPO',
-            'CANTO', 'CARNE', 'CARRO', 'CASAL', 'CAUSA',
-            'CERTO', 'CHAVE', 'CHEFE', 'CHUVA', 'CLARO',
-            'CLIMA', 'COBRA', 'COMUM', 'CONTA', 'COPIA',
-            'CORPO', 'COISA', 'CORTE', 'CREME', 'CUSTO',
-            'DADOS', 'DANCA', 'DENTE', 'DESDE', 'DEVER',
-            'DIABO', 'DISCO', 'DOIDO', 'DOLAR', 'DRAMA',
-            'DUPLA', 'DURAR', 'ECRAN', 'ELITE', 'ENTAO',
-            'ENTRE', 'ENVIO', 'ERRAR', 'EXATO', 'EXTRA',
-            'FALAR', 'FALTA', 'FATOS', 'FAVOR', 'FAZER',
-            'FELIZ', 'FESTA', 'FICAR', 'FINAL', 'FIRME',
-            'FLUXO', 'FOLHA', 'FORCA', 'FORMA', 'FORTE',
-            'FRACO', 'FRASE', 'FUNDO', 'GENTE', 'GERAL',
-            'GESTO', 'GLOBO', 'GOLPE', 'GOSTO', 'GRADE',
-            'GRAMA', 'GRAVE', 'GREVE', 'GRUPO', 'HEROI',
-            'HORAS', 'HOTEL', 'HUMOR', 'IDADE', 'IDEAL',
-            'IDEIA', 'IGUAL', 'ILHAS', 'IMPAR', 'INDIO',
-            'JANTA', 'JOGOS', 'JOVEM', 'JULHO', 'JUNHO',
-            'JUSTO', 'LADOS', 'LAPIS', 'LARGO', 'LEGAL',
-            'LEITE', 'LEVAR', 'LICAO', 'LIDAR', 'LIMPO',
-            'LINHA', 'LIVRO', 'LOCAL', 'LOUCO', 'LUGAR',
-            'MAGIA', 'MAIOR', 'MANCO', 'MANHA', 'MARCA',
-            'MARIA', 'MASSA', 'MATAR', 'MEDIA', 'MEDIR',
-            'MEIOS', 'MENOR', 'MENOS', 'MESMO', 'METAL',
-            'MINHA', 'MISTO', 'MOEDA', 'MONTE', 'MORAL',
-            'MORRO', 'MORTO', 'MOTOR', 'MUDOU', 'MUITO',
-            'MUNDO', 'MUSEU', 'NAVIO', 'NEGRO', 'NERVO',
-            'NOITE', 'NOIVA', 'NORTE', 'NOSSO', 'NOTAR',
-            'NOVOS', 'NUNCA', 'OBRAS', 'OBVIO', 'OLHAR',
-            'OLHOS', 'ORDEM', 'OUTRO', 'OUVIR', 'PADRE',
-            'PAGAR', 'PAGOU', 'PAPEL', 'PARAR', 'PASSO',
-            'PASTA', 'PATIO', 'PAUSA', 'PEDRA', 'PEGAR',
-            'PEITO', 'PELOS', 'PENSO', 'PERDA', 'PERTO',
-            'PIANO', 'PILHA', 'PINGA', 'PISTA', 'PLACA',
-            'PLANO', 'PLENA', 'PODER', 'PONTO', 'PORTA',
-            'POSSE', 'POSTO', 'PRAIA', 'PRATA', 'PRAZO',
-            'PRECO', 'PRESA', 'PRIMA', 'PROVA', 'PULSO',
-            'QUASE', 'QUEDA', 'QUERO', 'QUOTA', 'RADIO',
-            'RAIVA', 'RAMOS', 'RAPAZ', 'RAZAO', 'REDOR',
-            'REGRA', 'REINO', 'RELAX', 'RESTO', 'REZAR',
-            'RITMO', 'RIVAL', 'ROCHA', 'ROLHA', 'ROSTO',
-            'RUIDO', 'RURAL', 'SABER', 'SABOR', 'SAIDA',
-            'SALDO', 'SALTO', 'SANTA', 'SANTO', 'SAUDE',
-            'SECAR', 'SETOR', 'SEXTO', 'SIGLA', 'SILVA',
-            'SOBRE', 'SOLAR', 'SOLTO', 'SONHO', 'SORTE',
-            'SUAVE', 'SUBIR', 'SUCOS', 'SUJOS', 'SUPER',
-            'SURDO', 'SURRA', 'TANGO', 'TANTO', 'TARDE',
-            'TAXIS', 'TECTO', 'TEMAS', 'TEMPO', 'TENDA',
-            'TENHO', 'TERRA', 'TESTE', 'TIGRE', 'TINHA',
-            'TODAS', 'TOMAR', 'TOQUE', 'TOTAL', 'TRACO',
-            'TRAJE', 'TROCA', 'TRONO', 'TROPA', 'TURNO',
-            'UNIAO', 'UNICO', 'UNIDO', 'URSOS', 'USADO',
-            'VAMOS', 'VAPOR', 'VENDA', 'VENTO', 'VERDE',
-            'VERAO', 'VIDEO', 'VIGOR', 'VINDA', 'VINHO',
-            'VIRAR', 'VISTA', 'VITAL', 'VIVER', 'VOCES',
-            'VOGAL', 'VOLTA', 'VOTAR', 'VULTO', 'ZEBRA',
-            'ZEROS', 'ZOMBI', 'ZORRA', 'AGUAS', 'AMPLO',
-            'ASPAS', 'BALAO', 'BINGO', 'CACAU', 'CACHO',
-            'CEDRO', 'CERCO', 'CHAMA', 'CHATO', 'CHEGA',
-            'CIRCO', 'COLAR', 'COLMO', 'COMER', 'CONTO',
-            'CORAR', 'CORES', 'COSMO', 'COXAS', 'COZER',
-            'CRAVO', 'CRIME', 'CUECA', 'CULPA', 'DAMAS',
-            'DEDOS', 'DIZER', 'DOBRO', 'DORES', 'DOTAR',
-            'DURAS', 'DUROS', 'ERROS', 'ESTOU', 'EXAME',
-            'FALAM', 'FALSO', 'FAUNA', 'FEIRA', 'FERRO',
-            'FEUDO', 'FIBRA', 'FILME', 'FLORA', 'FOCAR',
-            'FOCOS', 'FOLIA', 'FONTE', 'FORUM', 'FROTA',
-            'FRUTA', 'FUSAO', 'GALHO', 'GARRA', 'GATOS',
-            'GENIO', 'GERAR', 'GIRAR', 'GIROS', 'GLOTE',
-            'GORRO', 'GOTAS', 'GRACA', 'GRIPE', 'GUETO',
-            'HAVIA', 'HASTE', 'HOMEM', 'HONRA', 'HORTA',
-            'JAULA', 'JOGAR', 'LAMAS', 'LENTO', 'LETRA',
-            'LIMAO', 'LINDA', 'LOJAS', 'LONGE', 'LOTAR',
-            'LOTES', 'LUCRO', 'LUNAR', 'LUXOS', 'MANDO',
-            'MANGA', 'MANTA', 'MARES', 'MICRO', 'MIOLO',
-            'MISSA', 'MODAL', 'MODOS', 'MOSCA', 'MOVEM',
-            'MUDAR', 'MULTA', 'NADAR', 'NATAS', 'NEXOS',
-            'NOBRE', 'NOMES', 'NOTAS', 'NOVAS', 'NULOS',
-            'OBTER', 'OCASO', 'OMEGA', 'OPTAR', 'OPCAO',
-            'OSSOS', 'OUVEM', 'PACTO', 'PALAS', 'PALCO',
-            'PALHA', 'PANOS', 'PAPAS', 'PAPOS', 'PARES',
-            'PASSE', 'PAUTA', 'PAVIO', 'PECAS', 'PENAS',
-            'PESCA', 'PESOS', 'PILAR', 'PINOS', 'PIPER',
-            'PIQUE', 'PIRES', 'PLEBE', 'PLUMA', 'PODRE',
-            'POLAR', 'POLIR', 'POLPA', 'POLVO', 'POMAR',
-            'PONDE', 'PONTE', 'POUPA', 'PRECE', 'PREGO',
-            'PRETO', 'PRIMO', 'PUDIM', 'PUROS', 'RAIOS',
-            'RALAR', 'RAMPA', 'RANCO', 'RAROS', 'RASAR',
-            'RASTO', 'RATOS', 'REGUA', 'RELER', 'RENDA',
-            'RENTE', 'REPOR', 'REZAS', 'RISCO', 'RODAR',
-            'RODAS', 'ROLAR', 'ROLOS', 'ROMBO', 'RONCO',
-            'ROUPA', 'SABIA', 'SACRO', 'SAFOS', 'SAGAS',
-            'SAGUI', 'SALMO', 'SAMPA', 'SANAR', 'SAQUE',
-            'SARAR', 'SARNA', 'SECOS', 'SEDAS', 'SELOS',
-            'SEMEN', 'SENHA', 'SENSO', 'SERAO', 'SERIO',
-            'SERVO', 'SESTA', 'SIGMA', 'SINAL', 'SISMA',
-            'SISMO', 'SOCAR', 'SODIO', 'SOFAS', 'SOLDA',
-            'SOLOS', 'SOMAR', 'SONDA', 'SOPAS', 'SOPRO',
-            'SOROS', 'SOVAR', 'TABUS', 'TACOS', 'TALAS',
-            'TALHO', 'TANGA', 'TAPAR', 'TAPAS', 'TARSO',
-            'TASAR', 'TELAS', 'TERCO', 'TERMA', 'TERNO',
-            'TETRA', 'TEXTO', 'TIBIA', 'TIPOS', 'TIRAR',
-            'TIRAS', 'TITAN', 'TOADA', 'TODOS', 'TOLDO',
-            'TONAL', 'TONER', 'TOPIA', 'TOPOS', 'TORAX',
-            'TORPE', 'TORRE', 'TORSO', 'TOSCO', 'TOSSE',
-            'TRAIR', 'TRAMA', 'TREVO', 'TRIBO', 'TRICO',
-            'TRIFO', 'TROCO', 'TROVA', 'TUBOS', 'TUMOR',
-            'TURVO', 'TUTUS', 'UMBRO', 'UNTAR', 'URNAS',
-            'USUAL', 'VACAS', 'VAGAS', 'VAGOS', 'VAIAR',
-            'VALER', 'VALOR', 'VALSA', 'VARAL', 'VAZIO',
-            'VEIAS', 'VELAR', 'VELHA', 'VELHO', 'VENAL',
-            'VENCE', 'VERBA', 'VERBO', 'VESPA', 'VESTE',
-            'VIBES', 'VIELA', 'VIGIA', 'VILAS', 'VIRAL',
-            'VIRIL', 'VISAR', 'VISOR', 'VIUVA', 'VIUVO',
-            'VIVAR', 'VOADO', 'VOGAR', 'VOGOU', 'VOTOS',
-            'VULGO', 'ALTAS', 'ALTAR', 'ALTOS', 'AMADO',
-            'AMEBA', 'ANEXO', 'ANJOS', 'ARCOS', 'AREAS',
-            'ARMAS', 'ATLAS', 'ATOMO', 'AUTOR', 'BASES',
-            'BICHO', 'BOCAS', 'BOLAS', 'BOTES', 'BRAOS',
-            'CABOS', 'CACOS', 'CAIXA', 'CALOS', 'CAMAS',
-            'CAPIM', 'CASOS', 'CAVES', 'CELAS', 'CENAS',
-            'CERCA', 'CHORO', 'CINCO', 'CISNE', 'CIVIL',
-            'CLUBE', 'CODAS', 'COLAS', 'COMER', 'COPAS',
-            'CREIA', 'CULTO', 'CURSO', 'DATAS', 'DEITA',
-            'DELTA', 'DEPOR', 'DESSA', 'DIETA', 'DIGNO',
-            'DITOS', 'DIVOS', 'DOCES', 'DOSSO', 'DOTES',
-            'DUETO', 'DUNAS', 'DUQUE', 'EIXOS', 'ELITE',
-            'ENTES', 'ERVAS', 'ESSES', 'ESTAR', 'EUROS',
-            'FACAS', 'FADAS', 'FADAS', 'FASES', 'FAXAS',
-            'FECHO', 'FEDOR', 'FEIAS', 'FEIOS', 'FEIXE',
-            'FENDA', 'FETAL', 'FETOS', 'FIBRA', 'FILHA',
-            'FILHO', 'FILOS', 'FITAS', 'FITAS', 'FIXAS',
-            'FIXOS', 'FOBIA', 'FOCOS', 'FOGOS', 'FOICE',
-            'FOSSE', 'FOTOS', 'FRACA', 'FREAR', 'FUGAS',
-            'FUMAR', 'FUMOS', 'FURAS', 'FUROS', 'GAITA',
-            'GALAO', 'GALOS', 'GAMAS', 'GANGA', 'GANHO',
-            'GASES', 'GAZES', 'GELAM', 'GELAS', 'GELOS',
-            'GEMAS', 'GENES', 'GERAL', 'GESSO', 'GOELA',
-            'GOLAS', 'GOLES', 'GOMAS', 'GONGO', 'GOZAR',
-            'GOZOS', 'GRACA', 'GRAPA', 'GRAOS', 'GRATA',
-            'GRATO', 'GRILO', 'GRUTA', 'GUIAS', 'GUIAR'
+            'AMOR', 'ALMA', 'AGUA', 'ALTO', 'AZUL', 'BOLA', 'BOCA', 'BELO', 'BEBE', 'BICO',
+            'CADA', 'CASA', 'CARA', 'CAFE', 'CAMA', 'CEDO', 'CEIA', 'CERA', 'CIMA', 'COLA',
+            'DADO', 'DATA', 'DEDO', 'DELE', 'DEUS', 'DIAS', 'DICA', 'DOCE', 'DOIS', 'DONO',
+            'ESSA', 'ESSE', 'ESTA', 'ESTE', 'ELAS', 'ELES', 'FACA', 'FALA', 'FAMA', 'FASE',
+            'FATO', 'FEIA', 'FEIO', 'FENO', 'FERA', 'FILA', 'FOGO', 'FOME', 'FORA', 'FOTO',
+            'GALO', 'GATA', 'GATO', 'GELO', 'GIRA', 'GOLA', 'GOTA', 'HORA', 'HOJE', 'ILHA',
+            'ISSO', 'JOGO', 'JOIA', 'LADO', 'LAGO', 'LATA', 'LEAO', 'LEVE', 'LIDO', 'LIMA',
+            'LISA', 'LISO', 'LOBO', 'LOJA', 'LOGO', 'LOJA', 'LOTE', 'LUCA', 'LUPA', 'LUXO',
+            'MACA', 'MAGO', 'MAIO', 'MALA', 'MAPA', 'MAIS', 'MATO', 'MEDO', 'MEIO', 'MESA',
+            'META', 'MICO', 'MINA', 'MODO', 'MOLE', 'MOTO', 'MUDO', 'MURO', 'NADA', 'NATA',
+            'NAVE', 'NEGO', 'NEVE', 'NETO', 'NIDO', 'NOME', 'NOTA', 'NOVA', 'NOVO', 'NUCA',
+            'OBRA', 'OITO', 'ONDE', 'ONDA', 'OURO', 'OSSO', 'OUVI', 'PACO', 'PAGO', 'PAIS',
+            'PANO', 'PARA', 'PARE', 'PATA', 'PATO', 'PECA', 'PELE', 'PELO', 'PENA', 'PESO',
+            'PICO', 'PIPA', 'PISO', 'PODE', 'POLO', 'POMO', 'PORO', 'POSE', 'POTE', 'PRUA',
+            'RABO', 'RAMO', 'RATO', 'RAIO', 'REAL', 'REDE', 'RELA', 'REMO', 'RICA', 'RICO',
+            'RIMA', 'RIOS', 'RISO', 'ROBO', 'RODA', 'ROLA', 'ROSA', 'ROTA', 'RUDE', 'RUIM',
+            'SACO', 'SALA', 'SACO', 'SAIA', 'SAIR', 'SEDE', 'SELO', 'SETA', 'SETE', 'SINO',
+            'SOBE', 'SOLO', 'SOMA', 'SONO', 'SOPA', 'SUCO', 'SUJO', 'TACA', 'TALO', 'TAPA',
+            'TATU', 'TAXA', 'TEIA', 'TELA', 'TEMA', 'TETO', 'TIPO', 'TOCA', 'TODO', 'TOMA',
+            'TOPO', 'TUDO', 'TUBO', 'URNA', 'USAR', 'VACA', 'VAGA', 'VALE', 'VASO', 'VEIA',
+            'VELA', 'VEJO', 'VIDA', 'VIDE', 'VILA', 'VIRA', 'VIVE', 'VIVO', 'VOCE', 'VOTO',
+            'XALE', 'ZERO', 'ZONA', 'ARCO', 'ARTE', 'ASNO', 'BALA', 'BECO', 'BIBI', 'BIFE',
+            'CABO', 'CACO', 'CALO', 'CANO', 'CAPO', 'CARO', 'CASO', 'CAVA', 'CELA', 'CEPO',
+            'CHAO', 'COCO', 'COLO', 'COMO', 'CONE', 'COPO', 'CORO', 'COTA', 'COVA', 'COXA',
+            'CUBO', 'DAMA', 'DANO', 'DITA', 'DITO', 'DIVA', 'DOCA', 'DOMO', 'DOSE', 'DOTE',
+            'DURO', 'EIXO', 'ERRA', 'FADO', 'FARO', 'FAVA', 'FICO', 'FIGO', 'FINA', 'FINO',
+            'FITA', 'FOCO', 'FURO', 'GADO', 'GALO', 'GANA', 'GAZE', 'GENE', 'GIRO', 'GOLE',
+            'GOMA', 'GOZO', 'GUIA', 'HINO', 'IOGA', 'JADE', 'JATO', 'JUIZ', 'JURA', 'JURO',
+            'LACA', 'LACO', 'LAMA', 'LAPA', 'LAVA', 'LEAL', 'LEIA', 'LEME', 'LENO', 'LERO',
+            'LEVA', 'LIDE', 'LIMO', 'LIRA', 'LITE', 'LOCA', 'LONA', 'LOTE', 'LOTO', 'LOUA'
         ];
         
         this.numWords = 4;
         this.maxAttempts = 9;
-        this.wordLength = 5;
+        this.wordLength = 4;
         this.running = false;
         
         this.reset();
@@ -5181,37 +5127,32 @@ class TermoQuartetGame {
         this.ctx.font = '11px Arial';
         this.ctx.fillText('Adivinhe 4 palavras aleatórias ao mesmo tempo!', this.canvas.width / 2, 48);
         
-        // Grid settings - 2x2 layout
-        const tileSize = 38;
-        const gap = 4;
+        // Grid settings - 2x2 layout with all attempts visible in each grid
+        const tileSize = 28;
+        const gap = 3;
         const gridWidth = this.wordLength * tileSize + (this.wordLength - 1) * gap;
         const gridHeight = this.maxAttempts * tileSize + (this.maxAttempts - 1) * gap;
-        const gridSpacingX = 25;
-        const gridSpacingY = 20;
+        const gridSpacingX = 20;
+        const gridSpacingY = 15;
         const totalWidth = 2 * gridWidth + gridSpacingX;
+        const totalHeight = 2 * gridHeight + gridSpacingY;
         const startX = (this.canvas.width - totalWidth) / 2;
-        const startY = 60;
+        const startY = 55;
         
-        // Draw grids in 2x2 layout
+        // Draw grids in 2x2 layout - each grid shows all attempts for its word
         for (let wordIdx = 0; wordIdx < this.numWords; wordIdx++) {
             const gridCol = wordIdx % 2;
             const gridRow = Math.floor(wordIdx / 2);
             const gridStartX = startX + gridCol * (gridWidth + gridSpacingX);
-            const gridStartY = startY + gridRow * (gridHeight / 2 + gridSpacingY);
+            const gridStartY = startY + gridRow * (gridHeight + gridSpacingY);
             const targetWord = this.targetWords[wordIdx];
             const isSolved = this.solvedWords[wordIdx];
             
-            // Only show half the attempts per grid in 2x2 layout
-            const attemptsPerGrid = Math.ceil(this.maxAttempts / 2);
-            const rowOffset = gridRow * attemptsPerGrid;
-            
-            for (let row = 0; row < attemptsPerGrid; row++) {
-                const actualRow = row + rowOffset;
-                if (actualRow >= this.maxAttempts) continue;
-                
-                const isCurrentRow = actualRow === this.attempts.length && !this.gameOver && !this.won;
-                const isCompletedRow = actualRow < this.attempts.length;
-                const attempt = isCompletedRow ? this.attempts[actualRow] : (isCurrentRow ? this.currentAttempt : '');
+            // Show all attempts in each grid
+            for (let row = 0; row < this.maxAttempts; row++) {
+                const isCurrentRow = row === this.attempts.length && !this.gameOver && !this.won;
+                const isCompletedRow = row < this.attempts.length;
+                const attempt = isCompletedRow ? this.attempts[row] : (isCurrentRow ? this.currentAttempt : '');
                 
                 let rowOffsetX = 0;
                 if (isCurrentRow && this.shake) {
@@ -5225,8 +5166,8 @@ class TermoQuartetGame {
                     
                     let bgColor, borderColor, textColor;
                     
-                    if (isSolved && actualRow >= this.attempts.findIndex(a => a === targetWord)) {
-                        if (actualRow === this.attempts.findIndex(a => a === targetWord)) {
+                    if (isSolved && row >= this.attempts.findIndex(a => a === targetWord)) {
+                        if (row === this.attempts.findIndex(a => a === targetWord)) {
                             bgColor = '#22c55e';
                             borderColor = '#16a34a';
                             textColor = '#ffffff';
@@ -5236,7 +5177,7 @@ class TermoQuartetGame {
                             textColor = isDark ? '#e2e8f0' : '#1e293b';
                         }
                     } else if (isCompletedRow) {
-                        const isRevealed = actualRow < this.attempts.length - 1 || col <= this.revealIndex;
+                        const isRevealed = row < this.attempts.length - 1 || col <= this.revealIndex;
                         
                         if (isRevealed) {
                             const status = this.getLetterStatus(letter, col, attempt, targetWord);
@@ -5278,7 +5219,7 @@ class TermoQuartetGame {
                     
                     if (letter) {
                         this.ctx.fillStyle = textColor;
-                        this.ctx.font = 'bold 18px Arial';
+                        this.ctx.font = 'bold 14px Arial';
                         this.ctx.textAlign = 'center';
                         this.ctx.textBaseline = 'middle';
                         this.ctx.fillText(letter, x + tileSize / 2, y + tileSize / 2 + 1);
@@ -5291,7 +5232,7 @@ class TermoQuartetGame {
                 this.ctx.fillStyle = '#22c55e';
                 this.ctx.font = 'bold 12px Arial';
                 this.ctx.textAlign = 'center';
-                this.ctx.fillText('✓', gridStartX + gridWidth + 8, gridStartY + attemptsPerGrid * (tileSize + gap) / 2);
+                this.ctx.fillText('✓', gridStartX + gridWidth + 8, gridStartY + gridHeight / 2);
             }
         }
         
@@ -5348,6 +5289,692 @@ class TermoQuartetGame {
         if (scoreEl) scoreEl.textContent = this.score;
         const solved = this.solvedWords.filter(s => s).length;
         if (infoEl) infoEl.textContent = `Tentativa ${Math.min(this.attempts.length + 1, this.maxAttempts)}/${this.maxAttempts} | ${solved}/${this.numWords}`;
+    }
+}
+
+class WordSearchGame {
+    constructor(canvas, onScore, manager) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.onScore = onScore;
+        this.manager = manager;
+        
+        this.canvas.width = 650;
+        this.canvas.height = 500;
+        
+        this.words = [
+            ['BICICLETA', 'PEDAL', 'RODA', 'FREIO', 'GUIDAO'],
+            ['CAPACETE', 'CORRENTE', 'SELIM', 'PNEU', 'RAIO'],
+            ['CICLISTA', 'GARFO', 'CUBO', 'ARO', 'MESA'],
+            ['QUADRO', 'CAMBIO', 'MANOPLA', 'BANCO', 'CABO']
+        ];
+        
+        this.gridSize = 12;
+        this.cellSize = 32;
+        this.running = false;
+        this.level = 0;
+        this.score = 0;
+        
+        this.reset();
+        this.setupControls();
+    }
+    
+    reset() {
+        this.grid = [];
+        this.targetWords = this.words[this.level % this.words.length];
+        this.foundWords = [];
+        this.selection = { start: null, end: null };
+        this.selecting = false;
+        this.gameOver = false;
+        this.won = false;
+        
+        for (let i = 0; i < this.gridSize; i++) {
+            this.grid[i] = [];
+            for (let j = 0; j < this.gridSize; j++) {
+                this.grid[i][j] = '';
+            }
+        }
+        
+        this.placeWords();
+        this.fillEmptyCells();
+        this.updateScoreDisplay();
+    }
+    
+    placeWords() {
+        const directions = [
+            { dx: 1, dy: 0 },
+            { dx: 0, dy: 1 },
+            { dx: 1, dy: 1 },
+            { dx: 1, dy: -1 }
+        ];
+        
+        this.wordPositions = [];
+        
+        for (const word of this.targetWords) {
+            let placed = false;
+            let attempts = 0;
+            
+            while (!placed && attempts < 100) {
+                const dir = directions[Math.floor(Math.random() * directions.length)];
+                const maxX = this.gridSize - (dir.dx > 0 ? word.length : 1);
+                const maxY = this.gridSize - (dir.dy > 0 ? word.length : 1);
+                const minY = dir.dy < 0 ? word.length - 1 : 0;
+                
+                const startX = Math.floor(Math.random() * (maxX + 1));
+                const startY = minY + Math.floor(Math.random() * (maxY - minY + 1));
+                
+                let canPlace = true;
+                for (let i = 0; i < word.length; i++) {
+                    const x = startX + i * dir.dx;
+                    const y = startY + i * dir.dy;
+                    if (x < 0 || x >= this.gridSize || y < 0 || y >= this.gridSize) {
+                        canPlace = false;
+                        break;
+                    }
+                    if (this.grid[y][x] !== '' && this.grid[y][x] !== word[i]) {
+                        canPlace = false;
+                        break;
+                    }
+                }
+                
+                if (canPlace) {
+                    for (let i = 0; i < word.length; i++) {
+                        const x = startX + i * dir.dx;
+                        const y = startY + i * dir.dy;
+                        this.grid[y][x] = word[i];
+                    }
+                    this.wordPositions.push({
+                        word,
+                        start: { x: startX, y: startY },
+                        end: { x: startX + (word.length - 1) * dir.dx, y: startY + (word.length - 1) * dir.dy }
+                    });
+                    placed = true;
+                }
+                attempts++;
+            }
+        }
+    }
+    
+    fillEmptyCells() {
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        for (let i = 0; i < this.gridSize; i++) {
+            for (let j = 0; j < this.gridSize; j++) {
+                if (this.grid[i][j] === '') {
+                    this.grid[i][j] = letters[Math.floor(Math.random() * letters.length)];
+                }
+            }
+        }
+    }
+    
+    setupControls() {
+        this.mouseDownHandler = (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const cell = this.getCellFromCoords(x, y);
+            if (cell) {
+                this.selecting = true;
+                this.selection.start = cell;
+                this.selection.end = cell;
+            }
+        };
+        
+        this.mouseMoveHandler = (e) => {
+            if (!this.selecting) return;
+            const rect = this.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const cell = this.getCellFromCoords(x, y);
+            if (cell) {
+                this.selection.end = cell;
+            }
+        };
+        
+        this.mouseUpHandler = (e) => {
+            if (this.selecting) {
+                this.checkSelection();
+                this.selecting = false;
+                this.selection = { start: null, end: null };
+            }
+        };
+        
+        this.keyHandler = (e) => {
+            if ((this.gameOver || this.won) && (e.key === ' ' || e.key === 'Enter')) {
+                this.level++;
+                this.reset();
+                this.start();
+            }
+        };
+        
+        this.canvas.addEventListener('mousedown', this.mouseDownHandler);
+        this.canvas.addEventListener('mousemove', this.mouseMoveHandler);
+        this.canvas.addEventListener('mouseup', this.mouseUpHandler);
+        document.addEventListener('keydown', this.keyHandler);
+    }
+    
+    getCellFromCoords(x, y) {
+        const offsetX = (this.canvas.width - this.gridSize * this.cellSize) / 2;
+        const offsetY = 60;
+        const col = Math.floor((x - offsetX) / this.cellSize);
+        const row = Math.floor((y - offsetY) / this.cellSize);
+        if (col >= 0 && col < this.gridSize && row >= 0 && row < this.gridSize) {
+            return { x: col, y: row };
+        }
+        return null;
+    }
+    
+    getSelectedWord() {
+        if (!this.selection.start || !this.selection.end) return '';
+        
+        const dx = Math.sign(this.selection.end.x - this.selection.start.x);
+        const dy = Math.sign(this.selection.end.y - this.selection.start.y);
+        
+        if (dx !== 0 && dy !== 0 && Math.abs(dx) !== Math.abs(dy)) return '';
+        
+        let word = '';
+        let x = this.selection.start.x;
+        let y = this.selection.start.y;
+        const length = Math.max(
+            Math.abs(this.selection.end.x - this.selection.start.x),
+            Math.abs(this.selection.end.y - this.selection.start.y)
+        ) + 1;
+        
+        for (let i = 0; i < length; i++) {
+            if (x >= 0 && x < this.gridSize && y >= 0 && y < this.gridSize) {
+                word += this.grid[y][x];
+            }
+            x += dx;
+            y += dy;
+        }
+        
+        return word;
+    }
+    
+    checkSelection() {
+        const selectedWord = this.getSelectedWord();
+        const reversedWord = selectedWord.split('').reverse().join('');
+        
+        for (const word of this.targetWords) {
+            if ((selectedWord === word || reversedWord === word) && !this.foundWords.includes(word)) {
+                this.foundWords.push(word);
+                this.score += word.length * 100;
+                this.updateScoreDisplay();
+                
+                if (this.foundWords.length === this.targetWords.length) {
+                    this.won = true;
+                    this.score += 500;
+                    this.onScore(this.score);
+                }
+            }
+        }
+    }
+    
+    start() {
+        if (this.running) return;
+        this.running = true;
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
+    }
+    
+    stop() {
+        this.running = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        this.canvas.removeEventListener('mousedown', this.mouseDownHandler);
+        this.canvas.removeEventListener('mousemove', this.mouseMoveHandler);
+        this.canvas.removeEventListener('mouseup', this.mouseUpHandler);
+        document.removeEventListener('keydown', this.keyHandler);
+    }
+    
+    gameLoop() {
+        if (!this.running) return;
+        this.draw();
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
+    }
+    
+    draw() {
+        const isDark = document.documentElement.classList.contains('dark');
+        
+        this.ctx.fillStyle = isDark ? '#0f172a' : '#f1f5f9';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
+        this.ctx.font = 'bold 20px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('CAÇA PALAVRAS', this.canvas.width / 2, 30);
+        
+        const offsetX = (this.canvas.width - this.gridSize * this.cellSize) / 2;
+        const offsetY = 60;
+        
+        for (let row = 0; row < this.gridSize; row++) {
+            for (let col = 0; col < this.gridSize; col++) {
+                const x = offsetX + col * this.cellSize;
+                const y = offsetY + row * this.cellSize;
+                
+                let isSelected = false;
+                if (this.selection.start && this.selection.end) {
+                    const dx = Math.sign(this.selection.end.x - this.selection.start.x);
+                    const dy = Math.sign(this.selection.end.y - this.selection.start.y);
+                    const length = Math.max(
+                        Math.abs(this.selection.end.x - this.selection.start.x),
+                        Math.abs(this.selection.end.y - this.selection.start.y)
+                    ) + 1;
+                    
+                    let sx = this.selection.start.x;
+                    let sy = this.selection.start.y;
+                    for (let i = 0; i < length; i++) {
+                        if (sx === col && sy === row) {
+                            isSelected = true;
+                            break;
+                        }
+                        sx += dx;
+                        sy += dy;
+                    }
+                }
+                
+                let isFound = false;
+                for (const wp of this.wordPositions) {
+                    if (this.foundWords.includes(wp.word)) {
+                        const dx = Math.sign(wp.end.x - wp.start.x);
+                        const dy = Math.sign(wp.end.y - wp.start.y);
+                        let wx = wp.start.x;
+                        let wy = wp.start.y;
+                        for (let i = 0; i < wp.word.length; i++) {
+                            if (wx === col && wy === row) {
+                                isFound = true;
+                                break;
+                            }
+                            wx += dx;
+                            wy += dy;
+                        }
+                    }
+                }
+                
+                if (isFound) {
+                    this.ctx.fillStyle = '#22c55e';
+                } else if (isSelected) {
+                    this.ctx.fillStyle = '#3b82f6';
+                } else {
+                    this.ctx.fillStyle = isDark ? '#1e293b' : '#ffffff';
+                }
+                
+                this.ctx.fillRect(x, y, this.cellSize - 2, this.cellSize - 2);
+                this.ctx.strokeStyle = isDark ? '#334155' : '#e2e8f0';
+                this.ctx.strokeRect(x, y, this.cellSize - 2, this.cellSize - 2);
+                
+                this.ctx.fillStyle = (isSelected || isFound) ? '#ffffff' : (isDark ? '#e2e8f0' : '#1e293b');
+                this.ctx.font = 'bold 16px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(this.grid[row][col], x + this.cellSize / 2 - 1, y + this.cellSize / 2);
+            }
+        }
+        
+        const listY = offsetY + this.gridSize * this.cellSize + 20;
+        this.ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+        this.ctx.font = '14px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('Encontre as palavras:', this.canvas.width / 2, listY);
+        
+        let wordX = (this.canvas.width - this.targetWords.length * 100) / 2 + 50;
+        for (const word of this.targetWords) {
+            const found = this.foundWords.includes(word);
+            this.ctx.fillStyle = found ? '#22c55e' : (isDark ? '#e2e8f0' : '#1e293b');
+            this.ctx.font = found ? 'bold 12px Arial' : '12px Arial';
+            this.ctx.fillText(found ? `✓ ${word}` : word, wordX, listY + 25);
+            wordX += 100;
+        }
+        
+        if (this.won) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 28px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('🎉 PARABÉNS!', this.canvas.width / 2, this.canvas.height / 2 - 40);
+            
+            this.ctx.font = '18px Arial';
+            this.ctx.fillText(`Você encontrou todas as palavras!`, this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
+            
+            this.ctx.font = '14px Arial';
+            this.ctx.fillStyle = '#94a3b8';
+            this.ctx.fillText('Pressione ENTER ou ESPAÇO para próximo nível', this.canvas.width / 2, this.canvas.height / 2 + 70);
+        }
+    }
+    
+    updateScoreDisplay() {
+        const scoreEl = document.getElementById('game-score');
+        const infoEl = document.getElementById('game-phase');
+        if (scoreEl) scoreEl.textContent = this.score;
+        if (infoEl) infoEl.textContent = `Nível ${this.level + 1} | ${this.foundWords.length}/${this.targetWords.length}`;
+    }
+}
+
+class CrosswordGame {
+    constructor(canvas, onScore, manager) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.onScore = onScore;
+        this.manager = manager;
+        
+        this.canvas.width = 650;
+        this.canvas.height = 550;
+        
+        this.puzzles = [
+            {
+                grid: [
+                    ['B','I','C','I','C','L','E','T','A','#'],
+                    ['#','#','A','#','#','#','#','#','R','#'],
+                    ['P','E','D','A','L','#','R','O','D','A'],
+                    ['#','#','E','#','#','#','#','#','O','#'],
+                    ['F','R','E','I','O','#','C','A','B','O'],
+                    ['#','#','I','#','#','#','#','#','#','#'],
+                    ['S','E','L','I','M','#','C','U','B','O'],
+                    ['#','#','A','#','#','#','#','#','#','#']
+                ],
+                clues: {
+                    across: [
+                        { num: 1, clue: 'Veículo de duas rodas', answer: 'BICICLETA', row: 0, col: 0 },
+                        { num: 3, clue: 'Onde apoiamos o pé', answer: 'PEDAL', row: 2, col: 0 },
+                        { num: 4, clue: 'Parte circular', answer: 'RODA', row: 2, col: 6 },
+                        { num: 5, clue: 'Para parar', answer: 'FREIO', row: 4, col: 0 },
+                        { num: 6, clue: 'Fio condutor', answer: 'CABO', row: 4, col: 6 },
+                        { num: 7, clue: 'Assento', answer: 'SELIM', row: 6, col: 0 },
+                        { num: 8, clue: 'Forma geométrica', answer: 'CUBO', row: 6, col: 6 }
+                    ],
+                    down: [
+                        { num: 2, clue: 'Proteção de metal', answer: 'CADEIA', row: 0, col: 2 },
+                        { num: 3, clue: 'Parte traseira', answer: 'ARO', row: 0, col: 8 }
+                    ]
+                }
+            }
+        ];
+        
+        this.cellSize = 36;
+        this.running = false;
+        this.level = 0;
+        this.score = 0;
+        
+        this.reset();
+        this.setupControls();
+    }
+    
+    reset() {
+        const puzzle = this.puzzles[this.level % this.puzzles.length];
+        this.solution = puzzle.grid;
+        this.clues = puzzle.clues;
+        this.rows = this.solution.length;
+        this.cols = this.solution[0].length;
+        
+        this.userGrid = [];
+        for (let i = 0; i < this.rows; i++) {
+            this.userGrid[i] = [];
+            for (let j = 0; j < this.cols; j++) {
+                this.userGrid[i][j] = this.solution[i][j] === '#' ? '#' : '';
+            }
+        }
+        
+        this.selectedCell = { row: 0, col: 0 };
+        while (this.solution[this.selectedCell.row][this.selectedCell.col] === '#') {
+            this.selectedCell.col++;
+            if (this.selectedCell.col >= this.cols) {
+                this.selectedCell.col = 0;
+                this.selectedCell.row++;
+            }
+        }
+        
+        this.direction = 'across';
+        this.gameOver = false;
+        this.won = false;
+        
+        this.updateScoreDisplay();
+    }
+    
+    setupControls() {
+        this.keyHandler = (e) => {
+            if (this.won) {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    this.level++;
+                    this.reset();
+                    this.start();
+                }
+                return;
+            }
+            
+            const { row, col } = this.selectedCell;
+            
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.moveSelection(-1, 0);
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                this.moveSelection(1, 0);
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.moveSelection(0, -1);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.moveSelection(0, 1);
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                this.direction = this.direction === 'across' ? 'down' : 'across';
+            } else if (e.key === 'Backspace') {
+                e.preventDefault();
+                if (this.userGrid[row][col] !== '' && this.userGrid[row][col] !== '#') {
+                    this.userGrid[row][col] = '';
+                } else {
+                    if (this.direction === 'across') {
+                        this.moveSelection(0, -1);
+                    } else {
+                        this.moveSelection(-1, 0);
+                    }
+                    if (this.userGrid[this.selectedCell.row][this.selectedCell.col] !== '#') {
+                        this.userGrid[this.selectedCell.row][this.selectedCell.col] = '';
+                    }
+                }
+            } else if (/^[a-zA-Z]$/.test(e.key)) {
+                e.preventDefault();
+                this.userGrid[row][col] = e.key.toUpperCase();
+                
+                if (this.direction === 'across') {
+                    this.moveSelection(0, 1);
+                } else {
+                    this.moveSelection(1, 0);
+                }
+                
+                this.checkWin();
+            }
+        };
+        
+        this.clickHandler = (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const offsetX = 20;
+            const offsetY = 50;
+            
+            const col = Math.floor((x - offsetX) / this.cellSize);
+            const row = Math.floor((y - offsetY) / this.cellSize);
+            
+            if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
+                if (this.solution[row][col] !== '#') {
+                    if (this.selectedCell.row === row && this.selectedCell.col === col) {
+                        this.direction = this.direction === 'across' ? 'down' : 'across';
+                    } else {
+                        this.selectedCell = { row, col };
+                    }
+                }
+            }
+        };
+        
+        document.addEventListener('keydown', this.keyHandler);
+        this.canvas.addEventListener('click', this.clickHandler);
+    }
+    
+    moveSelection(dRow, dCol) {
+        let newRow = this.selectedCell.row + dRow;
+        let newCol = this.selectedCell.col + dCol;
+        
+        while (newRow >= 0 && newRow < this.rows && newCol >= 0 && newCol < this.cols) {
+            if (this.solution[newRow][newCol] !== '#') {
+                this.selectedCell = { row: newRow, col: newCol };
+                return;
+            }
+            newRow += dRow;
+            newCol += dCol;
+        }
+    }
+    
+    checkWin() {
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.cols; j++) {
+                if (this.solution[i][j] !== '#' && this.userGrid[i][j] !== this.solution[i][j]) {
+                    return;
+                }
+            }
+        }
+        
+        this.won = true;
+        this.score += 1000 + this.level * 200;
+        this.onScore(this.score);
+    }
+    
+    start() {
+        if (this.running) return;
+        this.running = true;
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
+    }
+    
+    stop() {
+        this.running = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        document.removeEventListener('keydown', this.keyHandler);
+        this.canvas.removeEventListener('click', this.clickHandler);
+    }
+    
+    gameLoop() {
+        if (!this.running) return;
+        this.draw();
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
+    }
+    
+    draw() {
+        const isDark = document.documentElement.classList.contains('dark');
+        
+        this.ctx.fillStyle = isDark ? '#0f172a' : '#f1f5f9';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
+        this.ctx.font = 'bold 20px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('CRUZADINHA', this.canvas.width / 2, 30);
+        
+        const offsetX = 20;
+        const offsetY = 50;
+        
+        for (let row = 0; row < this.rows; row++) {
+            for (let col = 0; col < this.cols; col++) {
+                const x = offsetX + col * this.cellSize;
+                const y = offsetY + row * this.cellSize;
+                const cell = this.solution[row][col];
+                
+                if (cell === '#') {
+                    this.ctx.fillStyle = isDark ? '#1e293b' : '#334155';
+                } else {
+                    const isSelected = row === this.selectedCell.row && col === this.selectedCell.col;
+                    const isCorrect = this.userGrid[row][col] === this.solution[row][col];
+                    
+                    if (isSelected) {
+                        this.ctx.fillStyle = '#3b82f6';
+                    } else if (this.userGrid[row][col] && isCorrect) {
+                        this.ctx.fillStyle = isDark ? '#166534' : '#dcfce7';
+                    } else if (this.userGrid[row][col] && !isCorrect) {
+                        this.ctx.fillStyle = isDark ? '#991b1b' : '#fee2e2';
+                    } else {
+                        this.ctx.fillStyle = isDark ? '#1e293b' : '#ffffff';
+                    }
+                }
+                
+                this.ctx.fillRect(x, y, this.cellSize - 2, this.cellSize - 2);
+                
+                if (cell !== '#') {
+                    this.ctx.strokeStyle = isDark ? '#475569' : '#cbd5e1';
+                    this.ctx.strokeRect(x, y, this.cellSize - 2, this.cellSize - 2);
+                    
+                    if (this.userGrid[row][col]) {
+                        const isSelected = row === this.selectedCell.row && col === this.selectedCell.col;
+                        this.ctx.fillStyle = isSelected ? '#ffffff' : (isDark ? '#e2e8f0' : '#1e293b');
+                        this.ctx.font = 'bold 18px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.textBaseline = 'middle';
+                        this.ctx.fillText(this.userGrid[row][col], x + this.cellSize / 2 - 1, y + this.cellSize / 2);
+                    }
+                }
+            }
+        }
+        
+        const clueX = offsetX + this.cols * this.cellSize + 30;
+        let clueY = offsetY;
+        
+        this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
+        this.ctx.font = 'bold 14px Arial';
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText('Horizontal:', clueX, clueY);
+        clueY += 20;
+        
+        this.ctx.font = '11px Arial';
+        for (const clue of this.clues.across) {
+            this.ctx.fillText(`${clue.num}. ${clue.clue}`, clueX, clueY);
+            clueY += 16;
+        }
+        
+        clueY += 15;
+        this.ctx.font = 'bold 14px Arial';
+        this.ctx.fillText('Vertical:', clueX, clueY);
+        clueY += 20;
+        
+        this.ctx.font = '11px Arial';
+        for (const clue of this.clues.down) {
+            this.ctx.fillText(`${clue.num}. ${clue.clue}`, clueX, clueY);
+            clueY += 16;
+        }
+        
+        this.ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+        this.ctx.font = '11px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('Use as setas para navegar • Tab para mudar direção • Digite as letras', this.canvas.width / 2, this.canvas.height - 15);
+        
+        if (this.won) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 28px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('🎉 PARABÉNS!', this.canvas.width / 2, this.canvas.height / 2 - 40);
+            
+            this.ctx.font = '18px Arial';
+            this.ctx.fillText('Cruzadinha completa!', this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
+            
+            this.ctx.font = '14px Arial';
+            this.ctx.fillStyle = '#94a3b8';
+            this.ctx.fillText('Pressione ENTER ou ESPAÇO para próximo nível', this.canvas.width / 2, this.canvas.height / 2 + 70);
+        }
+    }
+    
+    updateScoreDisplay() {
+        const scoreEl = document.getElementById('game-score');
+        const infoEl = document.getElementById('game-phase');
+        if (scoreEl) scoreEl.textContent = this.score;
+        if (infoEl) infoEl.textContent = `Nível ${this.level + 1}`;
     }
 }
 

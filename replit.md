@@ -26,6 +26,15 @@ O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicaç
   - Local file-based storage (no server required)
   - Full offline functionality
 
+## Recent Changes (17/12/2025)
+- **Delete Data Feature:** Added new section in the "Dados" (Data) tab to permanently delete system data with selective options:
+  - Delete all client registrations (clientes e bicicletas)
+  - Delete all access records (registros de entrada/saida)
+  - Delete all categories
+  - Shows count of each data type before deletion
+  - Double confirmation required for safety
+  - Permission-controlled (requires configuracao/exportar permission)
+
 ## Recent Changes (29/11/2025)
 - **Clickable Category Stats:** Adicionada funcionalidade para clicar nas estatísticas de categorias em Configuração > Gerenciar Categorias. Ao clicar em uma categoria, abre um modal mostrando todos os clientes daquela categoria com botão de editar (lápis) ao lado de cada um.
 - **Client ID Normalization:** Adicionada normalização automática de IDs de clientes para garantir que todos os registros tenham um identificador único.

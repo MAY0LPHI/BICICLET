@@ -21,6 +21,14 @@ export class DadosManager {
             importSystemFile: document.getElementById('import-system-file'),
             importSystemBtn: document.getElementById('import-system-btn'),
             importSystemStatus: document.getElementById('import-system-status'),
+            deleteClientes: document.getElementById('delete-clientes'),
+            deleteRegistros: document.getElementById('delete-registros'),
+            deleteCategorias: document.getElementById('delete-categorias'),
+            deleteClientesCount: document.getElementById('delete-clientes-count'),
+            deleteRegistrosCount: document.getElementById('delete-registros-count'),
+            deleteCategoriasCount: document.getElementById('delete-categorias-count'),
+            deleteDataBtn: document.getElementById('delete-data-btn'),
+            deleteStatus: document.getElementById('delete-status'),
         };
         this.init();
     }
@@ -64,6 +72,147 @@ export class DadosManager {
         
         if (this.elements.exportSystemCsvBtn) {
             this.elements.exportSystemCsvBtn.addEventListener('click', () => this.exportSystemToCSV());
+        }
+
+        if (this.elements.deleteClientes) {
+            this.elements.deleteClientes.addEventListener('change', () => this.updateDeleteButtonState());
+        }
+        if (this.elements.deleteRegistros) {
+            this.elements.deleteRegistros.addEventListener('change', () => this.updateDeleteButtonState());
+        }
+        if (this.elements.deleteCategorias) {
+            this.elements.deleteCategorias.addEventListener('change', () => this.updateDeleteButtonState());
+        }
+        if (this.elements.deleteDataBtn) {
+            this.elements.deleteDataBtn.addEventListener('click', () => this.handleDeleteData());
+        }
+        
+        this.updateDeleteCounts();
+    }
+
+    updateDeleteCounts() {
+        if (this.elements.deleteClientesCount) {
+            this.elements.deleteClientesCount.textContent = this.app.data.clients?.length || 0;
+        }
+        if (this.elements.deleteRegistrosCount) {
+            this.elements.deleteRegistrosCount.textContent = this.app.data.registros?.length || 0;
+        }
+        if (this.elements.deleteCategoriasCount) {
+            const categorias = Storage.loadCategorias();
+            this.elements.deleteCategoriasCount.textContent = Object.keys(categorias).length;
+        }
+    }
+
+    updateDeleteButtonState() {
+        const anyChecked = 
+            this.elements.deleteClientes?.checked || 
+            this.elements.deleteRegistros?.checked || 
+            this.elements.deleteCategorias?.checked;
+        
+        if (this.elements.deleteDataBtn) {
+            this.elements.deleteDataBtn.disabled = !anyChecked;
+        }
+    }
+
+    async handleDeleteData() {
+        try {
+            Auth.requirePermission('configuracao', 'exportar');
+        } catch (error) {
+            Modals.alert(error.message, 'Permissao Negada');
+            return;
+        }
+
+        const deleteClientes = this.elements.deleteClientes?.checked;
+        const deleteRegistros = this.elements.deleteRegistros?.checked;
+        const deleteCategorias = this.elements.deleteCategorias?.checked;
+
+        if (!deleteClientes && !deleteRegistros && !deleteCategorias) {
+            Modals.alert('Selecione pelo menos um tipo de dado para apagar.', 'Aviso');
+            return;
+        }
+
+        const items = [];
+        if (deleteClientes) items.push('Clientes');
+        if (deleteRegistros) items.push('Registros de Acesso');
+        if (deleteCategorias) items.push('Categorias');
+
+        const confirmed = await Modals.showConfirm(
+            `Tem certeza que deseja apagar permanentemente: ${items.join(', ')}?\n\nEsta acao NAO pode ser desfeita!`
+        );
+
+        if (!confirmed) return;
+
+        const doubleConfirmed = await Modals.showConfirm(
+            'ATENCAO FINAL: Todos os dados selecionados serao REMOVIDOS PERMANENTEMENTE. Confirma a exclusao?'
+        );
+
+        if (!doubleConfirmed) return;
+
+        try {
+            const statusEl = this.elements.deleteStatus;
+            if (statusEl) {
+                statusEl.classList.remove('hidden');
+                statusEl.className = 'text-sm text-blue-600 dark:text-blue-400';
+                statusEl.textContent = 'Apagando dados...';
+            }
+
+            const results = [];
+
+            if (deleteClientes) {
+                const count = this.app.data.clients.length;
+                this.app.data.clients = [];
+                await Storage.saveClients([]);
+                results.push(`${count} clientes`);
+            }
+
+            if (deleteRegistros) {
+                const count = this.app.data.registros.length;
+                this.app.data.registros = [];
+                await Storage.saveRegistros([]);
+                results.push(`${count} registros`);
+            }
+
+            if (deleteCategorias) {
+                const categorias = Storage.loadCategorias();
+                const count = Object.keys(categorias).length;
+                Storage.saveCategorias({});
+                results.push(`${count} categorias`);
+            }
+
+            if (this.elements.deleteClientes) this.elements.deleteClientes.checked = false;
+            if (this.elements.deleteRegistros) this.elements.deleteRegistros.checked = false;
+            if (this.elements.deleteCategorias) this.elements.deleteCategorias.checked = false;
+            this.updateDeleteButtonState();
+            this.updateDeleteCounts();
+
+            if (this.app.clientesManager) {
+                this.app.clientesManager.renderClientList();
+            }
+            if (this.app.registrosDiariosManager) {
+                this.app.registrosDiariosManager.renderRegistros();
+            }
+            if (this.app.configuracaoManager) {
+                this.app.configuracaoManager.renderCategorias();
+            }
+
+            if (statusEl) {
+                statusEl.className = 'text-sm text-green-600 dark:text-green-400';
+                statusEl.textContent = `Dados apagados com sucesso: ${results.join(', ')}.`;
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 5000);
+            }
+
+            Modals.alert(`Dados removidos com sucesso!\n\n${results.join('\n')}`, 'Sucesso');
+
+        } catch (error) {
+            console.error('Erro ao apagar dados:', error);
+            const statusEl = this.elements.deleteStatus;
+            if (statusEl) {
+                statusEl.className = 'text-sm text-red-600 dark:text-red-400';
+                statusEl.textContent = `Erro ao apagar: ${error.message}`;
+            }
+            Modals.alert(`Erro ao apagar dados: ${error.message}`, 'Erro');
         }
     }
 
