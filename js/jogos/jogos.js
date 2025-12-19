@@ -95,6 +95,9 @@ export class JogosManager {
         const username = session.username;
         const nome = session.nome;
 
+        // Always award exactly 2 points per victory
+        const finalScore = score > 0 ? 2 : 0;
+
         if (!this.rankings[gameId]) {
             this.rankings[gameId] = [];
         }
@@ -102,7 +105,7 @@ export class JogosManager {
         this.rankings[gameId].push({
             username,
             nome,
-            score,
+            score: finalScore,
             date: new Date().toISOString()
         });
 
@@ -111,13 +114,13 @@ export class JogosManager {
 
         // Update stats
         this.stats.gamesPlayed++;
-        if (score > this.stats.bestScore) {
-            this.stats.bestScore = score;
+        if (finalScore > this.stats.bestScore) {
+            this.stats.bestScore = finalScore;
         }
         this.saveStats();
 
         // Check for first win achievement
-        if (score > 0) {
+        if (finalScore > 0) {
             this.unlockAchievement('first_win');
         }
 
@@ -971,6 +974,10 @@ class DoomGame {
         this.won = false;
         this.running = false;
         
+        // Animação de tiro
+        this.shotAnimations = [];
+        this.lastShotAnimTime = 0;
+        
         this.maps = [
             [[1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,0,1],[1,0,1,1,0,1,1,0,0,1],[1,0,1,0,0,0,1,0,0,1],[1,0,0,0,1,0,0,0,0,1],[1,0,1,0,1,0,1,1,0,1],[1,0,1,0,0,0,0,0,0,1],[1,0,0,0,1,1,0,1,0,1],[1,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1]],
             [[1,1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,0,1],[1,0,1,0,1,0,1,1,0,1],[1,0,1,0,0,0,0,1,0,1],[1,0,1,1,1,1,0,0,0,1],[1,0,0,0,0,1,0,1,0,1],[1,1,1,0,0,0,0,1,0,1],[1,0,0,0,1,1,0,1,0,1],[1,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1]],
@@ -1141,6 +1148,17 @@ class DoomGame {
         this.lastShot = now;
         this.player.ammo--;
         this.bullets.push({ x: this.player.x, y: this.player.y, dx: Math.cos(this.player.angle) * 0.3, dy: Math.sin(this.player.angle) * 0.3, isEnemy: false });
+        
+        // Adicionar efeito de tiro
+        this.shotAnimations.push({
+            x: this.canvas.width / 2,
+            y: this.canvas.height / 2,
+            radius: 8,
+            maxRadius: 30,
+            opacity: 1,
+            startTime: now
+        });
+        
         this.updateScoreDisplay();
     }
 
@@ -1235,6 +1253,8 @@ class DoomGame {
                 this.ctx.fillRect(i * (this.canvas.width / numRays), wallTop, (this.canvas.width / numRays) + 1, wallHeight);
             }
         }
+        
+        this.drawShotAnimations();
         
         this.enemies.forEach(enemy => {
             const dx = enemy.x - this.player.x, dy = enemy.y - this.player.y;
@@ -1407,6 +1427,35 @@ class DoomGame {
         const infoEl = document.getElementById('game-phase');
         if (scoreEl) scoreEl.textContent = this.score;
         if (infoEl) infoEl.textContent = `HP: ${this.player.health} | Munição: ${this.player.ammo} | Nível ${this.level}`;
+    }
+
+    drawShotAnimations() {
+        const now = Date.now();
+        this.shotAnimations = this.shotAnimations.filter(shot => {
+            const elapsed = now - shot.startTime;
+            const duration = 200; // Duração da animação em ms
+            
+            if (elapsed > duration) return false;
+            
+            const progress = elapsed / duration;
+            const currentRadius = shot.radius + (shot.maxRadius - shot.radius) * progress;
+            const opacity = 1 - progress;
+            
+            // Desenhar círculo expandido
+            this.ctx.strokeStyle = `rgba(255, 200, 0, ${opacity * 0.7})`;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.arc(shot.x, shot.y, currentRadius, 0, Math.PI * 2);
+            this.ctx.stroke();
+            
+            // Desenhar ponto central amarelo
+            this.ctx.fillStyle = `rgba(255, 255, 0, ${opacity})`;
+            this.ctx.beginPath();
+            this.ctx.arc(shot.x, shot.y, 3, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            return true;
+        });
     }
 
     endGame() {
@@ -2682,8 +2731,9 @@ class MemoryGame {
         }
         
         setTimeout(() => {
-            alert(`Parabéns! Você completou em ${this.moves} movimentos!\nTempo: ${Math.floor(elapsed / 60)}:${(elapsed % 60).toString().padStart(2, '0')}\nPontuação: ${finalScore}`);
-            this.onScore(finalScore);
+            Modals.showAlert(`Parabéns! Você completou em ${this.moves} movimentos!\nTempo: ${Math.floor(elapsed / 60)}:${(elapsed % 60).toString().padStart(2, '0')}\nPontuação: ${finalScore}`, 'Jogo Concluído').then(() => {
+                this.onScore(finalScore);
+            });
         }, 500);
     }
 }

@@ -584,9 +584,10 @@ export class RegistrosManager {
 
         const bikeAtualInfo = bikeAtual ? `${bikeAtual.modelo} (${bikeAtual.marca} - ${bikeAtual.cor})` : 'Desconhecida';
         
-        const escolha = prompt(`Bicicleta atual: ${bikeAtualInfo}\n\nEscolha a nova bicicleta:\n${options}\n\nDigite o número:`);
+        const escolhaText = `Bicicleta atual: ${bikeAtualInfo}\n\nEscolha a nova bicicleta:\n${options}\n\nDigite o número:`;
+        const escolha = await Modals.showInputPrompt(escolhaText, 'Trocar Bicicleta');
         
-        if (escolha) {
+        if (escolha !== null && escolha.trim() !== '') {
             const index = parseInt(escolha) - 1;
             if (index >= 0 && index < outrasBikes.length) {
                 const novaBike = outrasBikes[index];
@@ -599,9 +600,9 @@ export class RegistrosManager {
                 await Storage.saveRegistros(this.app.data.registros);
                 this.renderDailyRecords();
                 this.app.bicicletasManager.renderClientDetails();
-                await Modals.showAlert('Bicicleta do registro alterada com sucesso!', 'Sucesso');
+                await Modals.showAlert('Bicicleta trocada com sucesso!', 'Sucesso');
             } else {
-                await Modals.showAlert('Opção inválida!', 'Erro');
+                await Modals.showAlert('Opção inválida! Selecione um número válido.', 'Erro');
             }
         }
     }
@@ -638,9 +639,9 @@ export class RegistrosManager {
             `${idx + 1}. ${bike.modelo} (${bike.marca} - ${bike.cor})`
         ).join('\n');
         
-        const escolha = prompt(`Escolha uma bicicleta para adicionar:\n${options}\n\nDigite o número:`);
+        const escolha = await Modals.showInputPrompt(`Escolha uma bicicleta para adicionar:\n${options}\n\nDigite o número:`, 'Adicionar Outra Bike');
         
-        if (escolha) {
+        if (escolha !== null && escolha.trim() !== '') {
             const index = parseInt(escolha) - 1;
             if (index >= 0 && index < bikesDisponiveis.length) {
                 const bikeSelecionada = bikesDisponiveis[index];
@@ -661,7 +662,7 @@ export class RegistrosManager {
                 this.renderDailyRecords();
                 await Modals.showAlert('Bicicleta adicionada ao mesmo registro com sucesso!', 'Sucesso');
             } else {
-                await Modals.showAlert('Opção inválida!', 'Erro');
+                await Modals.showAlert('Opção inválida! Selecione um número válido.', 'Erro');
             }
         }
     }

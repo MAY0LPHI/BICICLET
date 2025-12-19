@@ -139,6 +139,66 @@ export const Modals = {
                 onConfirm();
             }
         });
+    },
+
+    showInputPrompt(message, title = 'Entrada') {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('custom-alert-modal');
+            const titleEl = document.getElementById('alert-title');
+            const messageEl = document.getElementById('alert-message');
+            const okBtn = document.getElementById('alert-ok-btn');
+
+            titleEl.textContent = title;
+            
+            const inputHtml = `
+                <p class="text-slate-600 dark:text-slate-400 mb-4">${message}</p>
+                <input type="text" id="modal-input-field" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Digite aqui..." />
+            `;
+            messageEl.innerHTML = inputHtml;
+
+            const inputField = document.getElementById('modal-input-field');
+            const handleOk = () => {
+                cleanup();
+                resolve(inputField.value || null);
+            };
+
+            const handleCancel = () => {
+                cleanup();
+                resolve(null);
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') {
+                    handleOk();
+                }
+            };
+
+            const cleanup = () => {
+                modal.querySelector('.modal-content').classList.remove('scale-100');
+                modal.querySelector('.modal-content').classList.add('scale-95');
+                modal.classList.remove('show');
+                
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+                
+                okBtn.removeEventListener('click', handleOk);
+                okBtn.textContent = 'OK';
+                inputField.removeEventListener('keypress', handleKeyPress);
+            };
+
+            okBtn.addEventListener('click', handleOk);
+            inputField.addEventListener('keypress', handleKeyPress);
+            okBtn.textContent = 'Confirmar';
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.add('show');
+                modal.querySelector('.modal-content').classList.remove('scale-95');
+                modal.querySelector('.modal-content').classList.add('scale-100');
+                inputField.focus();
+            }, 10);
+        });
     }
 };
 
