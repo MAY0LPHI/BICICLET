@@ -21,7 +21,8 @@ function createWindow() {
       contextIsolation: true,
       devTools: true,
       enableRemoteModule: false,
-      sandbox: false
+      sandbox: false,
+      devTools: true
     },
     backgroundColor: '#f1f5f9',
     show: false
@@ -30,7 +31,17 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-    console.log(`[Renderer Console] ${message} (${sourceId}:${line})`);
+    const fileName = path.basename(sourceId);
+    let prefix = '[LOG]';
+    if (level === 2) prefix = '[AVISO]';
+    if (level === 3) prefix = '[ERRO]';
+    
+    // Silencia avisos de segurança do Electron e do Tailwind CDN que poluem o console
+    if (message.includes('Electron Security Warning') || message.includes('cdn.tailwindcss.com')) {
+      return;
+    }
+
+    console.log(`${prefix} (${fileName}:${line}): ${message}`);
   });
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
@@ -155,20 +166,8 @@ function setupIPCHandlers() {
     return storage.saveAllRegistros(registros);
   });
 
-  ipcMain.handle('load-users', () => {
-    return storage.loadAllUsers();
-  });
-
-  ipcMain.handle('save-users', (event, users) => {
-    return storage.saveAllUsers(users);
-  });
-
-  ipcMain.handle('load-audit-log', () => {
-    return storage.loadAuditLog();
-  });
-
-  ipcMain.handle('save-audit-log', (event, entries) => {
-    return storage.saveAuditLog(entries);
+  ipcMain.handle('get-storage-path', () => {
+    return storage.getStoragePath();
   });
 
   ipcMain.handle('load-categorias', () => {
@@ -177,10 +176,6 @@ function setupIPCHandlers() {
 
   ipcMain.handle('save-categorias', (event, categorias) => {
     return storage.saveCategorias(categorias);
-  });
-
-  ipcMain.handle('get-storage-path', () => {
-    return storage.getStoragePath();
   });
 }
 

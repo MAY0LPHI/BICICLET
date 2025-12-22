@@ -5,10 +5,6 @@ contextBridge.exposeInMainWorld('electron', {
   saveClients: (clients) => ipcRenderer.invoke('save-clients', clients),
   loadRegistros: () => ipcRenderer.invoke('load-registros'),
   saveRegistros: (registros) => ipcRenderer.invoke('save-registros', registros),
-  loadUsers: () => ipcRenderer.invoke('load-users'),
-  saveUsers: (users) => ipcRenderer.invoke('save-users', users),
-  loadAuditLog: () => ipcRenderer.invoke('load-audit-log'),
-  saveAuditLog: (entries) => ipcRenderer.invoke('save-audit-log', entries),
   loadCategorias: () => ipcRenderer.invoke('load-categorias'),
   saveCategorias: (categorias) => ipcRenderer.invoke('save-categorias', categorias),
   getStoragePath: () => ipcRenderer.invoke('get-storage-path')

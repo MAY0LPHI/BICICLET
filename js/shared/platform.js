@@ -27,7 +27,7 @@
         }
         
         // Check for electronAPI exposed via preload
-        if (typeof window !== 'undefined' && window.electronAPI) {
+        if (typeof window !== 'undefined' && (window.electronAPI || window.electron)) {
             return true;
         }
         

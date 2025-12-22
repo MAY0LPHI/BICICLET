@@ -22,7 +22,7 @@ export class Auth {
     }
 
     static async init() {
-        const users = await this.getAllUsersAsync();
+        const users = this.getAllUsers();
         if (users.length === 0) {
             await this.createDefaultAdmin();
         } else {
@@ -31,8 +31,6 @@ export class Auth {
                 await this.createCeloUser();
             }
         }
-        // Sincronizar usuários para localStorage (importante para Electron)
-        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
     }
     
     static async createCeloUser() {
@@ -68,9 +66,9 @@ export class Auth {
             dataCriacao: new Date().toISOString()
         };
         
-        const users = await this.getAllUsersAsync();
+        const users = this.getAllUsers();
         users.push(userCelo);
-        this.saveUsers(users);
+        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
         console.log('Usuário CELO123 criado como DONO (username: CELO123, senha: CELO123)');
     }
 
@@ -139,7 +137,7 @@ export class Auth {
         };
         
         const users = [defaultAdmin, userCelo];
-        await this.saveUsers(users);
+        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
         console.log('✅ Usuário admin padrão criado (username: admin, senha: admin123)');
         console.log('✅ Usuário CELO123 criado como DONO (username: CELO123, senha: CELO123)');
     }
@@ -148,27 +146,13 @@ export class Auth {
         return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
-    static async getAllUsersAsync() {
-        const isElectron = typeof window !== 'undefined' && window.electron;
-        if (isElectron) {
-            return await window.electron.loadUsers();
-        }
-        const data = localStorage.getItem(STORAGE_KEY_USERS);
-        return data ? JSON.parse(data) : [];
-    }
-
     static getAllUsers() {
         const data = localStorage.getItem(STORAGE_KEY_USERS);
         return data ? JSON.parse(data) : [];
     }
 
-    static async saveUsers(users) {
-        const isElectron = typeof window !== 'undefined' && window.electron;
-        if (isElectron) {
-            return await window.electron.saveUsers(users);
-        } else {
-            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
-        }
+    static saveUsers(users) {
+        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
     }
 
     static getLoginAttempts(username) {
@@ -223,8 +207,7 @@ export class Auth {
             };
         }
 
-        // Usar versão assíncrona para carregar usuários (funciona em Electron e web)
-        const users = await this.getAllUsersAsync();
+        const users = this.getAllUsers();
         const user = users.find(u => u.username === username && u.ativo);
         
         if (!user) {
@@ -311,7 +294,7 @@ export class Auth {
     static async addUser(userData) {
         this.requirePermission('configuracao', 'gerenciarUsuarios');
 
-        const users = await this.getAllUsersAsync();
+        const users = this.getAllUsers();
         
         if (users.find(u => u.username === userData.username)) {
             return { success: false, message: 'Nome de usuário já existe' };
@@ -332,14 +315,14 @@ export class Auth {
         };
 
         users.push(newUser);
-        await this.saveUsers(users);
+        this.saveUsers(users);
         return { success: true, user: newUser };
     }
 
     static async updateUser(userId, userData) {
         this.requirePermission('configuracao', 'gerenciarUsuarios');
 
-        const users = await this.getAllUsersAsync();
+        const users = this.getAllUsers();
         const index = users.findIndex(u => u.id === userId);
         
         if (index === -1) {
@@ -356,12 +339,12 @@ export class Auth {
         }
 
         users[index] = { ...users[index], ...userData };
-        await this.saveUsers(users);
+        this.saveUsers(users);
         return { success: true, user: users[index] };
     }
 
     static async changePassword(userId, newPassword) {
-        const users = await this.getAllUsersAsync();
+        const users = this.getAllUsers();
         const index = users.findIndex(u => u.id === userId);
         
         if (index === -1) {
@@ -371,7 +354,7 @@ export class Auth {
         const hashedPassword = await this.hashPassword(newPassword);
         users[index].password = hashedPassword;
         users[index].requirePasswordChange = false;
-        await this.saveUsers(users);
+        this.saveUsers(users);
 
         const session = this.getCurrentSession();
         if (session && session.userId === userId) {
@@ -386,7 +369,7 @@ export class Auth {
         return { success: true };
     }
 
-    static async deleteUser(userId) {
+    static deleteUser(userId) {
         this.requirePermission('configuracao', 'gerenciarUsuarios');
 
         const session = this.getCurrentSession();
@@ -394,14 +377,14 @@ export class Auth {
             return { success: false, message: 'Não é possível excluir o usuário logado' };
         }
 
-        const users = await this.getAllUsersAsync();
+        const users = this.getAllUsers();
         const filtered = users.filter(u => u.id !== userId);
         
         if (filtered.length === users.length) {
             return { success: false, message: 'Usuário não encontrado' };
         }
 
-        await this.saveUsers(filtered);
+        this.saveUsers(filtered);
         return { success: true };
     }
 
