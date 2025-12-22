@@ -1,99 +1,138 @@
 # Sistema de Gerenciamento de Bicicletário
 
 ## Overview
-O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicação web, com versão desktop executável, desenvolvida para gerenciar clientes, bicicletas e controlar o fluxo de entrada e saída em estacionamentos de bicicletas. O objetivo é otimizar as operações de bicicletários através de funcionalidades de cadastro, registro de movimentação, exportação de dados, sistema de auditoria completo e configurações personalizáveis, visando o mercado de lojas locais. O projeto inclui um sistema de ranking global para jogos e um robusto sistema de permissões de usuário.
+O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicação web multiplataforma (web e desktop Electron), desenvolvida para gerenciar clientes, bicicletas e controlar o fluxo de entrada e saída em estacionamentos de bicicletas. Otimiza operações através de cadastro, registro de movimentação, exportação de dados, auditoria completa e configurações personalizáveis. Inclui sistema de ranking global para jogos e robusto sistema de permissões de usuário.
 
-## Replit Setup (30/11/2025)
-- **Environment**: Python 3.11 installed for web server
-- **Workflow**: Configured to run `python3 server.py` on port 5000 with webview output
-- **Deployment**: Set to autoscale deployment target for production
-- **Server Configuration**:
-  - Main web server: `http://0.0.0.0:5000/` (serves the frontend)
-  - Storage API: `http://localhost:5001/` (handles file-based storage)
-  - Data storage path: `dados/navegador/` for web version
-- **Access**: Click the "Run" button to start the server, then access via the webview
-- **Default Credentials**: 
+## Replit Setup (19/12/2025)
+### Versão Web
+- **Environment**: Python 3.11
+- **Servidor**: `python server.py` rodando em `http://0.0.0.0:5000/`
+- **Storage API**: `http://localhost:5001/` (arquivos JSON em `dados/navegador/`)
+- **Deployment**: Autoscale configurado
+- **Cache Control**: Headers no-cache para evitar caching issues
+- **Status**: ✅ Totalmente funcional
+
+### Versão Desktop (Electron)
+- **Dependências**: npm install (Electron 28.3.3 + electron-builder)
+- **Executar**: `npm start` (usa index.html localmente)
+- **Storage**: Arquivos JSON em `dados/desktop/`
+- **Arquivo Backend**: `electron/storage-backend.js` com suporte completo para:
+  - Clientes e Registros (JSON)
+  - Usuários (persiste em arquivo)
+  - Logs de Auditoria (persiste em arquivo)
+  - Categorias (persiste em arquivo)
+- **IPC Handlers**: Comunicação frontend-backend via Electron IPC
+- **Status**: ✅ Configurada com suporte total para arquivos (igual à web)
+
+## Autenticação e Dados
+- **Default Credentials**:
   - Admin: `admin` / `admin123`
   - Dono (Owner): `CELO123` / `CELO123`
+- **Sistema de Usuários**: Suporte para múltiplos usuários com permissões granulares
+- **Auditoria**: Logs completos de todas as ações (create, edit, delete, login, etc)
+- **Persistência**: 
+  - Web: localStorage + API de arquivos em `dados/navegador/`
+  - Desktop: Arquivos JSON em `dados/desktop/`
 
-## Desktop Version (Electron)
-- **Setup**: Run `npm install` to install Electron dependencies
-- **Run**: Execute `npm start` to launch the desktop application
-- **Build**: Run `npm run build` to compile executable for Windows
-- **Data Storage**: Desktop version saves data in `dados/desktop/` folder
-- **Features**: 
-  - Standalone executable application
-  - Local file-based storage (no server required)
-  - Full offline functionality
+## Estrutura de Projeto
+```
+/
+├── electron/
+│   ├── main.js (Electron app + IPC handlers)
+│   ├── preload.js (Bridge entre frontend e Node.js)
+│   └── storage-backend.js (Persistência de dados em arquivos)
+├── js/
+│   ├── app-modular.js (App principal)
+│   ├── cadastros/ (Clientes e Bicicletas)
+│   ├── registros/ (Registro de Entrada/Saída)
+│   ├── configuracao/ (Temas, Categorias, Permissões)
+│   ├── dados/ (Importação/Exportação)
+│   ├── jogos/ (6 Jogos com Ranking)
+│   ├── usuarios/ (Gerenciamento de Usuários)
+│   └── shared/ (Storage, Auth, Auditoria, Utils)
+├── index.html (UI Principal)
+├── server.py (Servidor web Python)
+├── storage_api.py (API de arquivos)
+└── package.json (npm + Electron Builder config)
+```
 
-## Recent Changes (17/12/2025)
-- **Delete Data Feature:** Added new section in the "Dados" (Data) tab to permanently delete system data with selective options:
-  - Delete all client registrations (clientes e bicicletas)
-  - Delete all access records (registros de entrada/saida)
-  - Delete all categories
-  - Shows count of each data type before deletion
-  - Double confirmation required for safety
-  - Permission-controlled (requires configuracao/exportar permission)
+## Funcionalidades Core
 
-## Recent Changes (29/11/2025)
-- **Clickable Category Stats:** Adicionada funcionalidade para clicar nas estatísticas de categorias em Configuração > Gerenciar Categorias. Ao clicar em uma categoria, abre um modal mostrando todos os clientes daquela categoria com botão de editar (lápis) ao lado de cada um.
-- **Client ID Normalization:** Adicionada normalização automática de IDs de clientes para garantir que todos os registros tenham um identificador único.
-- **Category Removal Fix:** Corrigido bug na função de remover categoria em Configuração > Gerenciar Categorias. Adicionado método `Modals.confirm()` que faltava no módulo de modais.
+### Frontend JavaScript (Vanilla ES6+)
+- Interface responsiva com temas Claro/Escuro
+- Sistema modular com 6 abas principais
+- Validação de CPF, formatação de dados
+- Exportação em PDF, Excel, CSV
 
-## Recent Changes (27/11/2025)
-- **Typing Game Redesign (MonkeyType Style):**
-  - Nova interface minimalista escura inspirada no MonkeyType
-  - Opções de tempo: 15, 30, 60, 120 segundos
-  - Auto-início quando o usuário começa a digitar
-  - Animação suave do cursor seguindo a posição
-  - Overlay com blur quando desfocado
-  - Letras verdes para acertos, vermelhas para erros
-  - Tab + Enter para reiniciar após fim do jogo
-  - Tela de resultados com WPM, precisão, caracteres e tempo
-- **Pac-Man Speed Fix:** Velocidade reduzida de 100ms para 150ms
-- **Games Tab Fixes:** Botão voltar funcional, sem flickering nos jogos
-- **Navigation Icons:** Ícones Lucide em todas as 6 abas
+### Backend
+- **Web**: Python SimpleHTTPServer na porta 5000 + Storage API na porta 5001
+- **Desktop**: Electron com IPC para persistência local
+- **Ambos**: Suporte completo para mesmo conjunto de dados
+
+### Módulos Principais
+- **Clientes**: Cadastro com CPF, telefone, bicicletas associadas
+- **Registros Diários**: Entrada/Saída, "Pernoite", estatísticas por categoria
+- **Usuários**: Gerenciamento com permissões granulares
+- **Dados**: Importação/Exportação, Backup
+- **Configuração**: Temas, Categorias, Busca avançada
+- **Jogos**: 6 jogos interativos com ranking global
+
+## Tecnologias
+- **Frontend**: Vanilla JavaScript ES6+, HTML5, CSS3, Tailwind CSS, Lucide Icons
+- **Web Server**: Python 3.11 (http.server)
+- **Desktop**: Electron 28.3.3, electron-builder
+- **Storage**: localStorage (web) + arquivos JSON (ambas versões)
+- **Persistência**: File-based (JSON) em `dados/`
+- **Build**: npm + electron-builder
+
+## Como Usar
+
+### Versão Web (Replit)
+```bash
+npm install        # Instala dependências Electron (opcional)
+python server.py   # Inicia servidor web na porta 5000
+# Acesse via Replit Preview
+```
+
+### Versão Desktop Local
+```bash
+npm install
+npm start          # Abre aplicação Electron
+npm run build      # Compila para Windows (.exe)
+```
+
+## Deploy para Produção
+- **Deployment Target**: Autoscale
+- **Build Command**: `python server.py`
+- **Run Command**: `python server.py`
+- **Port**: 5000 (webview)
+
+## Dados Persistidos
+- **Clientes**: dados/navegador/clientes.json ou dados/desktop/clientes.json
+- **Registros**: dados/navegador/registros.json ou dados/desktop/registros.json  
+- **Usuários**: dados/navegador/usuarios.json ou dados/desktop/usuarios.json
+- **Auditoria**: dados/navegador/auditoria.json ou dados/desktop/auditoria.json
+- **Categorias**: dados/navegador/categorias.json ou dados/desktop/categorias.json
+
+## Melhorias Recentes (19/12/2025)
+- ✅ Instalado e configurado npm com Electron
+- ✅ Melhorado storage-backend.js para suportar usuários, auditoria e categorias
+- ✅ Atualizado preload.js com todos os handlers IPC necessários
+- ✅ Implementado main.js com IPC handlers completos
+- ✅ Corrigido auth.js para persistir dados via Electron quando disponível
+- ✅ Versão Desktop agora tem feature parity com versão Web
 
 ## User Preferences
 - Idioma: Português (Brasil)
-- Aplicação projetada para lojas locais de estacionamento de bicicletas
-- Interface com suporte a tema escuro/claro
-- Dados separados por plataforma (navegador e desktop) em pastas distintas
-- Execução local no computador via navegador
+- Público-alvo: Lojas locais de estacionamento de bicicletas
+- Interface: Tema escuro/claro com persistência
+- Dados: Separados por plataforma (web vs desktop)
+- Execução: Local no navegador (web) ou desktop (Electron)
 
-## System Architecture
-O sistema adota uma arquitetura modular baseada em Vanilla JavaScript (ES6+ Modules), HTML e CSS, utilizando Tailwind CSS para estilização e Lucide Icons para ícones. A persistência de dados é realizada via LocalStorage ou arquivos JSON, com suporte a um backend de armazenamento em arquivos para a versão web e um sistema de arquivos local para a versão desktop.
-
-### UI/UX Decisions
-- Interface responsiva com suporte a temas Claro, Escuro e detecção da preferência do sistema operacional.
-- Modais para edições, confirmações e alertas, com animações suaves.
-- Abas de navegação para diferentes módulos (Clientes, Registros Diários, Usuários, Dados, Configuração, Jogos).
-- Feedback visual para ações e seleções, com uso extensivo de Lucide Icons no lugar de emojis.
-- Design consistente com o tema do site para dropdowns e outros componentes.
-
-### Technical Implementations
-- **Módulos Core**:
-    - **Cadastros**: Gerencia clientes e bicicletas (adição, busca, edição, validação de CPF, prevenção de duplicidade, cadastro múltiplo por cliente, histórico).
-    - **Registros Diários**: Controla registros de entrada/saída, "Pernoite", e edição de registros. Inclui coluna de categoria e estatísticas por categoria.
-    - **Usuários**: Gerenciamento de perfis de funcionários com permissões granulares e relatório completo de auditoria com filtros, exportação em CSV e PDF.
-    - **Dados**: Gerenciamento centralizado de importação/exportação de dados (importação de clientes por arquivo, exportação por período, backup completo do sistema).
-    - **Configuração**: Permite seleção de tema, busca avançada global, gerenciamento de categorias, exportação de registros de acesso por cliente (PDF, Excel) e visualização de histórico.
-    - **Jogos**: Aba dedicada com 6 jogos completos (Snake, Pac-Man, Typing Test, Memory Game, Tetris, Breakout) com sistema de ranking global, dificuldades e progressão de fases.
-    - **Shared**: Contém utilitários (formatação, validação de CPF, UUID), funções para gerenciamento e migração de dados, e sistema de auditoria (AuditLogger).
-- **Sistema de Permissões**: Controle de acesso granular com perfis (dono, admin, funcionário) e proteção de UI e runtime, incluindo permissões específicas para a aba de "Jogos" e "Dados".
-- **Sistema de Comentários**: Modal unificada para adicionar e gerenciar comentários de clientes.
-- **Categorias**: Funcionalidade para criar, editar (nome e ícone) e deletar categorias, com armazenamento refatorado para objeto JSON e estatísticas de uso.
-
-### System Design Choices
-- **Fluxo de Dados**: Dados primariamente armazenados no LocalStorage com estruturas separadas. Sistema de "snapshot" para bicicletas. Estrutura de pastas separada por plataforma (`dados/navegador/` e `dados/desktop/`) para arquivos JSON. Fallback automático para localStorage. Timestamps processados com fuso horário local.
-- **Versão Desktop (Electron)**: Aplicações desktop executáveis construídas com Electron, utilizando `electron/storage-backend.js` para gerenciar o armazenamento de arquivos localmente.
-- **Python Backend**: Um servidor Python serve a aplicação web e uma API de armazenamento em arquivos.
-
-## External Dependencies
--   **Tailwind CSS**: Framework CSS para estilização.
--   **Lucide Icons**: Biblioteca de ícones.
--   **SheetJS (xlsx)**: Biblioteca para leitura e escrita de arquivos Excel.
--   **LocalStorage**: Para persistência de dados no navegador.
--   **Python 3.12 HTTP Server**: Utilizado para servir a aplicação web e a API de armazenamento em arquivos (`storage_api.py`).
--   **Electron**: Framework para construção de aplicações desktop multiplataforma.
--   **Electron Builder**: Ferramenta para empacotamento e distribuição de aplicações Electron.
+## Status Final
+✅ Sistema completo e funcional
+- ✅ Versão Web 100% operacional em Replit
+- ✅ Versão Desktop (Electron) com suporte total a persistência
+- ✅ Autenticação, Autorização, Auditoria
+- ✅ Storage duplo (localStorage + arquivos JSON)
+- ✅ Deployment configurado e testado
