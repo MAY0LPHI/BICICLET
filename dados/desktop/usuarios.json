@@ -1,0 +1,84 @@
+[
+  {
+    "id": "user_1766110571744_smk0mu0pf",
+    "username": "admin",
+    "password": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+    "nome": "Administrador",
+    "tipo": "admin",
+    "permissoes": {
+      "clientes": {
+        "ver": true,
+        "adicionar": true,
+        "editar": true,
+        "excluir": true
+      },
+      "registros": {
+        "ver": true,
+        "adicionar": true,
+        "editar": true,
+        "excluir": true
+      },
+      "dados": {
+        "ver": true,
+        "exportar": true,
+        "importar": true,
+        "exportarDados": true,
+        "importarDados": true,
+        "exportarSistema": true,
+        "importarSistema": true
+      },
+      "configuracao": {
+        "ver": true,
+        "gerenciarUsuarios": true,
+        "buscaAvancada": true
+      },
+      "jogos": {
+        "ver": true
+      }
+    },
+    "ativo": true,
+    "requirePasswordChange": true,
+    "dataCriacao": "2025-12-19T02:16:11.744Z"
+  },
+  {
+    "id": "user_1766110571744_5xsv2ce2z",
+    "username": "CELO123",
+    "password": "a2baf8fc8257f81de6c3617cda7b89162a0eba4f323bc07289279b02b2128d98",
+    "nome": "CELO - Dono do Sistema",
+    "tipo": "dono",
+    "permissoes": {
+      "clientes": {
+        "ver": true,
+        "adicionar": true,
+        "editar": true,
+        "excluir": true
+      },
+      "registros": {
+        "ver": true,
+        "adicionar": true,
+        "editar": true,
+        "excluir": true
+      },
+      "dados": {
+        "ver": true,
+        "exportar": true,
+        "importar": true,
+        "exportarDados": true,
+        "importarDados": true,
+        "exportarSistema": true,
+        "importarSistema": true
+      },
+      "configuracao": {
+        "ver": true,
+        "gerenciarUsuarios": true,
+        "buscaAvancada": true
+      },
+      "jogos": {
+        "ver": true
+      }
+    },
+    "ativo": true,
+    "requirePasswordChange": false,
+    "dataCriacao": "2025-12-19T02:16:11.744Z"
+  }
+]
