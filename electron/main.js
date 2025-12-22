@@ -155,6 +155,30 @@ function setupIPCHandlers() {
     return storage.saveAllRegistros(registros);
   });
 
+  ipcMain.handle('load-users', () => {
+    return storage.loadAllUsers();
+  });
+
+  ipcMain.handle('save-users', (event, users) => {
+    return storage.saveAllUsers(users);
+  });
+
+  ipcMain.handle('load-audit-log', () => {
+    return storage.loadAuditLog();
+  });
+
+  ipcMain.handle('save-audit-log', (event, entries) => {
+    return storage.saveAuditLog(entries);
+  });
+
+  ipcMain.handle('load-categorias', () => {
+    return storage.loadCategorias();
+  });
+
+  ipcMain.handle('save-categorias', (event, categorias) => {
+    return storage.saveCategorias(categorias);
+  });
+
   ipcMain.handle('get-storage-path', () => {
     return storage.getStoragePath();
   });
