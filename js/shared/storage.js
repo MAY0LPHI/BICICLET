@@ -423,12 +423,17 @@ export const Storage = {
         return null;
     },
 
-    loadCategorias() {
+    async loadCategorias() {
+        if (isElectron) {
+            const cats = await window.electron.loadCategorias();
+            if (cats) return cats;
+        }
         const data = localStorage.getItem('bicicletario_categorias');
         if (data) {
             try {
                 const parsed = JSON.parse(data);
                 if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    if (isElectron) await window.electron.saveCategorias(parsed);
                     return parsed;
                 }
                 if (Array.isArray(parsed)) {
@@ -436,7 +441,7 @@ export const Storage = {
                     parsed.forEach(cat => {
                         obj[cat] = this.getDefaultEmoji(cat);
                     });
-                    this.saveCategorias(obj);
+                    await this.saveCategorias(obj);
                     return obj;
                 }
             } catch (e) {
@@ -449,7 +454,7 @@ export const Storage = {
             'IFOOD': '🍽️',
             'ACADEMIA': '💪'
         };
-        this.saveCategorias(defaultCategories);
+        await this.saveCategorias(defaultCategories);
         return defaultCategories;
     },
 
@@ -464,7 +469,10 @@ export const Storage = {
         return emojiMap[categoryUpper] || '⚙️';
     },
 
-    saveCategorias(categorias) {
+    async saveCategorias(categorias) {
+        if (isElectron) {
+            await window.electron.saveCategorias(categorias);
+        }
         localStorage.setItem('bicicletario_categorias', JSON.stringify(categorias));
     }
 };
