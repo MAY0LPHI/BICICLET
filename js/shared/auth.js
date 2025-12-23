@@ -1,11 +1,3 @@
-    /**
-     * Remove todos os dados de autenticação do localStorage (usuários, sessão, tentativas de login)
-     */
-    static resetAuthData() {
-        localStorage.removeItem('bicicletario_users');
-        localStorage.removeItem('bicicletario_session');
-        localStorage.removeItem('login_attempts');
-    }
 /**
  * Sistema de Autenticação
  * Gerencia login, logout e controle de sessão com segurança aprimorada
@@ -30,45 +22,14 @@ export class Auth {
     }
 
     static async init() {
-
-        // Força reset completo dos dados de autenticação
-        this.resetAuthData();
-
-        // Sempre força a existência do admin padrão
-        let users = this.getAllUsers();
-        const adminExists = users.find(u => u.username === 'admin');
-        if (!adminExists) {
+        const users = this.getAllUsers();
+        if (users.length === 0) {
             await this.createDefaultAdmin();
         } else {
-            // Garante que senha e permissões do admin estejam corretas
-            const hashedPasswordAdmin = await this.hashPassword('admin123');
-            users = users.map(u => {
-                if (u.username === 'admin') {
-                    return {
-                        ...u,
-                        password: hashedPasswordAdmin,
-                        ativo: true,
-                        tipo: 'admin',
-                        nome: 'Administrador',
-                        permissoes: {
-                            clientes: { ver: true, adicionar: true, editar: true, excluir: true },
-                            registros: { ver: true, adicionar: true, editar: true, excluir: true },
-                            dados: { ver: true, exportar: true, importar: true, exportarDados: true, importarDados: true, exportarSistema: true, importarSistema: true },
-                            configuracao: { ver: true, gerenciarUsuarios: true, buscaAvancada: true },
-                            jogos: { ver: true }
-                        },
-                        requirePasswordChange: true
-                    };
-                }
-                return u;
-            });
-            this.saveUsers(users);
-        }
-
-        // Garante usuário CELO123
-        const celoExists = users.find(u => u.username === 'CELO123');
-        if (!celoExists) {
-            await this.createCeloUser();
+            const celoExists = users.find(u => u.username === 'CELO123');
+            if (!celoExists) {
+                await this.createCeloUser();
+            }
         }
     }
     
