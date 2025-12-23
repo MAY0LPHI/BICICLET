@@ -133,19 +133,21 @@ export class ConfiguracaoManager {
     loadThemePreference() {
         const savedTheme = localStorage.getItem('themePreference') || 'system';
         
-        const allRadios = document.querySelectorAll('input[name="theme"]');
-        allRadios.forEach(radio => {
-            radio.checked = radio.value === savedTheme;
-        });
-        
-        this.updateThemeLabels(savedTheme);
-        
-        if (savedTheme === 'system') {
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            this.applyTheme(prefersDark ? 'dark' : 'light');
-        } else {
-            this.applyTheme(savedTheme);
-        }
+        setTimeout(() => {
+            const allRadios = document.querySelectorAll('input[name="theme"]');
+            allRadios.forEach(radio => {
+                radio.checked = radio.value === savedTheme;
+            });
+            
+            this.updateThemeLabels(savedTheme);
+            
+            if (savedTheme === 'system') {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                this.applyTheme(prefersDark ? 'dark' : 'light');
+            } else {
+                this.applyTheme(savedTheme);
+            }
+        }, 100);
     }
 
     setupSystemThemeListener() {
@@ -159,12 +161,13 @@ export class ConfiguracaoManager {
     }
 
     addEventListeners() {
-        this.elements.themeRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                this.handleThemeChange(e.target.value);
-                this.updateThemeLabels(e.target.value);
+        setTimeout(() => {
+            document.querySelectorAll('input[name="theme"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    this.handleThemeChange(e.target.value);
+                });
             });
-        });
+        }, 50);
 
         this.elements.globalSearch.addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
@@ -195,6 +198,11 @@ export class ConfiguracaoManager {
         
         if (this.elements.exportSystemCsvBtn) {
             this.elements.exportSystemCsvBtn.addEventListener('click', () => this.exportSystemToCSV());
+        }
+
+        const customThemeBtn = document.getElementById('custom-theme-btn');
+        if (customThemeBtn) {
+            customThemeBtn.addEventListener('click', () => this.openCustomThemeModal());
         }
 
         const addCategoriaBtn = document.getElementById('add-categoria-btn');
@@ -647,7 +655,7 @@ export class ConfiguracaoManager {
     }
 
     updateThemeLabels(selectedTheme) {
-        const labels = document.querySelectorAll('input[name="theme"]').forEach(radio => {
+        document.querySelectorAll('input[name="theme"]').forEach(radio => {
             const label = radio.closest('label');
             if (radio.value === selectedTheme) {
                 label.classList.add('bg-blue-50', 'dark:bg-blue-900/30', 'border-blue-500', 'dark:border-blue-400');
@@ -668,6 +676,8 @@ export class ConfiguracaoManager {
         } else {
             this.applyTheme(theme);
         }
+        
+        this.updateThemeLabels(theme);
     }
 
     applyTheme(theme) {
@@ -680,7 +690,141 @@ export class ConfiguracaoManager {
             htmlElement.classList.remove('dark');
         }
         
-        localStorage.setItem('theme', theme);
+        localStorage.setItem('themePreference', theme);
+
+        // Aplica cores customizadas do usuário atual se existirem
+        const session = Auth.getCurrentSession();
+        const username = session ? session.username : null;
+        const storageKey = username ? `customThemeColors_${username}` : 'customThemeColors';
+        
+        const customColors = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        if (customColors.primary) {
+            document.documentElement.style.setProperty('--color-primary', customColors.primary);
+        }
+        if (customColors.secondary) {
+            document.documentElement.style.setProperty('--color-secondary', customColors.secondary);
+        }
+        if (customColors.accent) {
+            document.documentElement.style.setProperty('--color-accent', customColors.accent);
+        }
+    }
+
+    openCustomThemeModal() {
+        const session = Auth.getCurrentSession();
+        const username = session ? session.username : null;
+        const storageKey = username ? `customThemeColors_${username}` : 'customThemeColors';
+        
+        const customColors = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        
+        const themes = [
+            { name: 'Padrão (Slate)', primary: '#2563eb', secondary: '#1e40af', accent: '#0ea5e9' },
+            { name: 'Oceano', primary: '#0891b2', secondary: '#0369a1', accent: '#06b6d4' },
+            { name: 'Floresta', primary: '#16a34a', secondary: '#15803d', accent: '#22c55e' },
+            { name: 'Pôr do Sol', primary: '#ea580c', secondary: '#c2410c', accent: '#f97316' },
+            { name: 'Ametista', primary: '#a855f7', secondary: '#9333ea', accent: '#d946ef' }
+        ];
+
+        const content = `
+            <div class="space-y-6">
+                <div>
+                    <p class="text-sm font-medium text-slate-100 mb-4">Temas Pré-prontos</p>
+                    <div class="space-y-2">
+                        ${themes.map(t => `
+                            <button type="button" class="preset-theme-btn w-full flex items-center gap-4 p-3 rounded-lg border border-slate-600 hover:border-slate-500 hover:bg-slate-700/50 dark:hover:bg-slate-700/50 transition-all text-left" data-primary="${t.primary}" data-secondary="${t.secondary}" data-accent="${t.accent}">
+                                <div class="flex gap-2">
+                                    <div class="w-6 h-6 rounded" style="background-color: ${t.primary}"></div>
+                                    <div class="w-6 h-6 rounded" style="background-color: ${t.secondary}"></div>
+                                    <div class="w-6 h-6 rounded" style="background-color: ${t.accent}"></div>
+                                </div>
+                                <span class="text-sm font-medium text-slate-100 flex-1">${t.name}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-600">
+                    <p class="text-sm font-medium text-slate-100 mb-4">Personalizar Cores</p>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs text-slate-300">Cor Primária</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="primary-color-input" value="${customColors.primary || '#2563eb'}" class="w-10 h-8 p-1 rounded border border-slate-500 bg-slate-700 cursor-pointer">
+                                <input type="text" id="primary-color-text" value="${customColors.primary || '#2563eb'}" class="w-20 px-2 py-1 text-xs rounded border border-slate-500 bg-slate-700 text-slate-100" readonly>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs text-slate-300">Cor Secundária</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="secondary-color-input" value="${customColors.secondary || '#1e40af'}" class="w-10 h-8 p-1 rounded border border-slate-500 bg-slate-700 cursor-pointer">
+                                <input type="text" id="secondary-color-text" value="${customColors.secondary || '#1e40af'}" class="w-20 px-2 py-1 text-xs rounded border border-slate-500 bg-slate-700 text-slate-100" readonly>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs text-slate-300">Cor de Destaque</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="accent-color-input" value="${customColors.accent || '#0ea5e9'}" class="w-10 h-8 p-1 rounded border border-slate-500 bg-slate-700 cursor-pointer">
+                                <input type="text" id="accent-color-text" value="${customColors.accent || '#0ea5e9'}" class="w-20 px-2 py-1 text-xs rounded border border-slate-500 bg-slate-700 text-slate-100" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancel-theme-btn" class="flex-1 py-2.5 px-4 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded font-medium transition-all">Cancelar</button>
+                    <button type="button" id="save-theme-btn" class="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium shadow-lg shadow-blue-500/20 transition-all">Salvar Tema</button>
+                </div>
+            </div>
+        `;
+
+        Modals.show('Personalizar Tema', content);
+
+        setTimeout(() => {
+            const primaryInput = document.getElementById('primary-color-input');
+            const primaryText = document.getElementById('primary-color-text');
+            const secondaryInput = document.getElementById('secondary-color-input');
+            const secondaryText = document.getElementById('secondary-color-text');
+            const accentInput = document.getElementById('accent-color-input');
+            const accentText = document.getElementById('accent-color-text');
+            const saveBtn = document.getElementById('save-theme-btn');
+            const cancelBtn = document.getElementById('cancel-theme-btn');
+            const presetBtns = document.querySelectorAll('.preset-theme-btn');
+
+            // Sincronizar color input com text input
+            primaryInput.addEventListener('change', () => { primaryText.value = primaryInput.value; });
+            secondaryInput.addEventListener('change', () => { secondaryText.value = secondaryInput.value; });
+            accentInput.addEventListener('change', () => { accentText.value = accentInput.value; });
+
+            const saveThemeColors = () => {
+                const primary = primaryInput.value;
+                const secondary = secondaryInput.value;
+                const accent = accentInput.value;
+                document.documentElement.style.setProperty('--color-primary', primary);
+                document.documentElement.style.setProperty('--color-secondary', secondary);
+                document.documentElement.style.setProperty('--color-accent', accent);
+                
+                const session = Auth.getCurrentSession();
+                const username = session ? session.username : null;
+                const key = username ? `customThemeColors_${username}` : 'customThemeColors';
+                localStorage.setItem(key, JSON.stringify({ primary, secondary, accent }));
+                
+                Modals.close();
+                Modals.alert('Tema salvo com sucesso!', 'Tema Atualizado');
+            };
+
+            saveBtn.addEventListener('click', saveThemeColors);
+            cancelBtn.addEventListener('click', () => Modals.close());
+
+            presetBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    primaryInput.value = btn.dataset.primary;
+                    primaryText.value = btn.dataset.primary;
+                    secondaryInput.value = btn.dataset.secondary;
+                    secondaryText.value = btn.dataset.secondary;
+                    accentInput.value = btn.dataset.accent;
+                    accentText.value = btn.dataset.accent;
+                });
+            });
+        }, 50);
     }
 
     handleGlobalSearch(query) {
