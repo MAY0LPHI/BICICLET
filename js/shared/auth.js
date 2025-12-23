@@ -260,6 +260,11 @@ export class Auth {
             });
         }
         localStorage.removeItem(STORAGE_KEY_SESSION);
+        
+        // Limpar cores do tema do usuário ao fazer logout
+        document.documentElement.style.removeProperty('--color-primary');
+        document.documentElement.style.removeProperty('--color-secondary');
+        document.documentElement.style.removeProperty('--color-accent');
     }
 
     static getCurrentSession() {
