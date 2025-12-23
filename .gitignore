@@ -42,3 +42,4 @@ keystore.properties
 
 # Capacitor generated (can be regenerated)
 # android/  # Uncomment to ignore entire android folder
+.env
