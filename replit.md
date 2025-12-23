@@ -26,6 +26,32 @@ O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicaç
   - Local file-based storage (no server required)
   - Full offline functionality
 
+## Recent Changes (23/12/2025 - Theme Customization per User)
+- **Theme Switching Fixed**: 
+  - Light mode (Claro) works correctly by removing the 'dark' class from the HTML element
+  - Dark mode (Escuro) works by adding the 'dark' class
+  - System preference (Sistema) respects the OS theme setting
+- **Color Customization Feature (Per User)**:
+  - Pencil icon added next to "Tema do Sistema" heading
+  - Clicking the pencil opens a "Personalizar Tema" modal with:
+    - 5 pre-made color themes: Padrão (Slate), Oceano, Floresta, Pôr do Sol, Ametista
+    - Each theme shows 3 color swatches (primária, secundária, destaque)
+    - Custom color pickers for each color type with hex value display
+    - "Salvar Tema" button to apply custom theme
+    - "Cancelar" button to close modal
+  - **Per-User Theme Storage**: Each user's custom colors are saved individually:
+    - Cores armazenadas em `customThemeColors_USERNAME` no localStorage
+    - Quando um usuário faz login, suas cores personalizadas são carregadas automaticamente
+    - Ao fazer logout, as cores são limpas
+    - Diferentes usuários podem ter diferentes temas personalizados
+  - CSS variables (`--color-primary`, `--color-secondary`, `--color-accent`) applied globally
+  - All utility classes use theme variables for consistent theming
+- **Code Improvements**:
+  - Added setTimeout() delays in `loadThemePreference()` and `addEventListeners()` for DOM readiness
+  - Fixed `handleThemeChange()` to update labels properly
+  - Simplified `applyTheme()` to manage theme application and color persistence
+  - Enhanced modal UI with better visual hierarchy and color displays
+
 ## Recent Changes (17/12/2025)
 - **Delete Data Feature:** Added new section in the "Dados" (Data) tab to permanently delete system data with selective options:
   - Delete all client registrations (clientes e bicicletas)
