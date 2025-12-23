@@ -1,3 +1,11 @@
+    /**
+     * Remove todos os dados de autenticação do localStorage (usuários, sessão, tentativas de login)
+     */
+    static resetAuthData() {
+        localStorage.removeItem('bicicletario_users');
+        localStorage.removeItem('bicicletario_session');
+        localStorage.removeItem('login_attempts');
+    }
 /**
  * Sistema de Autenticação
  * Gerencia login, logout e controle de sessão com segurança aprimorada
@@ -22,9 +30,9 @@ export class Auth {
     }
 
     static async init() {
-        // Limpa tentativas de login antigas e sessão
-        localStorage.removeItem('login_attempts');
-        localStorage.removeItem('bicicletario_session');
+
+        // Força reset completo dos dados de autenticação
+        this.resetAuthData();
 
         // Sempre força a existência do admin padrão
         let users = this.getAllUsers();
