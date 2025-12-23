@@ -1,3 +1,55 @@
+    // --- Personalização de Tema ---
+    initThemePersonalization() {
+        // Botão lápis para abrir modal de personalização
+        const editThemeBtn = document.getElementById('edit-theme-btn');
+        if (editThemeBtn) {
+            editThemeBtn.addEventListener('click', () => {
+                document.getElementById('modal-personalizar-tema').classList.remove('hidden');
+            });
+        }
+
+        // Temas pré-prontos
+        document.querySelectorAll('.theme-preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const theme = btn.getAttribute('data-theme');
+                this.applyPresetTheme(theme);
+            });
+        });
+
+        // Salvar tema customizado
+        const salvarTemaBtn = document.getElementById('salvar-tema-btn');
+        if (salvarTemaBtn) {
+            salvarTemaBtn.addEventListener('click', () => {
+                const corPrincipal = document.getElementById('cor-principal').value;
+                const corSecundaria = document.getElementById('cor-secundaria').value;
+                const corDestaque = document.getElementById('cor-destaque').value;
+                this.applyCustomTheme(corPrincipal, corSecundaria, corDestaque);
+                document.getElementById('modal-personalizar-tema').classList.add('hidden');
+            });
+        }
+    }
+
+    applyPresetTheme(theme) {
+        // Exemplos de cores para cada tema
+        const presets = {
+            'slate':   {principal: '#64748b', secundaria: '#94a3b8', destaque: '#3b82f6'},
+            'oceano':  {principal: '#2563eb', secundaria: '#38bdf8', destaque: '#0ea5e9'},
+            'floresta':{principal: '#16a34a', secundaria: '#22d3ee', destaque: '#166534'},
+            'por-do-sol':{principal: '#f59e42', secundaria: '#fbbf24', destaque: '#ea580c'},
+            'ametista':{principal: '#7c3aed', secundaria: '#a78bfa', destaque: '#a78bfa'}
+        };
+        if (presets[theme]) {
+            this.applyCustomTheme(presets[theme].principal, presets[theme].secundaria, presets[theme].destaque);
+            document.getElementById('modal-personalizar-tema').classList.add('hidden');
+        }
+    }
+
+    applyCustomTheme(principal, secundaria, destaque) {
+        document.documentElement.style.setProperty('--cor-principal', principal);
+        document.documentElement.style.setProperty('--cor-secundaria', secundaria);
+        document.documentElement.style.setProperty('--cor-destaque', destaque);
+        localStorage.setItem('customTheme', JSON.stringify({principal, secundaria, destaque}));
+    }
 import { Storage } from '../shared/storage.js';
 import { Utils } from '../shared/utils.js';
 import { Modals } from '../shared/modals.js';
@@ -70,6 +122,7 @@ export class ConfiguracaoManager {
         this.addEventListeners();
         this.setupSystemThemeListener();
         this.loadThemePreference();
+        this.initThemePersonalization();
         this.renderHistoricoOrganizado();
         this.renderCategorias();
     }
