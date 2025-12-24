@@ -26,6 +26,20 @@ O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicaç
   - Local file-based storage (no server required)
   - Full offline functionality
 
+## Recent Changes (24/12/2025 - UI Modernization & Code Cleanup)
+- **Delete Data Section Modernized**:
+  - Dark gradient background (slate-800 to slate-900)
+  - Red circular badges showing item counts
+  - Enhanced checkbox styling with hover effects
+  - Gradient red button with better visual hierarchy
+  - Improved warning section with better contrast
+  - Modern card design matching current UI theme
+- **Project Cleanup**:
+  - Removed `legado/app-monolitico.js` (653 lines of legacy code)
+  - Removed `test_theme.html` (24 lines of test file)
+  - Project now uses modular architecture exclusively (`js/app-modular.js`)
+  - Total cleanup: 677 lines removed
+
 ## Recent Changes (23/12/2025 - Theme Customization per User)
 - **Theme Switching Fixed**: 
   - Light mode (Claro) works correctly by removing the 'dark' class from the HTML element
@@ -49,8 +63,10 @@ O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicaç
 - **Code Improvements**:
   - Added setTimeout() delays in `loadThemePreference()` and `addEventListeners()` for DOM readiness
   - Fixed `handleThemeChange()` to update labels properly
-  - Simplified `applyTheme()` to manage theme application and color persistence
+  - Fixed dark mode to respect user's selected theme (no longer defaults to OS preference)
+  - Refactored `applyTheme()` to correctly apply light/dark based on user selection
   - Enhanced modal UI with better visual hierarchy and color displays
+  - Dark mode now works correctly: selecting "Escuro" applies dark theme immediately
 
 ## Recent Changes (17/12/2025)
 - **Delete Data Feature:** Added new section in the "Dados" (Data) tab to permanently delete system data with selective options:
