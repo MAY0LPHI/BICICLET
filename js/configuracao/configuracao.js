@@ -140,13 +140,7 @@ export class ConfiguracaoManager {
             });
             
             this.updateThemeLabels(savedTheme);
-            
-            if (savedTheme === 'system') {
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                this.applyTheme(prefersDark ? 'dark' : 'light');
-            } else {
-                this.applyTheme(savedTheme);
-            }
+            this.applyTheme(savedTheme);
         }, 100);
     }
 
@@ -474,7 +468,7 @@ export class ConfiguracaoManager {
         }, 50);
     }
 
-    addCategoria() {
+    async addCategoria() {
         const input = document.getElementById('nova-categoria');
         const categoria = input.value.trim().toUpperCase();
 
@@ -492,7 +486,7 @@ export class ConfiguracaoManager {
 
         const emoji = Storage.getDefaultEmoji(categoria);
         categorias[categoria] = emoji;
-        Storage.saveCategorias(categorias);
+        await Storage.saveCategorias(categorias);
         input.value = '';
         this.renderCategorias();
     }
@@ -501,16 +495,16 @@ export class ConfiguracaoManager {
         Modals.confirm(
             `Tem certeza que deseja remover a categoria "${categoria}"?`,
             'Confirmar Remoção',
-            () => {
+            async () => {
                 let categorias = Storage.loadCategorias();
                 delete categorias[categoria];
-                Storage.saveCategorias(categorias);
+                await Storage.saveCategorias(categorias);
                 this.renderCategorias();
             }
         );
     }
 
-    editCategoria(categoria) {
+    async editCategoria(categoria) {
         const categorias = Storage.loadCategorias();
         const emojiAtual = categorias[categoria];
         
@@ -577,7 +571,7 @@ export class ConfiguracaoManager {
             Modals.close();
         });
         
-        document.getElementById('save-edit-cat').addEventListener('click', () => {
+        document.getElementById('save-edit-cat').addEventListener('click', async () => {
             const novoNome = document.getElementById('edit-cat-nome').value.trim().toUpperCase();
             
             if (!novoNome) {
@@ -595,7 +589,7 @@ export class ConfiguracaoManager {
             }
             
             categorias[novoNome] = emojiSelecionado;
-            Storage.saveCategorias(categorias);
+            await Storage.saveCategorias(categorias);
             Modals.close();
             this.renderCategorias();
         });
@@ -668,29 +662,28 @@ export class ConfiguracaoManager {
     }
 
     handleThemeChange(theme) {
-        localStorage.setItem('themePreference', theme);
-        
-        if (theme === 'system') {
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            this.applyTheme(prefersDark ? 'dark' : 'light');
-        } else {
-            this.applyTheme(theme);
-        }
-        
+        this.applyTheme(theme);
         this.updateThemeLabels(theme);
     }
 
     applyTheme(theme) {
         const htmlElement = document.documentElement;
-        const isDark = theme === 'dark';
         
-        if (isDark) {
+        // Sempre salvar a preferência do usuário
+        localStorage.setItem('themePreference', theme);
+        
+        // Determinar o tema real a ser aplicado
+        let realTheme = theme;
+        if (theme === 'system') {
+            realTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        
+        // Aplicar classe dark apenas se for dark
+        if (realTheme === 'dark') {
             htmlElement.classList.add('dark');
         } else {
             htmlElement.classList.remove('dark');
         }
-        
-        localStorage.setItem('themePreference', theme);
 
         // Aplica cores customizadas do usuário atual se existirem
         const session = Auth.getCurrentSession();
