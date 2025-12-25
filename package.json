@@ -50,5 +50,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Gestão de Bicicletário"
     }
+  },
+  "dependencies": {
+    "@capacitor/cli": "^7.4.4"
   }
 }

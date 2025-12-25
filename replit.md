@@ -3,9 +3,9 @@
 ## Overview
 O Sistema de Gerenciamento de Bicicletário (Bicicletário Shop) é uma aplicação web, com versão desktop executável, desenvolvida para gerenciar clientes, bicicletas e controlar o fluxo de entrada e saída em estacionamentos de bicicletas. O objetivo é otimizar as operações de bicicletários através de funcionalidades de cadastro, registro de movimentação, exportação de dados, sistema de auditoria completo e configurações personalizáveis, visando o mercado de lojas locais. O projeto inclui um sistema de ranking global para jogos e um robusto sistema de permissões de usuário.
 
-## Replit Setup (30/11/2025)
+## Replit Setup (24/12/2025)
 - **Environment**: Python 3.11 installed for web server
-- **Workflow**: Configured to run `python3 server.py` on port 5000 with webview output
+- **Workflow**: Configured to run `python server.py` on port 5000 with webview output
 - **Deployment**: Set to autoscale deployment target for production
 - **Server Configuration**:
   - Main web server: `http://0.0.0.0:5000/` (serves the frontend)
