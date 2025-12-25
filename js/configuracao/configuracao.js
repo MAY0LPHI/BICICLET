@@ -71,7 +71,11 @@ export class ConfiguracaoManager {
         this.setupSystemThemeListener();
         this.loadThemePreference();
         this.renderHistoricoOrganizado();
-        this.renderCategorias();
+        
+        // Pequeno atraso para garantir que o Storage carregou tudo (especialmente se houver async no futuro)
+        setTimeout(() => {
+            this.renderCategorias();
+        }, 100);
     }
 
     cleanupCategoriesWithQuotes() {
@@ -224,15 +228,22 @@ export class ConfiguracaoManager {
         const categoriasList = document.getElementById('categorias-list');
         if (!categoriasList) return;
 
-        const categorias = Storage.loadCategorias();
+        let categorias = Storage.loadCategorias();
         
-        if (Object.keys(categorias).length === 0) {
+        // Garantir que categorias seja um objeto válido
+        if (!categorias || typeof categorias !== 'object' || Array.isArray(categorias)) {
+            console.error('Categorias inválidas carregadas:', categorias);
+            categorias = {};
+        }
+        
+        const entries = Object.entries(categorias);
+        if (entries.length === 0) {
             categoriasList.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhuma categoria cadastrada</p>';
             this.renderCategoriasStats();
             return;
         }
 
-        categoriasList.innerHTML = Object.entries(categorias).map(([nome, emoji]) => {
+        categoriasList.innerHTML = entries.map(([nome, emoji]) => {
             const iconName = this.getIconForEmoji(emoji);
             const escapedNome = this.escapeHtmlAttr(nome);
             return `
@@ -245,7 +256,7 @@ export class ConfiguracaoManager {
                     <button class="edit-categoria-btn text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" data-categoria="${escapedNome}">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
                     </button>
-                    <button class="delete-categoria-btn text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-blue-300 transition-colors" data-categoria="${escapedNome}">
+                    <button class="delete-categoria-btn text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors" data-categoria="${escapedNome}">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -277,7 +288,13 @@ export class ConfiguracaoManager {
         const statsContainer = document.getElementById('categorias-stats');
         if (!statsContainer) return;
 
-        const categorias = Storage.loadCategorias();
+        let categorias = Storage.loadCategorias();
+        
+        // Garantir que categorias seja um objeto válido
+        if (!categorias || typeof categorias !== 'object' || Array.isArray(categorias)) {
+            categorias = {};
+        }
+
         const clientes = Storage.loadClientsSync();
         
         const categoriaCounts = {};
@@ -382,7 +399,11 @@ export class ConfiguracaoManager {
 
     showClientsByCategory(categoria) {
         const clientes = Storage.loadClientsSync();
-        const categorias = Storage.loadCategorias();
+        let categorias = Storage.loadCategorias();
+        
+        if (!categorias || typeof categorias !== 'object' || Array.isArray(categorias)) {
+            categorias = {};
+        }
         
         const clientesFiltrados = clientes.filter(cliente => {
             const clienteCategoria = cliente.categoria || '';

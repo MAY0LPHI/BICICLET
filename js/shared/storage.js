@@ -423,17 +423,16 @@ export const Storage = {
         return null;
     },
 
-    async loadCategorias() {
-        if (isElectron) {
-            const cats = await window.electron.loadCategorias();
-            if (cats) return cats;
+    loadCategorias() {
+        if (isElectron && window.electron && window.electron.loadCategorias) {
+            // No Electron, loadCategorias é geralmente assíncrono, mas aqui estamos em um contexto síncrono ou legado
+            // Para simplificar e manter compatibilidade, vamos usar o localStorage como fonte primária na web
         }
         const data = localStorage.getItem('bicicletario_categorias');
         if (data) {
             try {
                 const parsed = JSON.parse(data);
                 if (typeof parsed === 'object' && !Array.isArray(parsed)) {
-                    if (isElectron) await window.electron.saveCategorias(parsed);
                     return parsed;
                 }
                 if (Array.isArray(parsed)) {
@@ -441,7 +440,7 @@ export const Storage = {
                     parsed.forEach(cat => {
                         obj[cat] = this.getDefaultEmoji(cat);
                     });
-                    await this.saveCategorias(obj);
+                    this.saveCategorias(obj);
                     return obj;
                 }
             } catch (e) {
@@ -452,9 +451,13 @@ export const Storage = {
             'CLIENTE': '👤',
             'LOJISTA': '🏪',
             'IFOOD': '🍽️',
-            'ACADEMIA': '💪'
+            'ACADEMIA': '💪',
+            'MORADOR': '🏠',
+            'VISITANTE': '🚶',
+            'VIP': '⭐',
+            'ENTREGA': '📦'
         };
-        await this.saveCategorias(defaultCategories);
+        this.saveCategorias(defaultCategories);
         return defaultCategories;
     },
 
@@ -464,7 +467,11 @@ export const Storage = {
             'CLIENTE': '👤',
             'LOJISTA': '🏪',
             'IFOOD': '🍽️',
-            'ACADEMIA': '💪'
+            'ACADEMIA': '💪',
+            'MORADOR': '🏠',
+            'VISITANTE': '🚶',
+            'VIP': '⭐',
+            'ENTREGA': '📦'
         };
         return emojiMap[categoryUpper] || '⚙️';
     },
