@@ -665,25 +665,48 @@
                 </div>
 
                 <div id="games-menu-section">
-                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 mb-8 text-white">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h2 class="text-xl font-bold mb-2">Ranking Global</h2>
-                                <p class="text-blue-100 text-sm">Compita com outros funcionarios e suba no ranking!</p>
+                    <!-- Statistics and Achievements Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <!-- Statistics Card -->
+                        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                            <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
+                                <i data-lucide="bar-chart-2" class="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400"></i>
+                                Suas Estatísticas
+                            </h2>
+                            <div id="player-stats" class="grid grid-cols-3 gap-4">
+                                <!-- Stats will be rendered here by JS -->
                             </div>
-                            <div class="text-center">
-                                <i data-lucide="trophy" class="w-12 h-12 mx-auto mb-2 text-yellow-300"></i>
-                                <p class="text-sm text-blue-100">Pontuacoes salvas por usuario</p>
+                        </div>
+
+                        <!-- Achievements Card -->
+                        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                            <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
+                                <i data-lucide="trophy" class="mr-2 h-5 w-5 text-yellow-500 dark:text-yellow-400"></i>
+                                Conquistas
+                            </h2>
+                            <div id="player-achievements" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <!-- Achievements will be rendered here by JS -->
                             </div>
                         </div>
                     </div>
 
-                    <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
-                        <i data-lucide="grid-3x3" class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"></i>
-                        Escolha um Jogo
-                    </h2>
+                    <!-- Ranking Global Banner -->
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 mb-8 text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-bold mb-2">Ranking Global</h2>
+                                <p class="text-blue-100 text-sm">Compita com outros funcionários e suba no ranking!</p>
+                            </div>
+                            <div class="text-center">
+                                <i data-lucide="trophy" class="w-12 h-12 mx-auto mb-2 text-yellow-300"></i>
+                                <p class="text-sm text-blue-100">Pontuações salvas por usuário</p>
+                            </div>
+                        </div>
+                    </div>
 
-                    <div id="games-menu" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Games by Category -->
+                    <div id="games-menu">
+                        <!-- Games will be rendered here by JS organized by category -->
                     </div>
                 </div>
 
@@ -1003,6 +1026,25 @@
                     <button type="button" id="comments-modal-add-btn" class="flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors">
                         <i data-lucide="send" class="h-4 w-4"></i>
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="categoria-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg modal-content transform scale-95">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex-1">
+                        <h3 id="categoria-modal-title" class="text-xl font-bold text-slate-800 dark:text-slate-100"></h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Pessoas registradas nesta categoria</p>
+                    </div>
+                    <button type="button" id="close-categoria-modal-btn" class="text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                        <i data-lucide="x" class="h-6 w-6"></i>
+                    </button>
+                </div>
+                
+                <div id="categoria-modal-list" class="space-y-3 max-h-[400px] overflow-y-auto">
                 </div>
             </div>
         </div>
