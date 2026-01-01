@@ -81,19 +81,69 @@ export const Sanitizer = {
 
     /**
      * Sanitizes user input for safe display
-     * Removes potentially dangerous content
+     * IMPORTANT: For maximum security, prefer using textContent or escapeHtml
+     * This method attempts to remove dangerous content but regex-based sanitization
+     * has limitations. For untrusted content, always use textContent.
+     * 
      * @param {string} input - The user input
      * @returns {string} The sanitized input
+     * @security This uses multiple sanitization passes but may have edge cases.
+     *           For critical security needs, use textContent or a dedicated library.
      */
     sanitizeInput(input) {
         if (typeof input !== 'string') return '';
         
-        // Remove any HTML tags
-        let sanitized = input.replace(/<[^>]*>/g, '');
+        let sanitized = input;
         
-        // Remove script-like patterns
-        sanitized = sanitized.replace(/javascript:/gi, '');
-        sanitized = sanitized.replace(/on\w+\s*=/gi, '');
+        // Remove any HTML tags - use multiple passes to handle nested/encoded tags
+        let iterations = 0;
+        const maxIterations = 10; // Prevent infinite loops
+        
+        while (iterations < maxIterations) {
+            const before = sanitized;
+            
+            // Remove HTML tags - handle various bypass attempts
+            // Split by < and > to handle incomplete tags
+            const parts = sanitized.split('<');
+            sanitized = parts[0]; // Keep everything before first <
+            for (let i = 1; i < parts.length; i++) {
+                const gtIndex = parts[i].indexOf('>');
+                if (gtIndex !== -1) {
+                    // Skip everything until after the >
+                    sanitized += parts[i].substring(gtIndex + 1);
+                }
+                // If no >, the < was incomplete, so skip it entirely
+            }
+            
+            // Handle double encoding
+            sanitized = sanitized.replace(/&lt;.*?&gt;/gi, '');
+            
+            // Remove dangerous protocols (with various encodings)
+            sanitized = sanitized.replace(/j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t\s*:/gi, '');
+            sanitized = sanitized.replace(/d\s*a\s*t\s*a\s*:/gi, '');
+            sanitized = sanitized.replace(/v\s*b\s*s\s*c\s*r\s*i\s*p\s*t\s*:/gi, '');
+            
+            // Remove event handlers - match various patterns
+            // Using split and filter approach to avoid incomplete sanitization
+            const onParts = sanitized.split(/\bon/i);
+            if (onParts.length > 1) {
+                // Keep first part, remove anything after 'on' that looks like event handler
+                sanitized = onParts[0];
+                for (let i = 1; i < onParts.length; i++) {
+                    // If the part doesn't start with a common event name followed by =, keep it
+                    if (!/^[a-z]+\s*=/i.test(onParts[i])) {
+                        sanitized += 'on' + onParts[i];
+                    }
+                }
+            }
+            
+            // If no changes were made, we're done
+            if (before === sanitized) {
+                break;
+            }
+            
+            iterations++;
+        }
         
         // Trim whitespace
         sanitized = sanitized.trim();
@@ -113,11 +163,22 @@ export const Sanitizer = {
             const parsed = new URL(url, window.location.origin);
             
             // Only allow http, https, and mailto protocols
-            if (['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
-                return parsed.href;
+            // Explicitly exclude dangerous protocols
+            const allowedProtocols = ['http:', 'https:', 'mailto:'];
+            const dangerousProtocols = ['javascript:', 'data:', 'vbscript:', 'file:'];
+            
+            // Check for dangerous protocols first
+            const lowerProtocol = parsed.protocol.toLowerCase();
+            if (dangerousProtocols.includes(lowerProtocol)) {
+                return null;
             }
             
-            return null;
+            // Then check if it's in allowed list
+            if (!allowedProtocols.includes(lowerProtocol)) {
+                return null;
+            }
+            
+            return parsed.href;
         } catch (e) {
             return null;
         }
