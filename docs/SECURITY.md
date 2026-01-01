@@ -325,5 +325,5 @@ Se você descobrir uma vulnerabilidade de segurança, por favor:
 
 ---
 
-**Última atualização:** Janeiro 2026  
+**Última atualização:** 1º de Janeiro de 2026  
 **Versão:** 3.1

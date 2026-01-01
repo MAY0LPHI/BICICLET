@@ -25,17 +25,20 @@ export const Sanitizer = {
     },
 
     /**
-     * Sanitizes HTML by allowing only safe tags and attributes
+     * Escapes HTML special characters and returns safe text
+     * Note: This removes ALL HTML tags. For preserving safe HTML,
+     * use a library like DOMPurify
      * @param {string} html - The HTML string to sanitize
-     * @returns {string} The sanitized HTML
+     * @returns {string} The sanitized plain text
      */
     sanitizeHtml(html) {
         if (typeof html !== 'string') return '';
         
-        // Create a temporary div to parse HTML
+        // Remove all HTML by converting to text
+        // This is more secure than trying to allow "safe" tags
         const temp = document.createElement('div');
         temp.textContent = html;
-        return temp.innerHTML;
+        return temp.textContent || '';
     },
 
     /**

@@ -54,6 +54,7 @@ export class Logger {
 
     /**
      * Writes log to storage if persistence is enabled
+     * Implements automatic cleanup to prevent storage quota issues
      * @private
      */
     _persistLog(logEntry) {
@@ -63,14 +64,27 @@ export class Logger {
             const logs = this._getStoredLogs();
             logs.push(logEntry);
             
-            // Keep only the most recent logs
+            // Keep only the most recent logs to prevent storage issues
             if (logs.length > this.maxLogs) {
                 logs.splice(0, logs.length - this.maxLogs);
             }
             
-            localStorage.setItem(this.storageKey, JSON.stringify(logs));
+            try {
+                localStorage.setItem(this.storageKey, JSON.stringify(logs));
+            } catch (storageError) {
+                // Storage quota exceeded - remove older logs
+                if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                    const reducedLogs = logs.slice(-Math.floor(this.maxLogs / 2));
+                    localStorage.setItem(this.storageKey, JSON.stringify(reducedLogs));
+                    if (this.consoleEnabled) {
+                        console.warn('Log storage quota exceeded, reduced to half');
+                    }
+                } else {
+                    throw storageError;
+                }
+            }
         } catch (error) {
-            // Silently fail if storage is full
+            // Silently fail if storage is completely unavailable
             if (this.consoleEnabled) {
                 console.error('Failed to persist log:', error);
             }
