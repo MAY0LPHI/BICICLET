@@ -67,7 +67,7 @@ export class BicicletasManager {
                 const bike = client.bicicletas.find(b => b.id === bikeId);
                 if (!bike) return;
                 
-                const confirmed = await Modals.confirm(
+                const confirmed = await Modals.showConfirm(
                     `Tem certeza que deseja excluir a bicicleta ${bike.modelo} (${bike.marca})?`,
                     'Confirmar Exclusão'
                 );
@@ -363,7 +363,7 @@ export class BicicletasManager {
         const bike = client.bicicletas.find(b => b.id === bikeId);
         if (!bike) return;
 
-        const confirmed = await Modals.confirm(
+        const confirmed = await Modals.showConfirm(
             `Tem certeza que deseja excluir a bicicleta ${bike.modelo} (${bike.marca})?`,
             'Confirmar Exclusão'
         );

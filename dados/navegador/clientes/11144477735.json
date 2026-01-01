@@ -1,9 +1,16 @@
 {
-  "id": "321d181b-2c97-4c98-98c7-8872e97cb13d",
+  "id": "d84b261d-5db0-4d54-b0a4-adee06d12fcb",
   "nome": "JOÃO SILVA",
   "cpf": "111.444.777-35",
   "telefone": "(11) 98765-4321",
   "categoria": "",
   "comentarios": [],
-  "bicicletas": []
+  "bicicletas": [
+    {
+      "id": "5968be6c-243a-497b-b1b7-1ae3b18b883a",
+      "modelo": "MOUNTAIN BIKE",
+      "marca": "CALOI",
+      "cor": "AZUL"
+    }
+  ]
 }
