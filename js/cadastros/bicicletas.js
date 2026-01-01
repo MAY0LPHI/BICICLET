@@ -61,19 +61,11 @@ export class BicicletasManager {
                 const clientId = this.elements.editBikeClientId.value;
                 const bikeId = this.elements.editBikeId.value;
                 
+                await this.handleDeleteBikeClick(clientId, bikeId);
+                
+                // Close modal if delete was successful (bike no longer exists)
                 const client = this.app.data.clients.find(c => c.id === clientId);
-                if (!client) return;
-                
-                const bike = client.bicicletas.find(b => b.id === bikeId);
-                if (!bike) return;
-                
-                const confirmed = await Modals.showConfirm(
-                    `Tem certeza que deseja excluir a bicicleta ${bike.modelo} (${bike.marca})?`,
-                    'Confirmar Exclusão'
-                );
-                
-                if (confirmed) {
-                    this.handleDeleteBike(clientId, bikeId);
+                if (client && !client.bicicletas.find(b => b.id === bikeId)) {
                     this.app.toggleModal('edit-bike-modal', false);
                 }
             });
