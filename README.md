@@ -200,6 +200,12 @@ O sistema possui **duas estratégias de armazenamento**:
 - ✅ Auditoria completa de ações
 - ✅ Proteção contra duplicação de CPF
 - ✅ Validação de dados em formulários
+- ✅ **Sanitização de inputs (proteção XSS)**
+- ✅ **Headers de segurança HTTP**
+- ✅ **Sistema centralizado de logging**
+- ✅ **Validação robusta de dados**
+
+Para mais informações sobre segurança, consulte [SECURITY.md](docs/SECURITY.md)
 
 ---
 
@@ -227,6 +233,12 @@ Para contribuir com o projeto:
 3. Commit suas mudanças
 4. Push para a branch
 5. Abra um Pull Request
+
+**Importante:** Consulte [CONTRIBUTING.md](CONTRIBUTING.md) para diretrizes detalhadas, incluindo:
+- Padrões de código
+- Práticas de segurança
+- Processo de revisão
+- Guia de testes
 
 ---
 
