@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 """
 API de armazenamento em arquivos para a versão web
-Similar ao sistema usado na versão desktop Electron
+Fornece endpoints REST para armazenamento persistente similar ao sistema Electron
 """
 import os
 import json
+import logging
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
 import threading
+
+# Configuração de logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 STORAGE_DIR = "dados/navegador"
 CLIENTS_DIR = os.path.join(STORAGE_DIR, "clientes")
@@ -15,8 +23,12 @@ REGISTROS_DIR = os.path.join(STORAGE_DIR, "registros")
 
 def ensure_directories():
     """Cria as pastas necessárias se não existirem"""
-    os.makedirs(CLIENTS_DIR, exist_ok=True)
-    os.makedirs(REGISTROS_DIR, exist_ok=True)
+    try:
+        os.makedirs(CLIENTS_DIR, exist_ok=True)
+        os.makedirs(REGISTROS_DIR, exist_ok=True)
+        logger.info(f"Diretórios criados/verificados: {STORAGE_DIR}")
+    except Exception as e:
+        logger.error(f"Erro ao criar diretórios: {e}")
 
 class StorageAPIHandler(BaseHTTPRequestHandler):
     def _set_headers(self, status=200, content_type='application/json'):
@@ -66,16 +78,27 @@ class StorageAPIHandler(BaseHTTPRequestHandler):
 
     def get_all_clients(self):
         """Retorna todos os clientes"""
-        clients = []
-        if os.path.exists(CLIENTS_DIR):
-            for filename in os.listdir(CLIENTS_DIR):
-                if filename.endswith('.json'):
-                    filepath = os.path.join(CLIENTS_DIR, filename)
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        clients.append(json.load(f))
-        
-        self._set_headers()
-        self.wfile.write(json.dumps(clients, ensure_ascii=False).encode('utf-8'))
+        try:
+            clients = []
+            if os.path.exists(CLIENTS_DIR):
+                for filename in os.listdir(CLIENTS_DIR):
+                    if filename.endswith('.json'):
+                        filepath = os.path.join(CLIENTS_DIR, filename)
+                        try:
+                            with open(filepath, 'r', encoding='utf-8') as f:
+                                clients.append(json.load(f))
+                        except json.JSONDecodeError as e:
+                            logger.error(f"Erro ao ler arquivo {filename}: {e}")
+                        except Exception as e:
+                            logger.error(f"Erro inesperado ao processar {filename}: {e}")
+            
+            self._set_headers()
+            self.wfile.write(json.dumps(clients, ensure_ascii=False).encode('utf-8'))
+            logger.debug(f"Retornados {len(clients)} clientes")
+        except Exception as e:
+            logger.error(f"Erro em get_all_clients: {e}", exc_info=True)
+            self._set_headers(500)
+            self.wfile.write(json.dumps({"error": "Internal server error"}).encode())
 
     def get_client(self, cpf):
         """Retorna um cliente específico por CPF"""
@@ -174,16 +197,19 @@ class StorageAPIHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps({"success": True, "id": registro['id']}).encode())
 
     def log_message(self, format, *args):
-        """Silencia logs HTTP padrão para evitar poluição"""
-        pass
+        """Log de requisições HTTP"""
+        logger.info("%s - %s" % (self.address_string(), format % args))
 
 def run_storage_api(port=5001):
     """Inicia o servidor da API de armazenamento"""
-    ensure_directories()
-    server = HTTPServer(('localhost', port), StorageAPIHandler)
-    print(f'Storage API rodando em http://localhost:{port}/')
-    print(f'Dados salvos em: {os.path.abspath(STORAGE_DIR)}/')
-    server.serve_forever()
+    try:
+        ensure_directories()
+        server = HTTPServer(('localhost', port), StorageAPIHandler)
+        logger.info(f'Storage API rodando em http://localhost:{port}/')
+        logger.info(f'Dados salvos em: {os.path.abspath(STORAGE_DIR)}/')
+        server.serve_forever()
+    except Exception as e:
+        logger.error(f"Erro ao iniciar Storage API: {e}", exc_info=True)
 
 if __name__ == '__main__':
     run_storage_api()
