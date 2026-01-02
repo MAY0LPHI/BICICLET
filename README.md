@@ -109,6 +109,7 @@ bicicletario/
 - **[replit.md](replit.md)** - Arquitetura e configuração Replit
 - **[ESTRUTURA.md](docs/ESTRUTURA.md)** - Organização modular do código
 - **[SISTEMA-ARQUIVOS.md](docs/SISTEMA-ARQUIVOS.md)** - Estrutura de armazenamento
+- **[TRADUCAO-COMMITS.md](docs/TRADUCAO-COMMITS.md)** - Tradução de mensagens de commit
 
 ### 🎨 Funcionalidades
 
