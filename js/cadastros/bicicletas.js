@@ -143,6 +143,9 @@ export class BicicletasManager {
                         <button class="edit-bike-btn text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" data-bike-id="${bike.id}" title="Editar bicicleta">
                             <i data-lucide="pencil" class="h-4 w-4"></i>
                         </button>
+                        <button class="delete-bike-btn text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" data-bike-id="${bike.id}" title="Excluir bicicleta">
+                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                        </button>
                         ` : ''}
                     </div>
                     ${canAddRegistros ? `
@@ -252,6 +255,9 @@ export class BicicletasManager {
         this.elements.clientDetailsSection.querySelectorAll('.edit-bike-btn').forEach(btn => {
             btn.addEventListener('click', () => this.openEditBikeModal(client.id, btn.dataset.bikeId));
         });
+        this.elements.clientDetailsSection.querySelectorAll('.delete-bike-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.handleDeleteBike(client.id, btn.dataset.bikeId));
+        });
     }
 
     openEditBikeModal(clientId, bikeId) {
@@ -273,6 +279,19 @@ export class BicicletasManager {
         this.elements.editBikeModelo.value = bike.modelo;
         this.elements.editBikeMarca.value = bike.marca;
         this.elements.editBikeCor.value = bike.cor;
+
+        // Setup delete button in modal
+        const deleteBtn = document.getElementById('delete-bike-from-modal');
+        if (deleteBtn) {
+            // Remove old event listener by cloning the button
+            const newDeleteBtn = deleteBtn.cloneNode(true);
+            deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+            
+            newDeleteBtn.addEventListener('click', async () => {
+                this.app.toggleModal('edit-bike-modal', false);
+                await this.handleDeleteBike(clientId, bikeId);
+            });
+        }
 
         this.app.toggleModal('edit-bike-modal', true);
     }
@@ -317,6 +336,52 @@ export class BicicletasManager {
         
         this.renderClientDetails();
         this.app.toggleModal('edit-bike-modal', false);
+    }
+
+    async handleDeleteBike(clientId, bikeId) {
+        try {
+            Auth.requirePermission('clientes', 'editar');
+        } catch (error) {
+            Modals.alert(error.message, 'Permissão Negada');
+            return;
+        }
+
+        const client = this.app.data.clients.find(c => c.id === clientId);
+        if (!client) return;
+
+        const bikeIndex = client.bicicletas.findIndex(b => b.id === bikeId);
+        if (bikeIndex === -1) return;
+
+        const bike = client.bicicletas[bikeIndex];
+
+        const confirmed = await Modals.showConfirm(
+            'Você tem certeza que deseja excluir esta bicicleta? Esta ação não pode ser desfeita.',
+            'Confirmar Exclusão'
+        );
+
+        if (!confirmed) return;
+
+        try {
+            client.bicicletas.splice(bikeIndex, 1);
+            Storage.saveClients(this.app.data.clients);
+
+            logAction('delete', 'bicicleta', bikeId, {
+                modelo: bike.modelo,
+                marca: bike.marca,
+                cor: bike.cor,
+                cliente: client.nome,
+                clienteCpf: client.cpf
+            });
+
+            this.renderClientDetails();
+            await Modals.alert('Bicicleta excluída com sucesso!', 'Sucesso');
+        } catch (error) {
+            console.error('Erro ao excluir bicicleta:', error);
+            await Modals.alert(
+                'Houve uma falha ao excluir a bicicleta. Por favor, tente novamente.',
+                'Erro'
+            );
+        }
     }
 
     applyPermissionsToUI() {
