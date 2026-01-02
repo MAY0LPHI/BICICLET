@@ -22,7 +22,6 @@ export class BicicletasManager {
             editBikeMarca: document.getElementById('edit-bike-marca'),
             editBikeCor: document.getElementById('edit-bike-cor'),
             cancelEditBike: document.getElementById('cancel-edit-bike'),
-            deleteBikeModalBtn: document.getElementById('delete-bike-modal-btn'),
         };
         this.setupEventListeners();
     }
@@ -55,21 +54,6 @@ export class BicicletasManager {
         
         this.elements.editBikeForm.addEventListener('submit', this.handleEditBike.bind(this));
         this.elements.cancelEditBike.addEventListener('click', () => this.app.toggleModal('edit-bike-modal', false));
-        
-        if (this.elements.deleteBikeModalBtn) {
-            this.elements.deleteBikeModalBtn.addEventListener('click', async () => {
-                const clientId = this.elements.editBikeClientId.value;
-                const bikeId = this.elements.editBikeId.value;
-                
-                await this.handleDeleteBikeClick(clientId, bikeId);
-                
-                // Close modal if delete was successful (bike no longer exists)
-                const client = this.app.data.clients.find(c => c.id === clientId);
-                if (client && !client.bicicletas.find(b => b.id === bikeId)) {
-                    this.app.toggleModal('edit-bike-modal', false);
-                }
-            });
-        }
         
         this.elements.editBikeModelo.addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
@@ -158,9 +142,6 @@ export class BicicletasManager {
                         ${canEditClients ? `
                         <button class="edit-bike-btn text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" data-bike-id="${bike.id}" title="Editar bicicleta">
                             <i data-lucide="pencil" class="h-4 w-4"></i>
-                        </button>
-                        <button class="delete-bike-btn text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" data-bike-id="${bike.id}" title="Excluir bicicleta">
-                            <i data-lucide="trash-2" class="h-4 w-4"></i>
                         </button>
                         ` : ''}
                     </div>
@@ -271,9 +252,6 @@ export class BicicletasManager {
         this.elements.clientDetailsSection.querySelectorAll('.edit-bike-btn').forEach(btn => {
             btn.addEventListener('click', () => this.openEditBikeModal(client.id, btn.dataset.bikeId));
         });
-        this.elements.clientDetailsSection.querySelectorAll('.delete-bike-btn').forEach(btn => {
-            btn.addEventListener('click', () => this.handleDeleteBikeClick(client.id, btn.dataset.bikeId));
-        });
     }
 
     openEditBikeModal(clientId, bikeId) {
@@ -339,53 +317,6 @@ export class BicicletasManager {
         
         this.renderClientDetails();
         this.app.toggleModal('edit-bike-modal', false);
-    }
-
-    async handleDeleteBikeClick(clientId, bikeId) {
-        try {
-            Auth.requirePermission('clientes', 'editar');
-        } catch (error) {
-            Modals.alert(error.message, 'Permissão Negada');
-            return;
-        }
-
-        const client = this.app.data.clients.find(c => c.id === clientId);
-        if (!client) return;
-
-        const bike = client.bicicletas.find(b => b.id === bikeId);
-        if (!bike) return;
-
-        const confirmed = await Modals.showConfirm(
-            `Tem certeza que deseja excluir a bicicleta ${bike.modelo} (${bike.marca})?`,
-            'Confirmar Exclusão'
-        );
-
-        if (confirmed) {
-            this.handleDeleteBike(clientId, bikeId);
-        }
-    }
-
-    handleDeleteBike(clientId, bikeId) {
-        const client = this.app.data.clients.find(c => c.id === clientId);
-        if (!client) return;
-
-        const bikeIndex = client.bicicletas.findIndex(b => b.id === bikeId);
-        if (bikeIndex === -1) return;
-
-        const bike = client.bicicletas[bikeIndex];
-        client.bicicletas.splice(bikeIndex, 1);
-
-        Storage.saveClients(this.app.data.clients);
-        
-        logAction('delete', 'bicicleta', bikeId, {
-            modelo: bike.modelo,
-            marca: bike.marca,
-            cor: bike.cor,
-            cliente: client.nome,
-            clienteCpf: client.cpf
-        });
-        
-        this.renderClientDetails();
     }
 
     applyPermissionsToUI() {
