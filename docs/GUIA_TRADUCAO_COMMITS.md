@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-Este diretório contém recursos para traduzir as mensagens de commits do repositório BICICLETARIO do inglês para o português.
+Este repositório contém recursos para traduzir as mensagens de commits do repositório BICICLETARIO do inglês para o português.
 
 ## Arquivos Incluídos
 

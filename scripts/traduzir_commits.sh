@@ -11,7 +11,7 @@ set -e
 
 echo "═══════════════════════════════════════════════════════════════"
 echo "  Script de Tradução de Mensagens de Commits"
-echo "  "
+echo ""
 echo "  AVISO: Este script irá REESCREVER o histórico do Git!"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
@@ -206,6 +206,7 @@ git filter-branch -f --msg-filter '
     # Retorna assunto traduzido + corpo original
     echo "$translated_subject"
     if [ -n "$body" ]; then
+        echo ""
         echo "$body"
     fi
 ' --tag-name-filter cat -- --all
