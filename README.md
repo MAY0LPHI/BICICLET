@@ -110,6 +110,7 @@ bicicletario/
 - **[ESTRUTURA.md](docs/ESTRUTURA.md)** - Organização modular do código
 - **[SISTEMA-ARQUIVOS.md](docs/SISTEMA-ARQUIVOS.md)** - Estrutura de armazenamento
 - **[TRADUCAO-COMMITS.md](docs/TRADUCAO-COMMITS.md)** - Tradução de mensagens de commit
+- **[REFERENCIA-RAPIDA-TRADUCOES.md](docs/REFERENCIA-RAPIDA-TRADUCOES.md)** - Guia rápido de traduções
 
 ### 🎨 Funcionalidades
 
