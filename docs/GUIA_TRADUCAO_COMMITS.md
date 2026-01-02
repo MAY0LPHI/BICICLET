@@ -152,7 +152,9 @@ Para traduzir também os corpos dos commits, seria necessário:
 
 ### Ambiente de Desenvolvimento Copilot
 
-O ambiente Copilot tem restrições:
+**Nota:** As limitações abaixo se aplicam ao ambiente de desenvolvimento GitHub Copilot Workspace. Se você estiver executando o script em seu próprio ambiente local com permissões adequadas, essas restrições não se aplicarão.
+
+No ambiente Copilot:
 - Não permite `git push --force` diretamente via comandos bash
 - Deve usar a ferramenta `report_progress` para commits
 - `report_progress` pode não suportar reescrita de histórico

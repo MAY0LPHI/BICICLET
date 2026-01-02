@@ -33,8 +33,9 @@ fi
 
 echo ""
 echo "Criando backup..."
-git clone --mirror . ../backup-bicicletario-$(date +%Y%m%d-%H%M%S).git
-echo "Backup criado em ../backup-bicicletario-$(date +%Y%m%d-%H%M%S).git"
+BACKUP_DIR="../backup-bicicletario-$(date +%Y%m%d-%H%M%S).git"
+git clone --mirror . "$BACKUP_DIR"
+echo "Backup criado em $BACKUP_DIR"
 
 echo ""
 echo "Iniciando tradução de commits..."
@@ -188,7 +189,12 @@ export -f translate_message
 
 # Aplica o filtro para traduzir mensagens de commit
 # Nota: Isto manterá o corpo dos commits intacto, traduzindo apenas o assunto
+# Exporta a função para uso no subshell do filter
+env TRANSLATE_FUNC="$(declare -f translate_message)" \
 git filter-branch -f --msg-filter '
+    # Importa a função no subshell
+    eval "$TRANSLATE_FUNC"
+    
     # Lê a primeira linha (assunto)
     read -r subject
     # Lê o resto (corpo)
