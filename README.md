@@ -123,6 +123,12 @@ bicicletario/
 - **[BUILD-WINDOWS.md](docs/BUILD-WINDOWS.md)** - Compilar para Windows
 - **[DESKTOP-TROUBLESHOOTING.md](docs/DESKTOP-TROUBLESHOOTING.md)** - Soluções de problemas
 
+### 🌍 Tradução de Commits
+
+- **[TRADUCAO_COMMITS.md](TRADUCAO_COMMITS.md)** - Tradução completa de mensagens de commit
+- **[GUIA_TRADUCAO_COMMITS.md](docs/GUIA_TRADUCAO_COMMITS.md)** - Guia para reescrita de histórico
+- **[Script de Tradução](scripts/traduzir_commits.sh)** - Ferramenta automatizada
+
 ### 🗄️ Armazenamento de Dados
 
 O sistema possui **duas estratégias de armazenamento**:
