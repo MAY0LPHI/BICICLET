@@ -349,8 +349,10 @@ export class BicicletasManager {
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (!client) return;
 
-        const bike = client.bicicletas.find(b => b.id === bikeId);
-        if (!bike) return;
+        const bikeIndex = client.bicicletas.findIndex(b => b.id === bikeId);
+        if (bikeIndex === -1) return;
+
+        const bike = client.bicicletas[bikeIndex];
 
         const confirmed = await Modals.showConfirm(
             'Você tem certeza que deseja excluir esta bicicleta? Esta ação não pode ser desfeita.',
@@ -360,9 +362,6 @@ export class BicicletasManager {
         if (!confirmed) return;
 
         try {
-            const bikeIndex = client.bicicletas.findIndex(b => b.id === bikeId);
-            if (bikeIndex === -1) return;
-
             client.bicicletas.splice(bikeIndex, 1);
             Storage.saveClients(this.app.data.clients);
 
