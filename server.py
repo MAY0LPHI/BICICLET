@@ -58,14 +58,22 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         logger.info("%s - %s" % (self.address_string(), format % args))
 
 def run_storage_api():
-    """Inicia a API de armazenamento em arquivos em background"""
+    """Inicia a API de armazenamento offline com SQLite em background"""
     try:
-        from storage_api import run_storage_api
-        logger.info("Iniciando API de armazenamento em http://localhost:5001/")
-        run_storage_api(port=5001)
+        # Tenta usar a API offline aprimorada
+        from offline_storage_api import run_offline_storage_api
+        logger.info("Iniciando API de armazenamento offline em http://localhost:5001/")
+        run_offline_storage_api(port=5001)
     except Exception as e:
-        logger.warning(f"API de armazenamento não iniciada: {e}")
-        logger.info("A aplicação funcionará normalmente usando localStorage")
+        logger.warning(f"API offline não disponível, usando fallback: {e}")
+        try:
+            # Fallback para API original
+            from storage_api import run_storage_api as run_original
+            logger.info("Usando API de armazenamento em arquivos")
+            run_original(port=5001)
+        except Exception as e2:
+            logger.warning(f"API de armazenamento não iniciada: {e2}")
+            logger.info("A aplicação funcionará normalmente usando localStorage")
 
 if __name__ == "__main__":
     try:
