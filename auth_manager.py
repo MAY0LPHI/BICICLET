@@ -144,9 +144,11 @@ class OfflineAuthManager:
         try:
             with open(self.users_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-                # Tenta descriptografar se criptografia estiver disponível
-                if self.cipher and content.startswith('gAAAAA'):
-                    content = self._decrypt_data(content)
+                # Verifica se é conteúdo criptografado usando marcador específico
+                # Formato: ENCRYPTED:<base64_data>
+                if self.cipher and content.startswith('ENCRYPTED:'):
+                    encrypted_content = content[10:]  # Remove 'ENCRYPTED:' prefix
+                    content = self._decrypt_data(encrypted_content)
                 return json.loads(content)
         except Exception as e:
             logger.error(f"Erro ao carregar usuários: {e}")
@@ -156,9 +158,10 @@ class OfflineAuthManager:
         """Salva usuários no arquivo"""
         try:
             content = json.dumps(users, ensure_ascii=False, indent=2)
-            # Criptografa se disponível
+            # Criptografa se disponível e adiciona marcador
             if self.cipher:
-                content = self._encrypt_data(content)
+                encrypted = self._encrypt_data(content)
+                content = f'ENCRYPTED:{encrypted}'
             
             with open(self.users_file, 'w', encoding='utf-8') as f:
                 f.write(content)

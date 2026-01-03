@@ -19,7 +19,12 @@ except ImportError:
     logging.warning("DatabaseManager não disponível, usando apenas arquivos")
 
 # Importa a storage_api original para fallback
-from storage_api import StorageAPIHandler as OriginalStorageAPIHandler
+try:
+    from storage_api import StorageAPIHandler as OriginalStorageAPIHandler
+    STORAGE_API_AVAILABLE = True
+except ImportError:
+    STORAGE_API_AVAILABLE = False
+    logging.warning("storage_api não disponível, fallback desabilitado")
 
 # Configuração de logging
 logging.basicConfig(
@@ -34,7 +39,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
     
     def __init__(self, *args, **kwargs):
         self.db = get_db_manager() if DB_AVAILABLE else None
-        self.fallback_handler = OriginalStorageAPIHandler
+        self.storage_api_available = STORAGE_API_AVAILABLE
         super().__init__(*args, **kwargs)
     
     def _set_headers(self, status=200, content_type='application/json'):

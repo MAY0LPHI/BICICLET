@@ -6,11 +6,15 @@
 const DB_NAME = 'BicicletarioDB';
 const DB_VERSION = 1;
 
+// API Base URL - Configurável via ambiente ou padrão para localhost
+const API_BASE_URL = window.BICICLETARIO_API_URL || 'http://localhost:5001/api';
+
 export class OfflineStorage {
     constructor() {
         this.db = null;
         this.syncQueue = [];
         this.isOnline = navigator.onLine;
+        this.apiBaseUrl = API_BASE_URL;
         this.initEventListeners();
     }
 
@@ -333,13 +337,12 @@ export class OfflineStorage {
      * Retorna o endpoint apropriado para a store
      */
     getEndpoint(storeName) {
-        const baseUrl = 'http://localhost:5001/api';
         const endpoints = {
-            'clientes': `${baseUrl}/client`,
-            'registros': `${baseUrl}/registro`,
-            'usuarios': `${baseUrl}/usuario`
+            'clientes': `${this.apiBaseUrl}/client`,
+            'registros': `${this.apiBaseUrl}/registro`,
+            'usuarios': `${this.apiBaseUrl}/usuario`
         };
-        return endpoints[storeName] || baseUrl;
+        return endpoints[storeName] || this.apiBaseUrl;
     }
 
     /**
@@ -349,16 +352,35 @@ export class OfflineStorage {
         let indicator = document.getElementById('offline-indicator');
         
         if (!indicator) {
+            // Cria elementos de forma segura
+            const container = document.createElement('div');
+            container.className = 'fixed top-4 right-4 z-[10000] bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2';
+            
+            // Ícone SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'w-5 h-5');
+            svg.setAttribute('fill', 'none');
+            svg.setAttribute('stroke', 'currentColor');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('stroke-linejoin', 'round');
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('d', 'M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414');
+            
+            svg.appendChild(path);
+            
+            // Texto
+            const span = document.createElement('span');
+            span.textContent = 'Modo Offline';
+            
+            container.appendChild(svg);
+            container.appendChild(span);
+            
             indicator = document.createElement('div');
             indicator.id = 'offline-indicator';
-            indicator.innerHTML = `
-                <div class="fixed top-4 right-4 z-[10000] bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
-                    </svg>
-                    <span>Modo Offline</span>
-                </div>
-            `;
+            indicator.appendChild(container);
             document.body.appendChild(indicator);
         }
         
@@ -375,35 +397,56 @@ export class OfflineStorage {
         }
         
         // Mostra notificação temporária
-        const notification = document.createElement('div');
-        notification.innerHTML = `
-            <div class="fixed top-4 right-4 z-[10000] bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span>Online - Sincronizando...</span>
-            </div>
-        `;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
+        this._createNotification('online', 'Online - Sincronizando...');
     }
 
     /**
      * Mostra notificação de sincronização completa
      */
     showSyncCompleteNotification() {
+        this._createNotification('sync', 'Sincronização Completa');
+    }
+
+    /**
+     * Cria notificação temporária de forma segura
+     */
+    _createNotification(type, message) {
+        const colors = {
+            'online': 'bg-green-500',
+            'sync': 'bg-blue-500'
+        };
+        const icons = {
+            'online': 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+            'sync': 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
+        };
+        
+        const container = document.createElement('div');
+        container.className = `fixed top-4 right-4 z-[10000] ${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2`;
+        
+        // Ícone SVG
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'w-5 h-5');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', icons[type]);
+        
+        svg.appendChild(path);
+        
+        // Texto (seguro contra XSS)
+        const span = document.createElement('span');
+        span.textContent = message;
+        
+        container.appendChild(svg);
+        container.appendChild(span);
+        
         const notification = document.createElement('div');
-        notification.innerHTML = `
-            <div class="fixed top-4 right-4 z-[10000] bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                <span>Sincronização Completa</span>
-            </div>
-        `;
+        notification.appendChild(container);
         document.body.appendChild(notification);
         
         setTimeout(() => {
