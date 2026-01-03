@@ -43,3 +43,23 @@ keystore.properties
 # Capacitor generated (can be regenerated)
 # android/  # Uncomment to ignore entire android folder
 .env
+
+# Dados sensíveis - Sistema Offline
+dados/auth/.key
+dados/auth/tokens.json
+dados/auth/users.json
+dados/database/*.db
+dados/database/backups/*.zip
+dados/logs/*.log
+dados/logs/*.csv
+dados/logs/*.txt
+dados/relatorios/*.csv
+dados/relatorios/*.txt
+dados/relatorios/*.pdf
+
+# Manter apenas estrutura de diretórios (add .gitkeep files se necessário)
+# dados/auth/
+# dados/database/backups/
+# dados/logs/
+# dados/relatorios/
+

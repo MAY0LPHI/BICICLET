@@ -1,0 +1,16 @@
+# Sistema de Gerenciamento de Bicicletário - Dependências Python
+# Para funcionamento offline completo com SQLite e criptografia
+
+# Banco de dados local
+# SQLite já vem incluso no Python 3.12
+
+# Criptografia e segurança
+cryptography>=41.0.0
+bcrypt>=4.1.0
+argon2-cffi>=23.1.0
+
+# Backup e compressão
+# zipfile já vem incluso no Python 3.12
+
+# Servidor web (já instalado)
+# http.server já vem incluso no Python 3.12

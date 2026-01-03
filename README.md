@@ -18,10 +18,14 @@ Sistema web profissional para gerenciamento de bicicletários, desenvolvido para
 - ✅ **Registros de Entrada/Saída** - Sistema de controle de acesso com histórico
 - ✅ **Sistema de Permissões** - Perfis hierárquicos (Dono, Admin, Funcionário)
 - ✅ **Auditoria Completa** - Rastreamento de todas as ações do sistema
-- ✅ **Exportação/Importação** - Backup completo em CSV/Excel
+- ✅ **Exportação/Importação** - Backup completo em CSV/Excel/JSON
 - ✅ **Tema Claro/Escuro** - Interface responsiva e moderna
 - ✅ **Categorias Personalizadas** - Organize clientes por tipo de serviço
 - ✅ **Sistema de Pernoite** - Controle especial para bikes que ficam durante a noite
+- ✅ **🌐 Modo Offline Completo** - Funciona 100% sem internet com sincronização automática
+- ✅ **🔒 Autenticação Segura Offline** - Bcrypt/SHA-256 + criptografia AES
+- ✅ **💾 SQLite Local** - Banco de dados robusto com backup automático
+- ✅ **📊 Relatórios Offline** - Exportação de logs e relatórios em CSV/TXT
 
 ---
 
@@ -101,6 +105,8 @@ bicicletario/
 ### 🎯 Começar por Aqui
 
 - **[README-PRINCIPAL.md](docs/README-PRINCIPAL.md)** - Guia completo de uso
+- **[GUIA-MODO-OFFLINE.md](docs/GUIA-MODO-OFFLINE.md)** - 📴 **NOVO!** Guia completo offline
+- **[FUNCIONAMENTO-OFFLINE.md](docs/FUNCIONAMENTO-OFFLINE.md)** - 🌐 Arquitetura offline
 - **[MUDANCAS-SISTEMA-PERMISSOES.md](docs/MUDANCAS-SISTEMA-PERMISSOES.md)** - Sistema de permissões
 - **[INSTRUCOES-USO.md](docs/INSTRUCOES-USO.md)** - Instruções detalhadas
 
@@ -125,26 +131,63 @@ bicicletario/
 
 ### 🗄️ Armazenamento de Dados
 
-O sistema possui **duas estratégias de armazenamento**:
+O sistema possui **múltiplas estratégias de armazenamento offline**:
 
-1. **Versão Web (Replit)**:
-   - Armazena em `dados/navegador/` (via API Python)
-   - Fallback automático para `localStorage`
+1. **Versão Web (Navegador)**:
+   - **SQLite** (porta 5001) - Banco de dados local robusto
+   - **IndexedDB** - Cache persistente no navegador (50MB+)
+   - **LocalStorage** - Fallback universal (~5-10MB)
+   - Sincronização automática quando online
 
 2. **Versão Desktop (Electron)**:
    - Armazena em `dados/desktop/` (arquivos JSON locais)
+   - Backup automático integrado
+
+3. **Segurança Offline**:
+   - Autenticação com **bcrypt** ou **SHA-256**
+   - Criptografia **AES** para dados sensíveis (opcional)
+   - Tokens de sessão seguros
+   - Backups automáticos em **.zip** e **.json**
+
+### 📊 Recursos Offline
+
+- ✅ **Funciona 100% sem internet**
+- ✅ **Sincronização automática** quando conexão retorna
+- ✅ **Fila de operações** - nenhuma ação perdida
+- ✅ **Indicadores visuais** de status online/offline
+- ✅ **Exportação de logs** em CSV e TXT
+- ✅ **Relatórios offline** completos
+- ✅ **Backup automático** do banco de dados
+
+Para mais detalhes, consulte [GUIA-MODO-OFFLINE.md](docs/GUIA-MODO-OFFLINE.md)
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Frontend**: HTML5, CSS3, JavaScript ES6+ (Vanilla)
-- **Estilização**: Tailwind CSS
-- **Ícones**: Lucide Icons
-- **Backend**: Python 3.12 (HTTP Server)
-- **Planilhas**: SheetJS (xlsx)
-- **Desktop**: Electron + Electron Builder
-- **Armazenamento**: LocalStorage + File System (JSON)
+### Frontend
+- **HTML5, CSS3, JavaScript ES6+** (Vanilla)
+- **Tailwind CSS** - Estilização responsiva
+- **Lucide Icons** - Ícones modernos
+- **SheetJS (xlsx)** - Exportação Excel
+- **IndexedDB** - Armazenamento offline estruturado
+
+### Backend
+- **Python 3.12** - Servidor HTTP e APIs
+- **SQLite** - Banco de dados local
+- **bcrypt** - Hash seguro de senhas (opcional)
+- **cryptography** - Criptografia AES (opcional)
+- **Flask-like REST API** - Endpoints locais
+
+### Desktop
+- **Electron** - Aplicação desktop nativa
+- **Electron Builder** - Compilação de executáveis
+
+### Armazenamento
+- **SQLite** - Banco de dados relacional
+- **IndexedDB** - Cache do navegador
+- **LocalStorage** - Fallback universal
+- **File System** - Arquivos JSON e backups
 
 ---
 
@@ -196,6 +239,9 @@ O sistema possui **duas estratégias de armazenamento**:
 ## 🔐 Segurança
 
 - ✅ Autenticação por usuário e senha
+- ✅ **Autenticação offline segura** com bcrypt/SHA-256
+- ✅ **Criptografia AES** para dados sensíveis (opcional)
+- ✅ **Tokens de sessão** seguros e persistentes
 - ✅ Validação de permissões em tempo real
 - ✅ Auditoria completa de ações
 - ✅ Proteção contra duplicação de CPF
@@ -204,6 +250,7 @@ O sistema possui **duas estratégias de armazenamento**:
 - ✅ **Headers de segurança HTTP**
 - ✅ **Sistema centralizado de logging**
 - ✅ **Validação robusta de dados**
+- ✅ **Backups automáticos criptografados**
 
 Para mais informações sobre segurança, consulte [SECURITY.md](docs/SECURITY.md)
 
@@ -256,6 +303,12 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 ## 📅 Histórico de Versões
 
+- **v3.1** (03/01/2026) - 🌐 **Sistema Offline Completo** + SQLite + Criptografia
+  - SQLite com backup automático
+  - Autenticação offline com bcrypt/AES
+  - IndexedDB com sincronização
+  - Exportação de logs em CSV/TXT
+  - Fila de sincronização automática
 - **v3.0** (23/11/2025) - Sistema de Permissões + Exportação/Importação
 - **v2.2** (21/11/2025) - Melhorias Desktop + Categorias
 - **v2.0** (20/11/2025) - Sistema de Auditoria

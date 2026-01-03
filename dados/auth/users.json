@@ -1,0 +1,18 @@
+{
+  "admin": {
+    "username": "admin",
+    "password": "$2b$12$vbFJltZx9fS3rXwO7/clceXptw0PGxP9s6qzjCVBUFgsqtbMPumCS",
+    "nome": "Administrador",
+    "tipo": "admin",
+    "ativo": true,
+    "criado_em": "2026-01-03T04:24:12.699066"
+  },
+  "CELO123": {
+    "username": "CELO123",
+    "password": "$2b$12$wPodapd0C74Kjpydcz74cu882QjsrRwqpCIpz0/.p68vfk3cD8j62",
+    "nome": "CELO - Dono do Sistema",
+    "tipo": "dono",
+    "ativo": true,
+    "criado_em": "2026-01-03T04:24:12.932762"
+  }
+}
