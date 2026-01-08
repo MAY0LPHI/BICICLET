@@ -334,9 +334,10 @@ export class SystemLoader {
             console.log('Pulando tela de carregamento (recarga do sistema)');
             
             // É seguro pular as verificações em uma recarga porque:
-            // 1. Os módulos já foram carregados na primeira carga
-            // 2. App.init() já chama Auth.init() novamente
-            // 3. As verificações são principalmente para módulos JavaScript que não mudam
+            // 1. Os módulos JavaScript já foram carregados na primeira carga
+            // 2. Auth.init() será chamado novamente por App.init() (ver app-modular.js linha 39)
+            // 3. As verificações são principalmente para módulos que não mudam entre reloads
+            // 4. Recargas sempre passam pelo mesmo fluxo: DOMContentLoaded -> SystemLoader.start() -> App.init()
             return true;
         }
         
