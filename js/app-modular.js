@@ -9,6 +9,7 @@ import { Debug } from './shared/debug.js';
 import { Auth } from './shared/auth.js';
 import { Usuarios } from './usuarios/usuarios.js';
 import { Utils } from './shared/utils.js';
+import { SystemLoader } from './shared/system-loader.js';
 
 class App {
     constructor() {
@@ -477,9 +478,18 @@ class App {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     Debug.init();
     lucide.createIcons();
-    window.app = new App();
-    window.app.init();
+    
+    // Executar verificação do sistema com tela de carregamento
+    const systemLoader = new SystemLoader();
+    const systemReady = await systemLoader.start();
+    
+    if (systemReady) {
+        window.app = new App();
+        window.app.init();
+    } else {
+        console.error('Sistema não pôde ser iniciado devido a erros críticos');
+    }
 });
