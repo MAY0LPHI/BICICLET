@@ -807,7 +807,11 @@ export class DadosManager {
             
             setTimeout(() => {
                 Modals.alert('Dados importados com sucesso! A página será recarregada.');
-                setTimeout(() => window.location.reload(), 1500);
+                setTimeout(() => {
+                    // Pular tela de carregamento ao recarregar após importar dados
+                    sessionStorage.setItem('skipLoadingScreen', 'true');
+                    window.location.reload();
+                }, 1500);
             }, 1000);
 
         } catch (error) {
