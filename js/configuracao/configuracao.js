@@ -1895,9 +1895,14 @@ export class ConfiguracaoManager {
             
             this.app.clientesManager.renderClientList();
             
+            // Pular tela de carregamento ao recarregar após importar dados
+            sessionStorage.setItem('skipLoadingScreen', 'true');
+            
             setTimeout(() => {
                 Modals.alert('Dados importados com sucesso! A página será recarregada.');
-                setTimeout(() => window.location.reload(), 1500);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             }, 1000);
 
         } catch (error) {
