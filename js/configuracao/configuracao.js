@@ -2353,7 +2353,7 @@ export class ConfiguracaoManager {
         
         // Salvar configurações
         if (saveBtn) {
-            saveBtn.addEventListener('click', async () => {
+            saveBtn.addEventListener('click', () => {
                 const newSettings = {
                     inactivityEnabled: inactivityEnabled?.checked || false,
                     inactivityInterval: parseInt(inactivityInterval?.value || 10),
@@ -2364,7 +2364,7 @@ export class ConfiguracaoManager {
                     patrolRoundInterval: parseInt(patrolRoundInterval?.value || 60),
                 };
                 
-                await notificationManager.saveSettings(newSettings);
+                notificationManager.saveSettings(newSettings);
                 
                 Modals.alert('Configurações de notificações salvas com sucesso!', '✅ Configurações Salvas');
             });

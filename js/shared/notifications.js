@@ -1,4 +1,3 @@
-import { Storage } from './storage.js';
 import { Modals } from './modals.js';
 
 export class NotificationManager {
@@ -16,6 +15,7 @@ export class NotificationManager {
         this.timers = {
             inactivity: null,
             patrolRound: null,
+            patrolSnooze: null,
         };
         
         this.counters = {
@@ -32,7 +32,7 @@ export class NotificationManager {
         this.startMonitoring();
     }
     
-    async loadSettings() {
+    loadSettings() {
         try {
             const saved = localStorage.getItem('notification_settings');
             if (saved) {
@@ -43,7 +43,7 @@ export class NotificationManager {
         }
     }
     
-    async saveSettings(newSettings) {
+    saveSettings(newSettings) {
         this.settings = { ...this.settings, ...newSettings };
         localStorage.setItem('notification_settings', JSON.stringify(this.settings));
         this.restartMonitoring();
@@ -74,6 +74,11 @@ export class NotificationManager {
         if (this.timers.patrolRound) {
             clearTimeout(this.timers.patrolRound);
             this.timers.patrolRound = null;
+        }
+        
+        if (this.timers.patrolSnooze) {
+            clearTimeout(this.timers.patrolSnooze);
+            this.timers.patrolSnooze = null;
         }
     }
     
@@ -212,8 +217,14 @@ export class NotificationManager {
     snoozePatrolRound() {
         this.patrolSnoozed = true;
         
-        setTimeout(() => {
+        // Clear any existing snooze timer to avoid duplicates
+        if (this.timers.patrolSnooze) {
+            clearTimeout(this.timers.patrolSnooze);
+        }
+        
+        this.timers.patrolSnooze = setTimeout(() => {
             this.patrolSnoozed = false;
+            this.timers.patrolSnooze = null;
             this.showPatrolRoundPopup();
         }, 5 * 60 * 1000); // 5 minutos
         
