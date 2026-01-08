@@ -275,7 +275,7 @@ export class SystemLoader {
 
             try {
                 // Simular um pequeno delay para visualização
-                await new Promise(resolve => setTimeout(resolve, 400));
+                await new Promise(resolve => setTimeout(resolve, 1200));
                 
                 // Executar a verificação
                 await step.handler();
@@ -295,7 +295,7 @@ export class SystemLoader {
         document.getElementById('system-status-message').textContent = 'Sistema pronto!';
         
         // Aguardar um pouco antes de remover a tela
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 800));
     }
 
     /**
