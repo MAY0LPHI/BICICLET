@@ -335,9 +335,9 @@ export class SystemLoader {
             
             // É seguro pular as verificações em uma recarga porque:
             // 1. Os módulos JavaScript já foram carregados na primeira carga
-            // 2. Auth.init() será chamado novamente por App.init() (ver app-modular.js linha 39)
-            // 3. As verificações são principalmente para módulos que não mudam entre reloads
-            // 4. Recargas sempre passam pelo mesmo fluxo: DOMContentLoaded -> SystemLoader.start() -> App.init()
+            // 2. Auth.init() será chamado novamente por App.init() (ver app-modular.js)
+            // 3. As verificações são principalmente para disponibilidade de módulos
+            // 4. Recargas sempre passam pelo mesmo fluxo: DOMContentLoaded → SystemLoader.start() → App.init()
             return true;
         }
         
