@@ -416,6 +416,7 @@ html.dark .dropdown-option-icon.selected {
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.step-icon:has(.lucide-check) {
+/* Remover animação quando a etapa está completa */
+.step-icon.completed {
     animation: none;
 }

@@ -16,6 +16,14 @@ export class SystemLoader {
             { id: 'modules', name: '📦 Ativação de Módulos', handler: this.checkModules.bind(this) }
         ];
         this.currentStepIndex = 0;
+        
+        // Configurações de delay (em ms) - pode ser ajustado ou removido em produção
+        // Para produção, considere reduzir ou definir como 0 para inicialização mais rápida
+        this.config = {
+            stepDelay: 1200,      // Delay entre etapas para visualização
+            errorDelay: 500,      // Delay após erro
+            completionDelay: 800  // Delay antes de remover a tela
+        };
     }
 
     /**
@@ -105,7 +113,7 @@ export class SystemLoader {
             
             const iconDiv = stepElement.querySelector('.step-icon');
             iconDiv.classList.remove('bg-white/20');
-            iconDiv.classList.add('bg-emerald-500/60');
+            iconDiv.classList.add('bg-emerald-500/60', 'completed');
             iconDiv.innerHTML = '<i data-lucide="check" class="w-3 h-3 text-white"></i>';
         } else if (status === 'error') {
             stepElement.classList.remove('ring-blue-400/30');
@@ -274,8 +282,8 @@ export class SystemLoader {
             this.updateStepStatus(step.id, 'loading', step.name);
 
             try {
-                // Simular um pequeno delay para visualização
-                await new Promise(resolve => setTimeout(resolve, 1200));
+                // Delay para visualização (configurável via this.config.stepDelay)
+                await new Promise(resolve => setTimeout(resolve, this.config.stepDelay));
                 
                 // Executar a verificação
                 await step.handler();
@@ -285,8 +293,8 @@ export class SystemLoader {
                 console.error(`Erro na etapa ${step.id}:`, error);
                 this.updateStepStatus(step.id, 'error', `${step.name} - Erro: ${error.message}`);
                 
-                // Continuar mesmo com erro, mas registrar
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Delay após erro (configurável via this.config.errorDelay)
+                await new Promise(resolve => setTimeout(resolve, this.config.errorDelay));
             }
         }
 
@@ -294,8 +302,8 @@ export class SystemLoader {
         this.updateProgress(100);
         document.getElementById('system-status-message').textContent = 'Sistema pronto!';
         
-        // Aguardar um pouco antes de remover a tela
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // Delay antes de remover a tela (configurável via this.config.completionDelay)
+        await new Promise(resolve => setTimeout(resolve, this.config.completionDelay));
     }
 
     /**
