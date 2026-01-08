@@ -2,6 +2,7 @@ import { Storage } from '../shared/storage.js';
 import { Utils } from '../shared/utils.js';
 import { Modals } from '../shared/modals.js';
 import { Auth } from '../shared/auth.js';
+import { notificationManager } from '../shared/notifications.js';
 
 export class ConfiguracaoManager {
     emojiToIconMap = {
@@ -71,6 +72,7 @@ export class ConfiguracaoManager {
         this.setupSystemThemeListener();
         this.loadThemePreference();
         this.renderHistoricoOrganizado();
+        this.setupNotificationSettings();
         
         // Pequeno atraso para garantir que o Storage carregou tudo (especialmente se houver async no futuro)
         setTimeout(() => {
@@ -2264,6 +2266,108 @@ export class ConfiguracaoManager {
             
             const systemImportSection = document.querySelector('#configuracao-tab-content .bg-white.rounded-lg.shadow-sm.p-6:nth-of-type(3)');
             if (systemImportSection) systemImportSection.style.display = 'none';
+        }
+    }
+    
+    setupNotificationSettings() {
+        const settings = notificationManager.getSettings();
+        
+        // Elementos de controle
+        const inactivityEnabled = document.getElementById('inactivity-enabled');
+        const inactivitySettings = document.getElementById('inactivity-settings');
+        const inactivityInterval = document.getElementById('inactivity-interval');
+        const inactivityRandom = document.getElementById('inactivity-random');
+        
+        const patrolRequestEnabled = document.getElementById('patrol-request-enabled');
+        const patrolRequestSettings = document.getElementById('patrol-request-settings');
+        const patrolRequestCount = document.getElementById('patrol-request-count');
+        
+        const patrolRoundEnabled = document.getElementById('patrol-round-enabled');
+        const patrolRoundSettings = document.getElementById('patrol-round-settings');
+        const patrolRoundInterval = document.getElementById('patrol-round-interval');
+        
+        const saveBtn = document.getElementById('save-notification-settings');
+        
+        // Carregar configurações salvas
+        if (inactivityEnabled) {
+            inactivityEnabled.checked = settings.inactivityEnabled;
+            if (settings.inactivityEnabled && inactivitySettings) {
+                inactivitySettings.classList.remove('hidden');
+            }
+        }
+        
+        if (inactivityInterval) {
+            inactivityInterval.value = settings.inactivityInterval;
+        }
+        
+        if (inactivityRandom) {
+            inactivityRandom.checked = settings.inactivityRandom;
+        }
+        
+        if (patrolRequestEnabled) {
+            patrolRequestEnabled.checked = settings.patrolRequestEnabled;
+            if (settings.patrolRequestEnabled && patrolRequestSettings) {
+                patrolRequestSettings.classList.remove('hidden');
+            }
+        }
+        
+        if (patrolRequestCount) {
+            patrolRequestCount.value = settings.patrolRequestCount;
+        }
+        
+        if (patrolRoundEnabled) {
+            patrolRoundEnabled.checked = settings.patrolRoundEnabled;
+            if (settings.patrolRoundEnabled && patrolRoundSettings) {
+                patrolRoundSettings.classList.remove('hidden');
+            }
+        }
+        
+        if (patrolRoundInterval) {
+            patrolRoundInterval.value = settings.patrolRoundInterval;
+        }
+        
+        // Event listeners para toggles
+        if (inactivityEnabled) {
+            inactivityEnabled.addEventListener('change', (e) => {
+                if (inactivitySettings) {
+                    inactivitySettings.classList.toggle('hidden', !e.target.checked);
+                }
+            });
+        }
+        
+        if (patrolRequestEnabled) {
+            patrolRequestEnabled.addEventListener('change', (e) => {
+                if (patrolRequestSettings) {
+                    patrolRequestSettings.classList.toggle('hidden', !e.target.checked);
+                }
+            });
+        }
+        
+        if (patrolRoundEnabled) {
+            patrolRoundEnabled.addEventListener('change', (e) => {
+                if (patrolRoundSettings) {
+                    patrolRoundSettings.classList.toggle('hidden', !e.target.checked);
+                }
+            });
+        }
+        
+        // Salvar configurações
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                const newSettings = {
+                    inactivityEnabled: inactivityEnabled?.checked || false,
+                    inactivityInterval: parseInt(inactivityInterval?.value || 10),
+                    inactivityRandom: inactivityRandom?.checked || false,
+                    patrolRequestEnabled: patrolRequestEnabled?.checked || false,
+                    patrolRequestCount: parseInt(patrolRequestCount?.value || 10),
+                    patrolRoundEnabled: patrolRoundEnabled?.checked || false,
+                    patrolRoundInterval: parseInt(patrolRoundInterval?.value || 60),
+                };
+                
+                notificationManager.saveSettings(newSettings);
+                
+                Modals.alert('Configurações de notificações salvas com sucesso!', '✅ Configurações Salvas');
+            });
         }
     }
 }

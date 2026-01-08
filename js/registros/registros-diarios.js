@@ -3,6 +3,7 @@ import { Storage } from '../shared/storage.js';
 import { Modals } from '../shared/modals.js';
 import { Auth } from '../shared/auth.js';
 import { logAction } from '../shared/audit-logger.js';
+import { notificationManager } from '../shared/notifications.js';
 
 export class RegistrosManager {
     constructor(app) {
@@ -184,6 +185,9 @@ export class RegistrosManager {
             this.app.data.registros.push(newRegistro);
             await Storage.saveRegistros(this.app.data.registros);
             
+            // Notificar o gerenciador de notificações sobre a atividade
+            notificationManager.onClientActivity();
+            
             logAction('register_entry', 'registro', newRegistro.id, {
                 cliente: client.nome,
                 clienteCpf: client.cpf,
@@ -241,6 +245,10 @@ export class RegistrosManager {
             if (registro && !registro.dataHoraSaida) {
                 registro.dataHoraSaida = Utils.getLocalISOString();
                 await Storage.saveRegistros(this.app.data.registros);
+                
+                // Notificar o gerenciador de notificações sobre a atividade
+                notificationManager.onClientActivity();
+                
                 this.renderDailyRecords();
                 this.app.bicicletasManager.renderClientDetails();
             }
@@ -384,6 +392,9 @@ export class RegistrosManager {
         if (registro && !registro.dataHoraSaida) {
             registro.dataHoraSaida = Utils.getLocalISOString();
             await Storage.saveRegistros(this.app.data.registros);
+            
+            // Notificar o gerenciador de notificações sobre a atividade
+            notificationManager.onClientActivity();
             
             const client = this.app.data.clients.find(c => c.id === registro.clientId);
             logAction('register_exit', 'registro', registroId, {
