@@ -176,6 +176,8 @@ class App {
 
     handleLogout() {
         Auth.logout();
+        // Pular tela de carregamento ao trocar de perfil
+        sessionStorage.setItem('skipLoadingScreen', 'true');
         window.location.reload();
     }
 
@@ -213,6 +215,8 @@ class App {
         try {
             const result = await Auth.login(username, password);
             if (result.success) {
+                // Pular tela de carregamento ao trocar de perfil
+                sessionStorage.setItem('skipLoadingScreen', 'true');
                 window.location.reload();
             } else {
                 errorEl.textContent = result.message;
@@ -282,6 +286,8 @@ class App {
             const result = await Auth.changePassword(session.userId, newPassword);
             if (result.success) {
                 document.getElementById('password-change-modal').remove();
+                // Pular tela de carregamento ao alterar senha
+                sessionStorage.setItem('skipLoadingScreen', 'true');
                 window.location.reload();
             } else {
                 errorEl.textContent = result.message;
@@ -291,6 +297,8 @@ class App {
 
         document.getElementById('modal-logout-btn').addEventListener('click', () => {
             Auth.logout();
+            // Pular tela de carregamento ao trocar de perfil
+            sessionStorage.setItem('skipLoadingScreen', 'true');
             window.location.reload();
         });
     }

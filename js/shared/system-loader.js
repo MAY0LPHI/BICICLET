@@ -325,6 +325,23 @@ export class SystemLoader {
      * Inicia o processo de carregamento
      */
     async start() {
+        // Verificar se é uma recarga após login/logout ou carga inicial
+        const skipLoadingScreen = sessionStorage.getItem('skipLoadingScreen');
+        
+        if (skipLoadingScreen === 'true') {
+            // Remover a flag e pular a tela de carregamento
+            sessionStorage.removeItem('skipLoadingScreen');
+            console.log('Pulando tela de carregamento (recarga do sistema)');
+            
+            // É seguro pular as verificações em uma recarga porque:
+            // 1. Os módulos JavaScript já foram carregados na primeira carga
+            // 2. Auth.init() será chamado novamente por App.init() (ver app-modular.js)
+            // 3. As verificações são principalmente para disponibilidade de módulos
+            // 4. Recargas sempre passam pelo mesmo fluxo: DOMContentLoaded → SystemLoader.start() → App.init()
+            return true;
+        }
+        
+        // Primeira carga do sistema - mostrar tela de carregamento
         this.createLoadingScreen();
         
         try {
