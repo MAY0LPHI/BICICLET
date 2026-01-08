@@ -286,7 +286,7 @@ class App {
             const result = await Auth.changePassword(session.userId, newPassword);
             if (result.success) {
                 document.getElementById('password-change-modal').remove();
-                // Pular tela de carregamento ao trocar de perfil
+                // Pular tela de carregamento ao alterar senha
                 sessionStorage.setItem('skipLoadingScreen', 'true');
                 window.location.reload();
             } else {

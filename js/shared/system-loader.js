@@ -332,6 +332,11 @@ export class SystemLoader {
             // Remover a flag e pular a tela de carregamento
             sessionStorage.removeItem('skipLoadingScreen');
             console.log('Pulando tela de carregamento (recarga do sistema)');
+            
+            // É seguro pular as verificações em uma recarga porque:
+            // 1. Os módulos já foram carregados na primeira carga
+            // 2. App.init() já chama Auth.init() novamente
+            // 3. As verificações são principalmente para módulos JavaScript que não mudam
             return true;
         }
         

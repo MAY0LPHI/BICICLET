@@ -805,11 +805,12 @@ export class DadosManager {
             
             this.app.clientesManager.renderClientList();
             
+            // Pular tela de carregamento ao recarregar após importar dados
+            sessionStorage.setItem('skipLoadingScreen', 'true');
+            
             setTimeout(() => {
                 Modals.alert('Dados importados com sucesso! A página será recarregada.');
                 setTimeout(() => {
-                    // Pular tela de carregamento ao recarregar após importar dados
-                    sessionStorage.setItem('skipLoadingScreen', 'true');
                     window.location.reload();
                 }, 1500);
             }, 1000);
