@@ -373,3 +373,50 @@ html.dark .dropdown-option-icon.selected {
 .dark .text-blue-400 { color: #60a5fa !important; }
 .dark .border-blue-400 { border-color: #60a5fa !important; }
 
+/* System Loading Screen Animations */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+#system-loading-screen > div {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Pulse effect for loading icons */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.step-icon {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Remover animação quando a etapa está completa */
+.step-icon.completed {
+    animation: none;
+}
