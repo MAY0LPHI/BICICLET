@@ -10,10 +10,10 @@ import { Utils } from './utils.js';
 export class SystemLoader {
     constructor() {
         this.steps = [
-            { id: 'security', name: '🔒 Verificação de Segurança', handler: this.checkSecurity.bind(this) },
-            { id: 'core', name: '⚙️ Inicialização do Núcleo', handler: this.checkCore.bind(this) },
-            { id: 'protocols', name: '🌐 Carregamento de Protocolos', handler: this.checkProtocols.bind(this) },
-            { id: 'modules', name: '📦 Ativação de Módulos', handler: this.checkModules.bind(this) }
+            { id: 'security', name: 'Verificação de Segurança', icon: 'shield-check', handler: this.checkSecurity.bind(this) },
+            { id: 'core', name: 'Inicialização do Núcleo', icon: 'cpu', handler: this.checkCore.bind(this) },
+            { id: 'protocols', name: 'Carregamento de Protocolos', icon: 'globe', handler: this.checkProtocols.bind(this) },
+            { id: 'modules', name: 'Ativação de Módulos', icon: 'package', handler: this.checkModules.bind(this) }
         ];
         this.currentStepIndex = 0;
         
@@ -60,8 +60,8 @@ export class SystemLoader {
                     <div id="system-steps-list" class="space-y-3">
                         ${this.steps.map(step => `
                             <div id="step-${step.id}" class="flex items-center space-x-3 p-3 bg-white/10 rounded-lg ring-1 ring-white/10 transition-all duration-300">
-                                <div class="step-icon flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                                    <div class="w-2 h-2 rounded-full bg-white/40"></div>
+                                <div class="step-icon flex-shrink-0 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                                    <i data-lucide="${step.icon}" class="w-4 h-4 text-white/60"></i>
                                 </div>
                                 <div class="flex-1">
                                     <div class="step-name text-sm text-white/80">${step.name}</div>
@@ -106,23 +106,42 @@ export class SystemLoader {
         if (status === 'loading') {
             stepElement.classList.add('ring-blue-400/30', 'bg-white/15');
             statusIcons[0]?.classList.remove('hidden'); // loader
+            
+            // Highlight the step icon during loading
+            const iconDiv = stepElement.querySelector('.step-icon');
+            iconDiv.classList.add('bg-blue-500/40', 'ring-2', 'ring-blue-400/30');
+            const stepIcon = iconDiv.querySelector('i');
+            if (stepIcon) {
+                stepIcon.classList.remove('text-white/60');
+                stepIcon.classList.add('text-white');
+            }
         } else if (status === 'success') {
             stepElement.classList.remove('ring-blue-400/30');
-            stepElement.classList.add('ring-emerald-500/25', 'bg-white/10', 'border-emerald-500/60');
+            stepElement.classList.add('ring-emerald-500/25', 'bg-white/10');
             statusIcons[1]?.classList.remove('hidden'); // check
             
             const iconDiv = stepElement.querySelector('.step-icon');
-            iconDiv.classList.remove('bg-white/20');
+            iconDiv.classList.remove('bg-white/20', 'bg-blue-500/40', 'ring-2', 'ring-blue-400/30');
             iconDiv.classList.add('bg-emerald-500/60', 'completed');
-            iconDiv.innerHTML = '<i data-lucide="check" class="w-3 h-3 text-white"></i>';
+            // Keep the original icon visible but with success color
+            const stepIcon = iconDiv.querySelector('i');
+            if (stepIcon) {
+                stepIcon.classList.remove('text-white/60', 'text-white');
+                stepIcon.classList.add('text-white');
+            }
         } else if (status === 'error') {
             stepElement.classList.remove('ring-blue-400/30');
             stepElement.classList.add('ring-red-500/25', 'bg-red-500/20');
             statusIcons[2]?.classList.remove('hidden'); // alert-circle
             
             const iconDiv = stepElement.querySelector('.step-icon');
-            iconDiv.classList.remove('bg-white/20');
+            iconDiv.classList.remove('bg-white/20', 'bg-blue-500/40', 'ring-2', 'ring-blue-400/30');
             iconDiv.classList.add('bg-red-500/60');
+            const stepIcon = iconDiv.querySelector('i');
+            if (stepIcon) {
+                stepIcon.classList.remove('text-white/60');
+                stepIcon.classList.add('text-white');
+            }
         }
 
         if (window.lucide) {
