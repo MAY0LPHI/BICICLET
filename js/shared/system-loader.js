@@ -126,7 +126,7 @@ export class SystemLoader {
             // Keep the original icon visible but with success color
             const stepIcon = iconDiv.querySelector('i');
             if (stepIcon) {
-                stepIcon.classList.remove('text-white/60', 'text-white');
+                stepIcon.classList.remove('text-white/60');
                 stepIcon.classList.add('text-white');
             }
         } else if (status === 'error') {
