@@ -2,6 +2,8 @@ import { Storage } from '../shared/storage.js';
 import { Utils } from '../shared/utils.js';
 import { Modals } from '../shared/modals.js';
 import { Auth } from '../shared/auth.js';
+import { getJobMonitor } from '../shared/job-monitor.js';
+import { logAction } from '../shared/audit-logger.js';
 
 export class DadosManager {
     constructor(app) {
@@ -31,6 +33,10 @@ export class DadosManager {
             deleteStatus: document.getElementById('delete-status'),
         };
         this.init();
+    }
+
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     init() {
@@ -116,7 +122,7 @@ export class DadosManager {
 
     async handleDeleteData() {
         try {
-            Auth.requirePermission('dados', 'importarSistema');
+            Auth.requirePermission('dados', 'limparDados');
         } catch (error) {
             Modals.alert(error.message, 'Permissao Negada');
             return;
@@ -164,23 +170,61 @@ export class DadosManager {
 
             if (deleteClientes) {
                 const count = this.app.data.clients.length;
-                this.app.data.clients = [];
-                await Storage.saveClients([]);
-                results.push(`${count} clientes`);
+                try {
+                    const response = await fetch('/api/clear/clients', { method: 'POST' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.app.data.clients = [];
+                        await Storage.saveClients([]);
+                        results.push(`${data.deleted || count} clientes`);
+                    } else {
+                        throw new Error('Erro ao limpar clientes no servidor');
+                    }
+                } catch (e) {
+                    console.warn('API indisponível, limpando localmente:', e);
+                    this.app.data.clients = [];
+                    await Storage.saveClients([]);
+                    results.push(`${count} clientes`);
+                }
             }
 
             if (deleteRegistros) {
                 const count = this.app.data.registros.length;
-                this.app.data.registros = [];
-                await Storage.saveRegistros([]);
-                results.push(`${count} registros`);
+                try {
+                    const response = await fetch('/api/clear/registros', { method: 'POST' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.app.data.registros = [];
+                        await Storage.saveRegistros([]);
+                        results.push(`${data.deleted || count} registros`);
+                    } else {
+                        throw new Error('Erro ao limpar registros no servidor');
+                    }
+                } catch (e) {
+                    console.warn('API indisponível, limpando localmente:', e);
+                    this.app.data.registros = [];
+                    await Storage.saveRegistros([]);
+                    results.push(`${count} registros`);
+                }
             }
 
             if (deleteCategorias) {
                 const categorias = Storage.loadCategorias();
                 const count = Object.keys(categorias).length;
-                Storage.saveCategorias({});
-                results.push(`${count} categorias`);
+                try {
+                    const response = await fetch('/api/clear/categorias', { method: 'POST' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        Storage.saveCategorias({});
+                        results.push(`${data.deleted || count} categorias`);
+                    } else {
+                        throw new Error('Erro ao limpar categorias no servidor');
+                    }
+                } catch (e) {
+                    console.warn('API indisponível, limpando localmente:', e);
+                    Storage.saveCategorias({});
+                    results.push(`${count} categorias`);
+                }
             }
 
             if (this.elements.deleteClientes) this.elements.deleteClientes.checked = false;
@@ -197,7 +241,17 @@ export class DadosManager {
             }
             if (this.app.configuracaoManager) {
                 this.app.configuracaoManager.renderCategorias();
+                if (typeof this.app.configuracaoManager.loadStorageModeSettings === 'function') {
+                    await this.app.configuracaoManager.loadStorageModeSettings();
+                }
+                if (typeof this.app.configuracaoManager.renderHistoricoOrganizado === 'function') {
+                    await this.app.configuracaoManager.renderHistoricoOrganizado();
+                }
             }
+
+            localStorage.removeItem('bicicletario_clients');
+            localStorage.removeItem('bicicletario_registros');
+            localStorage.removeItem('bicicletario_categorias');
 
             if (statusEl) {
                 statusEl.className = 'text-sm text-green-600 dark:text-green-400';
@@ -206,6 +260,11 @@ export class DadosManager {
                     statusEl.classList.add('hidden');
                 }, 5000);
             }
+
+            logAction('delete', 'dados', null, { 
+                tipos: items,
+                resultado: results.join(', ')
+            });
 
             Modals.alert(`Dados removidos com sucesso!\n\n${results.join('\n')}`, 'Sucesso');
 
@@ -233,29 +292,94 @@ export class DadosManager {
 
         const statusEl = this.elements.importStatus;
         statusEl.classList.remove('hidden');
-        statusEl.innerHTML = '<p class="text-blue-600 dark:text-blue-400">Importando...</p>';
 
         try {
+            this.showImportStatus('Lendo arquivo...', 'info', 0);
+            await this.delay(100);
+
+            this.showImportStatus('Processando arquivo...', 'info', 20);
+            await this.delay(100);
             const data = await this.readFile(file);
+
+            this.showImportStatus('Analisando dados...', 'info', 40);
+            await this.delay(100);
+
+            this.showImportStatus('Importando clientes...', 'info', 60);
+            await this.delay(100);
             const imported = this.processImportData(data);
             
             if (imported > 0) {
-                Storage.saveClients(this.app.data.clients);
+                const totalClients = this.app.data.clients.length;
+                this.showImportStatus('Salvando clientes...', 'info', 80, 0, totalClients);
+                await this.delay(100);
+                await Storage.saveClients(this.app.data.clients, true, (current, total) => {
+                    const progressPercent = 80 + Math.floor((current / total) * 10);
+                    this.showImportStatus('Salvando clientes...', 'info', progressPercent, current, total);
+                });
+
+                this.showImportStatus('Atualizando lista...', 'info', 90);
+                await this.delay(100);
                 this.app.clientesManager.renderClientList();
-                statusEl.innerHTML = `<p class="text-green-600 dark:text-green-400">✓ ${imported} cliente(s) importado(s) com sucesso!</p>`;
+
+                this.showImportStatus(`${imported} cliente(s) importado(s) com sucesso!`, 'success', 100);
+                
+                logAction('import', 'dados', null, { 
+                    tipo: 'clientes',
+                    quantidade: imported
+                });
+                
                 this.elements.importFile.value = '';
                 this.elements.importBtn.disabled = true;
             } else {
-                statusEl.innerHTML = '<p class="text-yellow-600 dark:text-yellow-400">Nenhum cliente válido encontrado no arquivo.</p>';
+                this.showImportStatus('Nenhum cliente válido encontrado no arquivo.', 'warning', null);
             }
         } catch (error) {
             console.error('Erro ao importar:', error);
-            statusEl.innerHTML = `<p class="text-red-600 dark:text-red-400">✗ Erro ao importar: ${error.message}</p>`;
+            this.showImportStatus(`Erro ao importar: ${error.message}`, 'error', null);
         }
 
         setTimeout(() => {
             statusEl.classList.add('hidden');
         }, 5000);
+    }
+
+    showImportStatus(message, type, progress = null, current = null, total = null) {
+        const statusEl = this.elements.importStatus;
+        if (!statusEl) return;
+
+        const colorClass = type === 'success' ? 'text-green-600 dark:text-green-400' :
+            type === 'error' ? 'text-red-600 dark:text-red-400' :
+            type === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
+            'text-blue-600 dark:text-blue-400';
+
+        const progressColorClass = type === 'success' ? 'bg-green-500' :
+            type === 'error' ? 'bg-red-500' : 'bg-orange-500';
+
+        if (progress !== null && progress >= 0 && progress <= 100) {
+            const countDisplay = (current !== null && total !== null) 
+                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>` 
+                : '';
+            const progressDisplay = (current !== null && total !== null) 
+                ? `${countDisplay} <span class="text-slate-500 dark:text-slate-400">(${progress}%)</span>`
+                : `${progress}%`;
+            
+            statusEl.innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <p class="${colorClass} font-medium">${message}</p>
+                        <p class="text-sm font-medium">${progressDisplay}</p>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                        <div class="${progressColorClass} h-3 rounded-full transition-all duration-300 ease-out" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+            `;
+        } else {
+            statusEl.innerHTML = `<p class="${colorClass}">${message}</p>`;
+        }
+        
+        statusEl.className = 'text-sm mt-2';
+        statusEl.classList.remove('hidden');
     }
 
     sanitizeCsvCell(cell) {
@@ -393,6 +517,13 @@ export class DadosManager {
         
         XLSX.writeFile(wb, fileName);
         
+        logAction('export', 'dados', null, { 
+            tipo: 'clientes', 
+            formato: 'xlsx',
+            quantidade: totalClientes,
+            periodo: { inicio: dataInicio || null, fim: dataFim || null }
+        });
+        
         Modals.alert(`Exportação concluída! ${totalClientes} cliente(s) exportado(s).`);
     }
 
@@ -442,6 +573,13 @@ export class DadosManager {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        logAction('export', 'dados', null, { 
+            tipo: 'clientes', 
+            formato: 'csv',
+            quantidade: totalClientes,
+            periodo: { inicio: dataInicio || null, fim: dataFim || null }
+        });
         
         Modals.alert(`Exportação concluída! ${totalClientes} cliente(s) exportado(s).`);
     }
@@ -523,6 +661,12 @@ export class DadosManager {
         const fileName = `backup_sistema_${periodoStr}.xlsx`;
         XLSX.writeFile(wb, fileName);
         
+        logAction('export', 'sistema', null, { 
+            tipo: 'backup_completo',
+            formato: 'xlsx',
+            periodo: { inicio: dataInicio || null, fim: dataFim || null }
+        });
+        
         const periodoMsg = dataInicio || dataFim 
             ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})` 
             : '';
@@ -587,6 +731,12 @@ export class DadosManager {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        logAction('export', 'sistema', null, { 
+            tipo: 'backup_completo',
+            formato: 'csv',
+            periodo: { inicio: dataInicio || null, fim: dataFim || null }
+        });
         
         const periodoMsg = dataInicio || dataFim 
             ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})` 
@@ -778,10 +928,14 @@ export class DadosManager {
         if (!confirmed) return;
 
         try {
-            this.showImportSystemStatus('Importando dados...', 'info');
+            this.showImportSystemStatus('Lendo arquivo...', 'info', 0);
+            await this.delay(100);
             
             const fileExtension = file.name.split('.').pop().toLowerCase();
             let importedData;
+
+            this.showImportSystemStatus('Processando arquivo...', 'info', 10);
+            await this.delay(100);
 
             if (fileExtension === 'csv') {
                 importedData = await this.processSystemCSVImport(file);
@@ -789,36 +943,120 @@ export class DadosManager {
                 importedData = await this.processSystemExcelImport(file);
             }
 
+            this.showImportSystemStatus('Analisando dados...', 'info', 30);
+            await this.delay(100);
+
             const mergedData = this.mergeSystemData(importedData);
-
-            await Storage.saveClients(mergedData.clients);
-            await Storage.saveRegistros(mergedData.registros);
-            Auth.saveUsers(mergedData.usuarios);
-            if (mergedData.categorias) {
-                Storage.saveCategorias(mergedData.categorias);
+            
+            const totalItems = mergedData.clients.length + mergedData.registros.length;
+            const USE_BACKGROUND_THRESHOLD = 20;
+            
+            if (totalItems >= USE_BACKGROUND_THRESHOLD) {
+                await this.handleBackgroundImport(mergedData);
+            } else {
+                await this.handleSyncImport(mergedData);
             }
-
-            this.app.data.clients = mergedData.clients;
-            this.app.data.registros = mergedData.registros;
-
-            this.showImportSystemStatus(`✅ Backup importado com sucesso! ${mergedData.stats.clientesNovos} clientes novos, ${mergedData.stats.clientesMesclados} mesclados, ${mergedData.stats.bicicletasAdicionadas} bicicletas adicionadas, ${mergedData.stats.registrosNovos} registros novos, ${mergedData.stats.usuariosNovos} usuários novos, ${mergedData.stats.categoriasImportadas} categorias.`, 'success');
-            
-            this.app.clientesManager.renderClientList();
-            
-            // Pular tela de carregamento ao recarregar após importar dados
-            sessionStorage.setItem('skipLoadingScreen', 'true');
-            
-            setTimeout(() => {
-                Modals.alert('Dados importados com sucesso! A página será recarregada.');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            }, 1000);
 
         } catch (error) {
             console.error('Erro ao importar backup:', error);
-            this.showImportSystemStatus(`❌ Erro ao importar: ${error.message}`, 'error');
+            this.showImportSystemStatus(`Erro ao importar: ${error.message}`, 'error', null);
         }
+    }
+    
+    async handleBackgroundImport(mergedData) {
+        const jobMonitor = getJobMonitor();
+        
+        this.showImportSystemStatus('Iniciando importação em segundo plano...', 'info', 40);
+        
+        try {
+            const backupData = {
+                clients: mergedData.clients,
+                registros: mergedData.registros,
+                usuarios: mergedData.usuarios,
+                categorias: mergedData.categorias
+            };
+            
+            const result = await jobMonitor.startImportBackup(backupData);
+            
+            if (result.success) {
+                this.showImportSystemStatus(
+                    `Importação iniciada em segundo plano! Acompanhe o progresso no canto inferior direito da tela.`, 
+                    'success', 
+                    100
+                );
+                
+                Auth.saveUsers(mergedData.usuarios);
+                if (mergedData.categorias) {
+                    Storage.saveCategorias(mergedData.categorias);
+                }
+                
+                this.elements.importSystemFile.value = '';
+                this.elements.importSystemBtn.disabled = true;
+                
+                jobMonitor.showToast('Importação iniciada em segundo plano', 'info');
+            } else {
+                throw new Error(result.error || 'Falha ao iniciar importação');
+            }
+        } catch (error) {
+            console.error('Erro ao iniciar importação em segundo plano:', error);
+            this.showImportSystemStatus('Fallback: usando importação síncrona...', 'warning', 45);
+            await this.handleSyncImport(mergedData);
+        }
+    }
+    
+    async handleSyncImport(mergedData) {
+        const totalClients = mergedData.clients.length;
+        this.showImportSystemStatus('Salvando clientes...', 'info', 50, 0, totalClients);
+        await this.delay(100);
+        await Storage.saveClients(mergedData.clients, true, (current, total) => {
+            const progressPercent = 50 + Math.floor((current / total) * 15);
+            this.showImportSystemStatus('Salvando clientes...', 'info', progressPercent, current, total);
+        });
+
+        const totalRegistros = mergedData.registros.length;
+        this.showImportSystemStatus('Salvando registros...', 'info', 65, 0, totalRegistros);
+        await this.delay(100);
+        await Storage.saveRegistros(mergedData.registros, (current, total) => {
+            const progressPercent = 65 + Math.floor((current / total) * 15);
+            this.showImportSystemStatus('Salvando registros...', 'info', progressPercent, current, total);
+        });
+
+        this.showImportSystemStatus('Salvando usuários...', 'info', 80);
+        await this.delay(100);
+        Auth.saveUsers(mergedData.usuarios);
+
+        if (mergedData.categorias) {
+            this.showImportSystemStatus('Salvando categorias...', 'info', 90);
+            await this.delay(100);
+            Storage.saveCategorias(mergedData.categorias);
+        }
+
+        this.app.data.clients = mergedData.clients;
+        this.app.data.registros = mergedData.registros;
+
+        this.showImportSystemStatus('Finalizando importação...', 'info', 95);
+        await this.delay(200);
+
+        this.showImportSystemStatus(`Backup importado com sucesso! ${mergedData.stats.clientesNovos} clientes novos, ${mergedData.stats.clientesMesclados} mesclados, ${mergedData.stats.bicicletasAdicionadas} bicicletas adicionadas, ${mergedData.stats.registrosNovos} registros novos, ${mergedData.stats.usuariosNovos} usuários novos, ${mergedData.stats.categoriasImportadas} categorias.`, 'success', 100);
+        
+        logAction('import', 'sistema', null, { 
+            tipo: 'backup_completo',
+            clientesNovos: mergedData.stats.clientesNovos,
+            clientesMesclados: mergedData.stats.clientesMesclados,
+            registrosNovos: mergedData.stats.registrosNovos,
+            usuariosNovos: mergedData.stats.usuariosNovos
+        });
+        
+        this.app.clientesManager.renderClientList();
+        
+        sessionStorage.setItem('skipLoadingScreen', 'true');
+        
+        setTimeout(() => {
+            Modals.alert('Dados importados com sucesso! A página será recarregada.', 'Importação Concluída', 'check-circle');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        }, 1000);
     }
 
     async processSystemExcelImport(file) {
@@ -1025,8 +1263,8 @@ export class DadosManager {
                 if (client) {
                     client.bicicletas.push({
                         id: row[0],
-                        modelo: row[2],
-                        marca: row[3],
+                        marca: row[2],
+                        modelo: row[3],
                         cor: row[4]
                     });
                 }
@@ -1096,6 +1334,16 @@ export class DadosManager {
             const row = usuariosData[i];
             if (!row[0]) continue;
 
+            let permissoes = {};
+            if (row[6]) {
+                try {
+                    permissoes = JSON.parse(row[6]);
+                } catch (e) {
+                    console.warn(`Erro ao parsear permissões para usuário ${row[1]}:`, e);
+                    permissoes = {};
+                }
+            }
+
             usuarios.push({
                 id: row[0],
                 username: row[1],
@@ -1103,7 +1351,7 @@ export class DadosManager {
                 nome: row[3],
                 tipo: row[4],
                 ativo: row[5] === 'Sim',
-                permissoes: JSON.parse(row[6])
+                permissoes: permissoes
             });
         }
 
@@ -1123,43 +1371,74 @@ export class DadosManager {
         return categorias;
     }
 
-    showImportSystemStatus(message, type) {
+    showImportSystemStatus(message, type, progress = null, current = null, total = null) {
         const statusEl = this.elements.importSystemStatus;
         if (!statusEl) return;
 
-        statusEl.textContent = message;
-        statusEl.className = `text-sm ${
-            type === 'success' ? 'text-green-600 dark:text-green-400' :
+        const colorClass = type === 'success' ? 'text-green-600 dark:text-green-400' :
             type === 'error' ? 'text-red-600 dark:text-red-400' :
-            'text-blue-600 dark:text-blue-400'
-        }`;
+            'text-blue-600 dark:text-blue-400';
+
+        const progressColorClass = type === 'success' ? 'bg-green-500' :
+            type === 'error' ? 'bg-red-500' : 'bg-orange-500';
+
+        if (progress !== null && progress >= 0 && progress <= 100) {
+            const countDisplay = (current !== null && total !== null) 
+                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>` 
+                : '';
+            const progressDisplay = (current !== null && total !== null) 
+                ? `${countDisplay} <span class="text-slate-500 dark:text-slate-400">(${progress}%)</span>`
+                : `${progress}%`;
+            
+            statusEl.innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <p class="${colorClass} font-medium">${message}</p>
+                        <p class="text-sm font-medium">${progressDisplay}</p>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                        <div class="${progressColorClass} h-3 rounded-full transition-all duration-300 ease-out" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+            `;
+        } else {
+            statusEl.innerHTML = `<p class="${colorClass}">${message}</p>`;
+        }
+        
+        statusEl.className = 'text-sm mt-2';
         statusEl.classList.remove('hidden');
     }
 
     applyPermissionsToUI() {
         const canExportarDados = Auth.hasPermission('dados', 'exportarDados');
+        const canImportarDados = Auth.hasPermission('dados', 'importarDados');
         const canExportarSistema = Auth.hasPermission('dados', 'exportarSistema');
-        const canImportarDados = Auth.hasPermission('dados', 'importar');
         const canImportarSistema = Auth.hasPermission('dados', 'importarSistema');
+        const canLimparDados = Auth.hasPermission('dados', 'limparDados');
 
-        if (!canExportarDados) {
-            if (this.elements.exportExcelBtn) this.elements.exportExcelBtn.style.display = 'none';
-            if (this.elements.exportCsvBtn) this.elements.exportCsvBtn.style.display = 'none';
+        const sectionImportarDados = document.getElementById('section-importar-dados');
+        if (sectionImportarDados) {
+            sectionImportarDados.style.display = canImportarDados ? '' : 'none';
         }
 
-        if (!canExportarSistema) {
-            if (this.elements.exportSystemExcelBtn) this.elements.exportSystemExcelBtn.style.display = 'none';
-            if (this.elements.exportSystemCsvBtn) this.elements.exportSystemCsvBtn.style.display = 'none';
+        const sectionExportarDados = document.getElementById('section-exportar-dados');
+        if (sectionExportarDados) {
+            sectionExportarDados.style.display = canExportarDados ? '' : 'none';
         }
 
-        if (!canImportarDados) {
-            if (this.elements.importFile) this.elements.importFile.style.display = 'none';
-            if (this.elements.importBtn) this.elements.importBtn.style.display = 'none';
+        const sectionExportarSistema = document.getElementById('section-exportar-sistema');
+        if (sectionExportarSistema) {
+            sectionExportarSistema.style.display = canExportarSistema ? '' : 'none';
         }
 
-        if (!canImportarSistema) {
-            if (this.elements.importSystemFile) this.elements.importSystemFile.style.display = 'none';
-            if (this.elements.importSystemBtn) this.elements.importSystemBtn.style.display = 'none';
+        const sectionImportarSistema = document.getElementById('section-importar-sistema');
+        if (sectionImportarSistema) {
+            sectionImportarSistema.style.display = canImportarSistema ? '' : 'none';
+        }
+
+        const sectionApagarDados = document.getElementById('section-apagar-dados');
+        if (sectionApagarDados) {
+            sectionApagarDados.style.display = canLimparDados ? '' : 'none';
         }
     }
 }

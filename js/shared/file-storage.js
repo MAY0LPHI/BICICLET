@@ -1,9 +1,10 @@
 /**
  * Cliente para a API de armazenamento em arquivos
  * Permite salvar dados em arquivos locais mesmo na versão web
+ * API integrada no servidor principal (porta 5000)
  */
 
-const API_URL = 'http://localhost:5001/api';
+const API_URL = '/api';
 
 export class FileStorage {
     static async isAvailable() {
@@ -60,5 +61,30 @@ export class FileStorage {
     static async loadAllRegistros() {
         const response = await fetch(`${API_URL}/registros`);
         return await response.json();
+    }
+
+    static async deleteRegistro(registroId) {
+        const response = await fetch(`${API_URL}/registro/${registroId}`, {
+            method: 'DELETE'
+        });
+        return await response.json();
+    }
+
+    // Categorias
+    static async saveCategorias(categorias) {
+        const response = await fetch(`${API_URL}/categorias`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(categorias)
+        });
+        return await response.json();
+    }
+
+    static async loadCategorias() {
+        const response = await fetch(`${API_URL}/categorias`);
+        if (response.ok) {
+            return await response.json();
+        }
+        return {};
     }
 }

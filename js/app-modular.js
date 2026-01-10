@@ -10,6 +10,7 @@ import { Auth } from './shared/auth.js';
 import { Usuarios } from './usuarios/usuarios.js';
 import { Utils } from './shared/utils.js';
 import { SystemLoader } from './shared/system-loader.js';
+import { getJobMonitor } from './shared/job-monitor.js';
 
 class App {
     constructor() {
@@ -68,6 +69,70 @@ class App {
         
         this.registrosManager.elements.dailyRecordsDateInput.value = new Date().toISOString().split('T')[0];
         this.registrosManager.renderDailyRecords();
+        
+        this.initJobMonitor();
+    }
+    
+    initJobMonitor() {
+        this.jobMonitor = getJobMonitor();
+        
+        this.jobMonitor.onChanges((changes) => {
+            console.log('📡 Mudanças detectadas:', changes);
+            
+            if (changes.clients) {
+                this.refreshClients();
+            }
+            
+            if (changes.registros) {
+                this.refreshRegistros();
+            }
+            
+            if (changes.usuarios) {
+                this.refreshUsuarios();
+            }
+            
+            if (changes.categorias) {
+                this.refreshCategorias();
+            }
+        });
+    }
+    
+    async refreshClients() {
+        try {
+            this.data.clients = await Storage.loadClients();
+            if (this.clientesManager) {
+                this.clientesManager.renderClientList();
+            }
+            this.jobMonitor.showToast('Lista de clientes atualizada', 'success');
+        } catch (e) {
+            console.warn('Erro ao atualizar clientes:', e);
+        }
+    }
+    
+    async refreshRegistros() {
+        try {
+            this.data.registros = await Storage.loadRegistros();
+            if (this.registrosManager) {
+                this.registrosManager.renderDailyRecords();
+            }
+            this.jobMonitor.showToast('Registros atualizados', 'success');
+        } catch (e) {
+            console.warn('Erro ao atualizar registros:', e);
+        }
+    }
+    
+    refreshUsuarios() {
+        if (this.usuariosManager && typeof this.usuariosManager.render === 'function') {
+            this.usuariosManager.render();
+        }
+        this.jobMonitor.showToast('Lista de usuários atualizada', 'success');
+    }
+    
+    refreshCategorias() {
+        if (this.configuracaoManager) {
+            this.configuracaoManager.loadCategorias();
+        }
+        this.jobMonitor.showToast('Categorias atualizadas', 'success');
     }
 
     setupLoginForm() {
@@ -144,6 +209,9 @@ class App {
         if (this.clientesManager) {
             this.clientesManager.applyPermissionsToUI();
         }
+        if (this.bicicletasManager) {
+            this.bicicletasManager.applyPermissionsToUI();
+        }
         if (this.registrosManager) {
             this.registrosManager.applyPermissionsToUI();
         }
@@ -152,6 +220,9 @@ class App {
         }
         if (this.dadosManager) {
             this.dadosManager.applyPermissionsToUI();
+        }
+        if (this.jogosManager) {
+            this.jogosManager.applyPermissionsToUI();
         }
     }
 
@@ -406,7 +477,11 @@ class App {
         clientCpf.textContent = Utils.formatCPF(client.cpf) + (client.telefone ? ' • ' + Utils.formatTelefone(client.telefone) : '');
 
         const renderCommentsList = () => {
-            const comentarios = client.comentarios || [];
+            let comentarios = client.comentarios || [];
+            if (typeof comentarios === 'string') {
+                try { comentarios = JSON.parse(comentarios); } catch (e) { comentarios = []; }
+            }
+            if (!Array.isArray(comentarios)) { comentarios = []; }
             const currentSession = Auth.getCurrentSession();
             const currentUsername = currentSession?.username || '';
             const canEditClients = Auth.hasPermission('clientes', 'editar');

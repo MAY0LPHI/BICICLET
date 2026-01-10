@@ -1,0 +1,59 @@
+==================================================
+  SISTEMA DE GERENCIAMENTO DE BICICLETARIO
+  BICICLETARIO SHOP. BOULEVARD V.V.
+==================================================
+
+COMO EXECUTAR NO SEU COMPUTADOR:
+
+1. INSTALE O PYTHON 3
+   - Baixe em: https://www.python.org/downloads/
+   - IMPORTANTE: Marque a opcao "Add Python to PATH"
+   - Reinicie o computador apos instalar
+
+2. EXECUTE O SISTEMA
+   - Clique 2 vezes em: INICIAR-NAVEGADOR.bat
+   - O sistema abrira automaticamente no navegador
+   - Endereco: http://localhost:5000
+
+3. ONDE FICAM OS DADOS
+   - Pasta do projeto/dados/navegador/clientes/
+   - Pasta do projeto/dados/navegador/registros/
+
+4. PARA PARAR O SISTEMA
+   - Feche a janela preta que abriu
+   - Ou pressione Ctrl+C na janela
+
+==================================================
+
+PROBLEMAS COMUNS:
+
+- "Python nao encontrado"
+  -> Instale o Python e marque "Add Python to PATH"
+
+- "Arquivo server.py nao encontrado"
+  -> Execute o script dentro da pasta do projeto
+
+- "localhost se recusou a conectar"
+  -> Verifique se o servidor iniciou corretamente
+  -> Feche outros programas na porta 5000
+
+==================================================
+
+OPCOES DE ATALHOS:
+
+- INICIAR-NAVEGADOR.bat  (navegador padrao)
+- INICIAR-CHROME.bat     (Google Chrome)
+- INICIAR-FIREFOX.bat    (Mozilla Firefox)
+- INICIAR-EDGE.bat       (Microsoft Edge)
+
+==================================================
+
+BACKUP DOS DADOS:
+
+1. Feche o sistema
+2. Copie a pasta "dados" para local seguro
+3. Para restaurar, substitua a pasta "dados"
+
+==================================================
+
+Suporte: consulte COMO-USAR-ATALHOS.md para mais detalhes

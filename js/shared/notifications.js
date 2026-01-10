@@ -120,9 +120,8 @@ export class NotificationManager {
     showInactivityNotification() {
         const message = 'Nenhum cliente entrou ou saiu recentemente. Verifique se há alguma movimentação no bicicletário.';
         
-        Modals.alert(message, '🔔 Alerta de Inatividade');
+        Modals.alert(message, 'Alerta de Inatividade', 'bell');
         
-        // Tocar som (opcional - browser API)
         this.playNotificationSound();
     }
     
@@ -142,7 +141,7 @@ export class NotificationManager {
     showPatrolRequestNotification() {
         const message = `Foram registrados ${this.settings.patrolRequestCount} acessos ou saídas. É recomendado realizar uma verificação ou ronda no local.`;
         
-        Modals.alert(message, '🚶 Solicitação de Ronda');
+        Modals.alert(message, 'Solicitação de Ronda', 'user-check');
         this.playNotificationSound();
     }
     
@@ -187,7 +186,7 @@ export class NotificationManager {
             </div>
         `;
         
-        Modals.show('🚶 Ronda de Verificação', content);
+        Modals.showWithIcon('Ronda de Verificação', content, 'clipboard-check');
         
         // Tocar som de alerta
         this.playNotificationSound();
@@ -228,7 +227,7 @@ export class NotificationManager {
             this.showPatrolRoundPopup();
         }, 5 * 60 * 1000); // 5 minutos
         
-        Modals.alert('A ronda foi adiada por 5 minutos.', 'Ronda Adiada');
+        Modals.alert('A ronda foi adiada por 5 minutos.', 'Ronda Adiada', 'clock');
     }
     
     completePatrolRound() {
@@ -245,7 +244,7 @@ export class NotificationManager {
         logs.push(log);
         localStorage.setItem('patrol_logs', JSON.stringify(logs));
         
-        Modals.alert('Ronda registrada como concluída. Obrigado!', '✅ Ronda Concluída');
+        Modals.alert('Ronda registrada como concluída. Obrigado!', 'Ronda Concluída', 'check-circle');
     }
     
     playNotificationSound() {

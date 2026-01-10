@@ -2,13 +2,21 @@ export const Modals = {
     currentModal: null,
 
     show(title, content) {
+        this.showWithIcon(title, content, null);
+    },
+
+    showWithIcon(title, content, iconName = null) {
         this.close();
+        
+        const iconHtml = iconName 
+            ? `<i data-lucide="${iconName}" class="w-6 h-6 text-blue-600 dark:text-blue-400 mr-2"></i>` 
+            : '';
         
         const modalHtml = `
             <div id="dynamic-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 transition-opacity duration-300">
                 <div class="modal-content bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300">
                     <div class="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between rounded-t-xl">
-                        <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-200">${title}</h2>
+                        <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-200 flex items-center">${iconHtml}${title}</h2>
                         <button onclick="Modals.close()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                             <i data-lucide="x" class="w-6 h-6"></i>
                         </button>
@@ -45,8 +53,8 @@ export const Modals = {
         }
     },
 
-    async alert(message, title = 'Aviso') {
-        return this.showAlert(message, title);
+    async alert(message, title = 'Aviso', iconName = null) {
+        return this.showAlert(message, title, iconName);
     },
 
     showConfirm(message, title = 'Confirmação') {
@@ -159,19 +167,40 @@ export const Modals = {
         });
     },
 
-    showAlert(message, title = 'Aviso') {
+    showAlert(message, title = 'Aviso', iconName = null) {
         return new Promise((resolve) => {
             const modal = document.getElementById('custom-alert-modal');
             const titleEl = document.getElementById('alert-title');
             const messageEl = document.getElementById('alert-message');
             const oldOkBtn = document.getElementById('alert-ok-btn');
+            const iconContainer = document.getElementById('alert-icon-container');
 
             // Clone button to remove all old event listeners
             const okBtn = oldOkBtn.cloneNode(true);
             oldOkBtn.parentNode.replaceChild(okBtn, oldOkBtn);
 
-            titleEl.textContent = title;
+            // Handle icon
+            if (iconContainer) {
+                if (iconName) {
+                    iconContainer.innerHTML = `<i data-lucide="${iconName}" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>`;
+                    iconContainer.classList.remove('hidden');
+                } else {
+                    iconContainer.innerHTML = '';
+                    iconContainer.classList.add('hidden');
+                }
+            }
+
+            const titleTextEl = document.getElementById('alert-title-text');
+            if (titleTextEl) {
+                titleTextEl.textContent = title;
+            } else {
+                titleEl.textContent = title;
+            }
             messageEl.textContent = message;
+
+            if (iconName) {
+                lucide.createIcons();
+            }
 
             let isProcessing = false;
 
@@ -208,11 +237,17 @@ export const Modals = {
     },
 
     confirm(message, title = 'Confirmação', onConfirm) {
-        this.showConfirm(message, title).then((confirmed) => {
-            if (confirmed && typeof onConfirm === 'function') {
-                onConfirm();
-            }
-        });
+        const promise = this.showConfirm(message, title);
+        
+        if (typeof onConfirm === 'function') {
+            promise.then((confirmed) => {
+                if (confirmed) {
+                    onConfirm();
+                }
+            });
+        }
+        
+        return promise;
     },
 
     showInputPrompt(message, title = 'Entrada') {
