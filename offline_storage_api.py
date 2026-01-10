@@ -37,8 +37,13 @@ logger = logging.getLogger(__name__)
 class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
     """Handler que usa SQLite quando disponível, com fallback para arquivos"""
     
+    db = None  # Class-level type hint
+    
     def __init__(self, *args, **kwargs):
-        self.db = get_db_manager() if DB_AVAILABLE else None
+        if DB_AVAILABLE:
+            self.db = get_db_manager()
+        else:
+            self.db = None
         self.storage_api_available = STORAGE_API_AVAILABLE
         super().__init__(*args, **kwargs)
     
@@ -72,7 +77,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
         
         # Status de sincronização
         if parsed_path.path == '/api/sync/status':
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 pending = self.db.get_pending_syncs()
                 self._set_headers()
                 self.wfile.write(json.dumps({
@@ -89,7 +94,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
         
         # Clientes
         if parsed_path.path == '/api/clients':
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 clients = self.db.get_all_clientes()
                 self._set_headers()
                 self.wfile.write(json.dumps(clients, ensure_ascii=False).encode('utf-8'))
@@ -100,7 +105,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
         
         if parsed_path.path.startswith('/api/client/'):
             cpf = parsed_path.path.split('/')[-1]
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 # Busca por CPF no SQLite
                 clients = self.db.get_all_clientes()
                 client = next((c for c in clients if c['cpf'] == cpf), None)
@@ -116,7 +121,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
         
         # Registros
         if parsed_path.path == '/api/registros':
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 registros = self.db.get_all_registros()
                 self._set_headers()
                 self.wfile.write(json.dumps(registros, ensure_ascii=False).encode('utf-8'))
@@ -126,7 +131,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
         
         # Auditoria
         if parsed_path.path == '/api/audit':
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 logs = self.db.get_audit_logs(100)
                 self._set_headers()
                 self.wfile.write(json.dumps(logs, ensure_ascii=False).encode('utf-8'))
@@ -138,7 +143,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
         # Backup
         if parsed_path.path.startswith('/api/backup/'):
             backup_format = parsed_path.path.split('/')[-1]  # 'zip' ou 'json'
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 backup_file = self.db.create_backup(backup_format)
                 if backup_file:
                     self._set_headers()
@@ -165,7 +170,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
         # Cliente
         if self.path == '/api/client':
             client = json.loads(post_data.decode('utf-8'))
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 success = self.db.save_cliente(client)
                 if success:
                     # Adiciona à fila de sincronização
@@ -185,7 +190,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
         # Registro
         if self.path == '/api/registro':
             registro = json.loads(post_data.decode('utf-8'))
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 success = self.db.save_registro(registro)
                 if success:
                     self.db.add_pending_sync('registro', 'save', registro)
@@ -204,7 +209,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
         # Auditoria
         if self.path == '/api/audit':
             audit_data = json.loads(post_data.decode('utf-8'))
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 success = self.db.log_audit(
                     audit_data['usuario'],
                     audit_data['acao'],
@@ -219,7 +224,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
         
         # Sincronizar pendências
         if self.path == '/api/sync':
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 # Retorna todas as operações pendentes para sincronização
                 pending = self.db.get_pending_syncs()
                 self._set_headers()
@@ -241,7 +246,7 @@ class OfflineStorageAPIHandler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         if self.path.startswith('/api/client/'):
             cpf = self.path.split('/')[-1]
-            if DB_AVAILABLE:
+            if DB_AVAILABLE and self.db is not None:
                 # Busca cliente por CPF
                 clients = self.db.get_all_clientes()
                 client = next((c for c in clients if c['cpf'] == cpf), None)
