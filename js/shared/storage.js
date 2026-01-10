@@ -28,22 +28,42 @@ function normalizeClients(clients) {
             client.id = Utils.generateUUID();
             needsSave = true;
         }
+        // Normaliza comentarios para array
+        if (typeof client.comentarios === 'string') {
+            try {
+                client.comentarios = JSON.parse(client.comentarios);
+            } catch (e) {
+                client.comentarios = [];
+            }
+        }
+        if (!Array.isArray(client.comentarios)) {
+            client.comentarios = [];
+        }
+        // Garante que bicicletas seja array
+        if (!Array.isArray(client.bicicletas)) {
+            client.bicicletas = [];
+        }
     });
     return { clients, needsSave };
 }
 
 export const Storage = {
-    async saveClients(clients) {
+    async saveClients(clients, syncToDatabase = false, onProgress = null) {
         if (isElectron) {
             await window.electron.saveClients(clients);
         } else {
             localStorage.setItem('bicicletario_clients', JSON.stringify(clients));
-            if (fileStorageAvailable) {
-                for (const client of clients) {
+            
+            if (syncToDatabase) {
+                const total = clients.length;
+                for (let i = 0; i < clients.length; i++) {
                     try {
-                        await FileStorage.saveClient(client);
+                        await FileStorage.saveClient(clients[i]);
+                        if (onProgress && typeof onProgress === 'function') {
+                            onProgress(i + 1, total);
+                        }
                     } catch (error) {
-                        console.warn('Erro ao salvar cliente em arquivo:', error);
+                        console.warn('Erro ao sincronizar cliente:', error);
                     }
                 }
             }
@@ -100,12 +120,11 @@ export const Storage = {
             }
             localStorage.setItem('bicicletario_clients', JSON.stringify(clients));
             
-            if (fileStorageAvailable) {
-                try {
-                    await FileStorage.saveClient(client);
-                } catch (error) {
-                    console.warn('Erro ao salvar cliente em arquivo:', error);
-                }
+            // Sincroniza com banco de dados imediatamente
+            try {
+                await FileStorage.saveClient(client);
+            } catch (error) {
+                console.warn('Erro ao salvar cliente em arquivo:', error);
             }
             
             return clients;
@@ -137,32 +156,33 @@ export const Storage = {
             const filtered = clients.filter(c => c.cpf.replace(/\D/g, '') !== cpf.replace(/\D/g, ''));
             localStorage.setItem('bicicletario_clients', JSON.stringify(filtered));
             
-            if (fileStorageAvailable) {
-                try {
-                    await FileStorage.deleteClient(cpf);
-                } catch (error) {
-                    console.warn('Erro ao deletar cliente de arquivo:', error);
-                }
+            // Sincroniza deleção com banco de dados imediatamente
+            try {
+                await FileStorage.deleteClient(cpf);
+            } catch (error) {
+                console.warn('Erro ao deletar cliente de arquivo:', error);
             }
             
             return { success: true };
         }
     },
 
-    async saveRegistros(registros) {
+    async saveRegistros(registros, onProgress = null) {
         if (isElectron) {
             await window.electron.saveRegistros(registros);
         } else {
             localStorage.setItem('bicicletario_registros', JSON.stringify(registros));
             this.organizeRegistrosByDate(registros);
             
-            if (fileStorageAvailable) {
-                for (const registro of registros) {
-                    try {
-                        await FileStorage.saveRegistro(registro);
-                    } catch (error) {
-                        console.warn('Erro ao salvar registro em arquivo:', error);
+            const total = registros.length;
+            for (let i = 0; i < registros.length; i++) {
+                try {
+                    await FileStorage.saveRegistro(registros[i]);
+                    if (onProgress && typeof onProgress === 'function') {
+                        onProgress(i + 1, total);
                     }
+                } catch (error) {
+                    console.warn('Erro ao salvar registro em arquivo:', error);
                 }
             }
         }
@@ -190,12 +210,11 @@ export const Storage = {
             localStorage.setItem('bicicletario_registros', JSON.stringify(registros));
             this.organizeRegistrosByDate(registros);
             
-            if (fileStorageAvailable) {
-                try {
-                    await FileStorage.saveRegistro(registro);
-                } catch (error) {
-                    console.warn('Erro ao salvar registro em arquivo:', error);
-                }
+            // Sincroniza com banco de dados imediatamente
+            try {
+                await FileStorage.saveRegistro(registro);
+            } catch (error) {
+                console.warn('Erro ao salvar registro em arquivo:', error);
             }
             
             return { success: true };
@@ -479,7 +498,15 @@ export const Storage = {
     async saveCategorias(categorias) {
         if (isElectron) {
             await window.electron.saveCategorias(categorias);
+        } else {
+            localStorage.setItem('bicicletario_categorias', JSON.stringify(categorias));
+            
+            // Sincroniza com banco de dados imediatamente
+            try {
+                await FileStorage.saveCategorias(categorias);
+            } catch (error) {
+                console.warn('Erro ao salvar categorias no banco:', error);
+            }
         }
-        localStorage.setItem('bicicletario_categorias', JSON.stringify(categorias));
     }
 };

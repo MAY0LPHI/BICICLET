@@ -911,21 +911,61 @@ class SnakeGame {
 
         // Game over / Won screen
         if (this.gameOver || this.won) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            // Animated background overlay
+            const overlayGradient = this.ctx.createRadialGradient(
+                this.canvas.width / 2, this.canvas.height / 2, 0,
+                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+            );
+            overlayGradient.addColorStop(0, this.won ? 'rgba(34, 197, 94, 0.85)' : 'rgba(239, 68, 68, 0.85)');
+            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
+            this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             
+            // Draw decorative elements
+            const time = Date.now() / 1000;
+            for (let i = 0; i < 5; i++) {
+                const angle = (time + i * 0.5) % (Math.PI * 2);
+                const radius = 60 + Math.sin(time * 2 + i) * 10;
+                this.ctx.strokeStyle = this.won ? 'rgba(134, 239, 172, 0.3)' : 'rgba(252, 165, 165, 0.3)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(this.canvas.width / 2, this.canvas.height / 2 - 20, radius, angle, angle + 1);
+                this.ctx.stroke();
+            }
+            
+            // Title with shadow
+            this.ctx.shadowColor = this.won ? '#22c55e' : '#ef4444';
+            this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 24px Arial';
+            this.ctx.font = 'bold 28px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? 'VOCÊ VENCEU!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 20);
+            this.ctx.fillText(this.won ? '🏆 VOCÊ VENCEU!' : '💀 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
+            this.ctx.shadowBlur = 0;
             
-            this.ctx.font = '18px Arial';
-            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 10);
-            this.ctx.fillText(`Fase: ${this.phase}/${this.maxPhase}`, this.canvas.width / 2, this.canvas.height / 2 + 35);
+            // Score box
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 80, this.canvas.height / 2 - 5, 160, 60, 12);
+            this.ctx.fill();
             
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 20px Arial';
+            this.ctx.fillText(`${this.score} pts`, this.canvas.width / 2, this.canvas.height / 2 + 20);
             this.ctx.font = '14px Arial';
-            this.ctx.fillStyle = '#94a3b8';
-            this.ctx.fillText('Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 70);
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.fillText(`Fase ${this.phase}/${this.maxPhase}`, this.canvas.width / 2, this.canvas.height / 2 + 42);
+            
+            // Restart button style
+            const btnY = this.canvas.height / 2 + 75;
+            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
+            this.ctx.fillStyle = `rgba(59, 130, 246, ${0.3 + pulse * 0.3})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 110, btnY - 15, 220, 30, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '13px Arial';
+            this.ctx.fillText('⏎ Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, btnY + 4);
         }
     }
 
@@ -1312,18 +1352,57 @@ class DoomGame {
         this.drawMinimap();
         
         if (this.gameOver || this.won) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            // Dramatic overlay for Doom
+            const overlayGradient = this.ctx.createRadialGradient(
+                this.canvas.width / 2, this.canvas.height / 2, 0,
+                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+            );
+            overlayGradient.addColorStop(0, this.won ? 'rgba(34, 197, 94, 0.9)' : 'rgba(127, 29, 29, 0.9)');
+            overlayGradient.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
+            this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // Animated rings
+            const time = Date.now() / 1000;
+            for (let i = 0; i < 3; i++) {
+                const radius = 50 + i * 30 + Math.sin(time * 2) * 5;
+                this.ctx.strokeStyle = this.won ? `rgba(134, 239, 172, ${0.3 - i * 0.1})` : `rgba(239, 68, 68, ${0.3 - i * 0.1})`;
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.arc(this.canvas.width / 2, this.canvas.height / 2 - 20, radius, 0, Math.PI * 2);
+                this.ctx.stroke();
+            }
+            
+            this.ctx.shadowColor = this.won ? '#22c55e' : '#dc2626';
+            this.ctx.shadowBlur = 25;
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 28px Arial';
+            this.ctx.font = 'bold 32px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? 'VITÓRIA!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
-            this.ctx.font = '18px Arial';
-            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 5);
-            this.ctx.fillText(`Nível: ${this.level}/${this.maxLevel}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
+            this.ctx.fillText(this.won ? '🎖️ VITÓRIA!' : '☠️ GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
+            this.ctx.shadowBlur = 0;
+            
+            // Stats box
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 100, this.canvas.height / 2, 200, 70, 12);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 22px Arial';
+            this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 30);
             this.ctx.font = '14px Arial';
-            this.ctx.fillStyle = '#94a3b8';
-            this.ctx.fillText('Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 70);
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.fillText(`Nível ${this.level}/${this.maxLevel} • ${this.kills} abates`, this.canvas.width / 2, this.canvas.height / 2 + 55);
+            
+            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
+            this.ctx.fillStyle = `rgba(239, 68, 68, ${0.3 + pulse * 0.3})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 85, 260, 32, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '13px Arial';
+            this.ctx.fillText('⏎ Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 105);
         }
     }
 
@@ -3365,21 +3444,61 @@ class SpaceInvadersGame {
         
         // Game over / Won screen
         if (this.gameOver || this.won) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            // Space-themed overlay
+            const overlayGradient = this.ctx.createRadialGradient(
+                this.canvas.width / 2, this.canvas.height / 2, 0,
+                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+            );
+            overlayGradient.addColorStop(0, this.won ? 'rgba(16, 185, 129, 0.85)' : 'rgba(127, 29, 29, 0.85)');
+            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
+            this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             
+            const time = Date.now() / 1000;
+            
+            // Animated stars in background
+            for (let i = 0; i < 20; i++) {
+                const x = (i * 23 + time * 20) % this.canvas.width;
+                const y = (i * 31) % this.canvas.height;
+                const alpha = 0.3 + Math.sin(time * 3 + i) * 0.3;
+                this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                this.ctx.fillRect(x, y, 2, 2);
+            }
+            
+            this.ctx.shadowColor = this.won ? '#10b981' : '#ef4444';
+            this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 28px Arial';
+            this.ctx.font = 'bold 32px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? 'VITÓRIA!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
+            this.ctx.fillText(this.won ? '🚀 VITÓRIA!' : '💥 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 40);
+            this.ctx.shadowBlur = 0;
             
-            this.ctx.font = '20px Arial';
-            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 10);
-            this.ctx.fillText(`Onda: ${this.wave}/${this.maxWave}`, this.canvas.width / 2, this.canvas.height / 2 + 40);
+            // Stats box
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 90, this.canvas.height / 2 - 10, 180, 70, 12);
+            this.ctx.fill();
             
-            this.ctx.font = '14px Arial';
-            this.ctx.fillStyle = '#94a3b8';
-            this.ctx.fillText('Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 80);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 24px Arial';
+            this.ctx.fillText(`${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 22);
+            this.ctx.font = '12px Arial';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            this.ctx.fillText('PONTOS', this.canvas.width / 2, this.canvas.height / 2 + 42);
+            
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.font = '16px Arial';
+            this.ctx.fillText(`Onda ${this.wave}/${this.maxWave}`, this.canvas.width / 2, this.canvas.height / 2 + 80);
+            
+            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
+            this.ctx.fillStyle = `rgba(59, 130, 246, ${0.3 + pulse * 0.3})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 100, 260, 32, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '13px Arial';
+            this.ctx.fillText('⏎ Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 120);
         }
     }
 
@@ -3901,21 +4020,61 @@ class BreakoutGame {
 
         // Game over / Won screen
         if (this.gameOver || this.won) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            // Colorful overlay for Breakout
+            const overlayGradient = this.ctx.createRadialGradient(
+                this.canvas.width / 2, this.canvas.height / 2, 0,
+                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+            );
+            overlayGradient.addColorStop(0, this.won ? 'rgba(168, 85, 247, 0.9)' : 'rgba(239, 68, 68, 0.85)');
+            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
+            this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             
+            const time = Date.now() / 1000;
+            
+            // Draw floating bricks animation
+            for (let i = 0; i < 6; i++) {
+                const x = 60 + i * 50;
+                const y = this.canvas.height / 2 - 80 + Math.sin(time * 2 + i) * 10;
+                const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#a855f7'];
+                this.ctx.fillStyle = colors[i];
+                this.ctx.globalAlpha = 0.6;
+                this.ctx.beginPath();
+                this.ctx.roundRect(x, y, 30, 12, 2);
+                this.ctx.fill();
+                this.ctx.globalAlpha = 1;
+            }
+            
+            this.ctx.shadowColor = this.won ? '#a855f7' : '#ef4444';
+            this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
             this.ctx.font = 'bold 28px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? 'VOCÊ VENCEU!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
+            this.ctx.fillText(this.won ? '🎉 VOCÊ VENCEU!' : '💔 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 20);
+            this.ctx.shadowBlur = 0;
             
-            this.ctx.font = '20px Arial';
-            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 10);
-            this.ctx.fillText(`Fase: ${this.phase}/${this.maxPhase}`, this.canvas.width / 2, this.canvas.height / 2 + 40);
+            // Stats box
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 80, this.canvas.height / 2 + 5, 160, 65, 12);
+            this.ctx.fill();
             
-            this.ctx.font = '14px Arial';
-            this.ctx.fillStyle = '#94a3b8';
-            this.ctx.fillText('ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 80);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 22px Arial';
+            this.ctx.fillText(`${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 35);
+            this.ctx.font = '12px Arial';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            this.ctx.fillText(`Fase ${this.phase}/${this.maxPhase}`, this.canvas.width / 2, this.canvas.height / 2 + 55);
+            
+            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
+            this.ctx.fillStyle = `rgba(168, 85, 247, ${0.3 + pulse * 0.3})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 115, this.canvas.height / 2 + 85, 230, 30, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '13px Arial';
+            this.ctx.fillText('⏎ ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 104);
         }
     }
 
@@ -4387,26 +4546,65 @@ class TermoGame {
         
         // Game over / Won overlay
         if (this.gameOver || this.won) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            const overlayGradient = this.ctx.createRadialGradient(
+                this.canvas.width / 2, this.canvas.height / 2, 0,
+                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+            );
+            overlayGradient.addColorStop(0, this.won ? 'rgba(34, 197, 94, 0.9)' : 'rgba(100, 116, 139, 0.9)');
+            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
+            this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             
+            const time = Date.now() / 1000;
+            
+            // Animated letter tiles
+            const letters = this.won ? this.targetWord : 'TERMO';
+            for (let i = 0; i < letters.length; i++) {
+                const x = this.canvas.width / 2 - 100 + i * 45;
+                const y = this.canvas.height / 2 - 100 + Math.sin(time * 3 + i) * 5;
+                this.ctx.fillStyle = this.won ? '#22c55e' : '#475569';
+                this.ctx.beginPath();
+                this.ctx.roundRect(x, y, 38, 38, 4);
+                this.ctx.fill();
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = 'bold 20px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(letters[i], x + 19, y + 26);
+            }
+            
+            this.ctx.shadowColor = this.won ? '#22c55e' : '#64748b';
+            this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
             this.ctx.font = 'bold 28px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 40);
+            this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : '😔 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
+            this.ctx.shadowBlur = 0;
             
-            this.ctx.font = '18px Arial';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 90, this.canvas.height / 2 - 5, 180, 65, 12);
+            this.ctx.fill();
+            
+            this.ctx.font = '16px Arial';
+            this.ctx.fillStyle = '#fff';
             if (this.won) {
-                this.ctx.fillText(`Você acertou em ${this.attempts.length} tentativa${this.attempts.length > 1 ? 's' : ''}!`, this.canvas.width / 2, this.canvas.height / 2);
+                this.ctx.fillText(`Acertou em ${this.attempts.length} tentativa${this.attempts.length > 1 ? 's' : ''}!`, this.canvas.width / 2, this.canvas.height / 2 + 18);
             } else {
-                this.ctx.fillText(`A palavra era: ${this.targetWord}`, this.canvas.width / 2, this.canvas.height / 2);
+                this.ctx.fillText(`Palavra: ${this.targetWord}`, this.canvas.width / 2, this.canvas.height / 2 + 18);
             }
-            
-            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
-            
             this.ctx.font = '14px Arial';
-            this.ctx.fillStyle = '#94a3b8';
-            this.ctx.fillText('Pressione ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 70);
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 42);
+            
+            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
+            this.ctx.fillStyle = `rgba(34, 197, 94, ${0.3 + pulse * 0.3})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 70, 260, 30, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '13px Arial';
+            this.ctx.fillText('⏎ ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 89);
         }
     }
 
@@ -4901,27 +5099,65 @@ class TermoDuoGame {
         
         // Game over / Won overlay
         if (this.gameOver || this.won) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            const overlayGradient = this.ctx.createRadialGradient(
+                this.canvas.width / 2, this.canvas.height / 2, 0,
+                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+            );
+            overlayGradient.addColorStop(0, this.won ? 'rgba(34, 197, 94, 0.9)' : 'rgba(100, 116, 139, 0.9)');
+            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
+            this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             
+            const time = Date.now() / 1000;
+            
+            // Animated duo tiles
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 5; j++) {
+                    const x = this.canvas.width / 2 - 150 + i * 180 + j * 30;
+                    const y = this.canvas.height / 2 - 100 + Math.sin(time * 2 + i + j) * 5;
+                    this.ctx.fillStyle = this.won ? '#22c55e' : '#475569';
+                    this.ctx.globalAlpha = 0.6;
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(x, y, 26, 26, 3);
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
+                }
+            }
+            
+            this.ctx.shadowColor = this.won ? '#22c55e' : '#64748b';
+            this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
             this.ctx.font = 'bold 28px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 40);
+            this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : '😔 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 35);
+            this.ctx.shadowBlur = 0;
             
-            this.ctx.font = '18px Arial';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 110, this.canvas.height / 2 - 10, 220, 70, 12);
+            this.ctx.fill();
+            
+            this.ctx.font = '16px Arial';
+            this.ctx.fillStyle = '#fff';
             if (this.won) {
-                this.ctx.fillText(`Você acertou em ${this.attempts.length} tentativas!`, this.canvas.width / 2, this.canvas.height / 2);
+                this.ctx.fillText(`Acertou em ${this.attempts.length} tentativas!`, this.canvas.width / 2, this.canvas.height / 2 + 15);
             } else {
                 const unsolved = this.targetWords.filter((_, i) => !this.solvedWords[i]);
-                this.ctx.fillText(`Palavras: ${unsolved.join(', ')}`, this.canvas.width / 2, this.canvas.height / 2);
+                this.ctx.fillText(`Palavras: ${unsolved.join(', ')}`, this.canvas.width / 2, this.canvas.height / 2 + 15);
             }
-            
-            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
-            
             this.ctx.font = '14px Arial';
-            this.ctx.fillStyle = '#94a3b8';
-            this.ctx.fillText('Pressione ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 70);
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 40);
+            
+            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
+            this.ctx.fillStyle = `rgba(59, 130, 246, ${0.3 + pulse * 0.3})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 70, 260, 30, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '13px Arial';
+            this.ctx.fillText('⏎ ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 89);
         }
     }
 
@@ -5305,27 +5541,67 @@ class TermoQuartetGame {
         
         // Game over / Won overlay
         if (this.gameOver || this.won) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            const overlayGradient = this.ctx.createRadialGradient(
+                this.canvas.width / 2, this.canvas.height / 2, 0,
+                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+            );
+            overlayGradient.addColorStop(0, this.won ? 'rgba(34, 197, 94, 0.9)' : 'rgba(100, 116, 139, 0.9)');
+            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
+            this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             
+            const time = Date.now() / 1000;
+            
+            // Animated quartet grid pattern
+            for (let i = 0; i < 2; i++) {
+                for (let k = 0; k < 2; k++) {
+                    for (let j = 0; j < 4; j++) {
+                        const x = this.canvas.width / 2 - 110 + k * 120 + j * 25;
+                        const y = this.canvas.height / 2 - 110 + i * 50 + Math.sin(time * 2 + i + k + j) * 4;
+                        this.ctx.fillStyle = this.won ? '#22c55e' : '#475569';
+                        this.ctx.globalAlpha = 0.5;
+                        this.ctx.beginPath();
+                        this.ctx.roundRect(x, y, 22, 22, 3);
+                        this.ctx.fill();
+                        this.ctx.globalAlpha = 1;
+                    }
+                }
+            }
+            
+            this.ctx.shadowColor = this.won ? '#22c55e' : '#64748b';
+            this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
             this.ctx.font = 'bold 26px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 50);
+            this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : '😔 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
+            this.ctx.shadowBlur = 0;
             
-            this.ctx.font = '16px Arial';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 120, this.canvas.height / 2 - 5, 240, 65, 12);
+            this.ctx.fill();
+            
+            this.ctx.font = '14px Arial';
+            this.ctx.fillStyle = '#fff';
             if (this.won) {
-                this.ctx.fillText(`Você acertou em ${this.attempts.length} tentativas!`, this.canvas.width / 2, this.canvas.height / 2 - 10);
+                this.ctx.fillText(`Acertou em ${this.attempts.length} tentativas!`, this.canvas.width / 2, this.canvas.height / 2 + 18);
             } else {
                 const unsolved = this.targetWords.filter((_, i) => !this.solvedWords[i]);
-                this.ctx.fillText(`Palavras: ${unsolved.join(', ')}`, this.canvas.width / 2, this.canvas.height / 2 - 10);
+                this.ctx.fillText(`Palavras: ${unsolved.slice(0, 3).join(', ')}`, this.canvas.width / 2, this.canvas.height / 2 + 18);
             }
-            
-            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 20);
-            
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             this.ctx.font = '13px Arial';
-            this.ctx.fillStyle = '#94a3b8';
-            this.ctx.fillText('Pressione ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 60);
+            this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 40);
+            
+            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
+            this.ctx.fillStyle = `rgba(59, 130, 246, ${0.3 + pulse * 0.3})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 70, 260, 28, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '12px Arial';
+            this.ctx.fillText('⏎ ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 88);
         }
     }
 
@@ -5673,21 +5949,60 @@ class WordSearchGame {
         }
         
         if (this.won) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            const overlayGradient = this.ctx.createRadialGradient(
+                this.canvas.width / 2, this.canvas.height / 2, 0,
+                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+            );
+            overlayGradient.addColorStop(0, 'rgba(34, 197, 94, 0.9)');
+            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
+            this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             
+            const time = Date.now() / 1000;
+            
+            // Animated checkmarks
+            for (let i = 0; i < 5; i++) {
+                const x = this.canvas.width / 2 - 80 + i * 40;
+                const y = this.canvas.height / 2 - 90 + Math.sin(time * 2 + i * 0.5) * 8;
+                this.ctx.fillStyle = '#22c55e';
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, 15, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = 'bold 16px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('✓', x, y + 6);
+            }
+            
+            this.ctx.shadowColor = '#22c55e';
+            this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
             this.ctx.font = 'bold 28px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText('🎉 PARABÉNS!', this.canvas.width / 2, this.canvas.height / 2 - 40);
+            this.ctx.fillText('🎯 PARABÉNS!', this.canvas.width / 2, this.canvas.height / 2 - 20);
+            this.ctx.shadowBlur = 0;
             
-            this.ctx.font = '18px Arial';
-            this.ctx.fillText(`Você encontrou todas as palavras!`, this.canvas.width / 2, this.canvas.height / 2);
-            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 110, this.canvas.height / 2 + 5, 220, 55, 12);
+            this.ctx.fill();
             
+            this.ctx.font = '16px Arial';
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillText('Todas as palavras encontradas!', this.canvas.width / 2, this.canvas.height / 2 + 28);
             this.ctx.font = '14px Arial';
-            this.ctx.fillStyle = '#94a3b8';
-            this.ctx.fillText('Pressione ENTER ou ESPAÇO para próximo nível', this.canvas.width / 2, this.canvas.height / 2 + 70);
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 48);
+            
+            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
+            this.ctx.fillStyle = `rgba(59, 130, 246, ${0.3 + pulse * 0.3})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 75, 260, 30, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '13px Arial';
+            this.ctx.fillText('⏎ ENTER ou ESPAÇO para próximo nível', this.canvas.width / 2, this.canvas.height / 2 + 94);
         }
     }
     
@@ -5998,21 +6313,60 @@ class CrosswordGame {
         this.ctx.fillText('Use as setas para navegar • Tab para mudar direção • Digite as letras', this.canvas.width / 2, this.canvas.height - 15);
         
         if (this.won) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            const overlayGradient = this.ctx.createRadialGradient(
+                this.canvas.width / 2, this.canvas.height / 2, 0,
+                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
+            );
+            overlayGradient.addColorStop(0, 'rgba(168, 85, 247, 0.9)');
+            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
+            this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             
+            const time = Date.now() / 1000;
+            
+            // Animated crossword pattern
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 5; j++) {
+                    const x = this.canvas.width / 2 - 80 + j * 35;
+                    const y = this.canvas.height / 2 - 100 + i * 35 + Math.sin(time * 2 + i + j) * 3;
+                    this.ctx.fillStyle = (i + j) % 2 === 0 ? '#a855f7' : '#7c3aed';
+                    this.ctx.globalAlpha = 0.6;
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(x, y, 28, 28, 3);
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
+                }
+            }
+            
+            this.ctx.shadowColor = '#a855f7';
+            this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
             this.ctx.font = 'bold 28px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText('🎉 PARABÉNS!', this.canvas.width / 2, this.canvas.height / 2 - 40);
+            this.ctx.fillText('🧩 PARABÉNS!', this.canvas.width / 2, this.canvas.height / 2 - 10);
+            this.ctx.shadowBlur = 0;
             
-            this.ctx.font = '18px Arial';
-            this.ctx.fillText('Cruzadinha completa!', this.canvas.width / 2, this.canvas.height / 2);
-            this.ctx.fillText(`Pontuação: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 100, this.canvas.height / 2 + 15, 200, 55, 12);
+            this.ctx.fill();
             
+            this.ctx.font = '16px Arial';
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillText('Cruzadinha completa!', this.canvas.width / 2, this.canvas.height / 2 + 38);
             this.ctx.font = '14px Arial';
-            this.ctx.fillStyle = '#94a3b8';
-            this.ctx.fillText('Pressione ENTER ou ESPAÇO para próximo nível', this.canvas.width / 2, this.canvas.height / 2 + 70);
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 58);
+            
+            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
+            this.ctx.fillStyle = `rgba(168, 85, 247, ${0.3 + pulse * 0.3})`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 80, 260, 30, 8);
+            this.ctx.fill();
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '13px Arial';
+            this.ctx.fillText('⏎ ENTER ou ESPAÇO para próximo nível', this.canvas.width / 2, this.canvas.height / 2 + 99);
         }
     }
     

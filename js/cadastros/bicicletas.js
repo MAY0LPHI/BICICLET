@@ -68,7 +68,7 @@ export class BicicletasManager {
         });
     }
 
-    handleAddBike(e) {
+    async handleAddBike(e) {
         e.preventDefault();
         
         try {
@@ -87,7 +87,7 @@ export class BicicletasManager {
         if (client) {
             const newBike = { id: Utils.generateUUID(), modelo, marca, cor };
             client.bicicletas.push(newBike);
-            Storage.saveClients(this.app.data.clients);
+            await Storage.saveClient(client);
             
             logAction('create', 'bicicleta', newBike.id, { 
                 modelo, 
@@ -162,7 +162,17 @@ export class BicicletasManager {
             </div>
         `).join('') : '<p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhuma bicicleta cadastrada.</p>';
 
-        const comentarios = client.comentarios || [];
+        let comentarios = client.comentarios || [];
+        if (typeof comentarios === 'string') {
+            try {
+                comentarios = JSON.parse(comentarios);
+            } catch (e) {
+                comentarios = [];
+            }
+        }
+        if (!Array.isArray(comentarios)) {
+            comentarios = [];
+        }
         const currentSession = Auth.getCurrentSession();
         const currentUsername = currentSession?.username || '';
         const categoryBadge = client.categoria ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 ml-3">${client.categoria}</span>` : '';
@@ -296,7 +306,7 @@ export class BicicletasManager {
         this.app.toggleModal('edit-bike-modal', true);
     }
 
-    handleEditBike(e) {
+    async handleEditBike(e) {
         e.preventDefault();
 
         try {
@@ -323,7 +333,7 @@ export class BicicletasManager {
         bike.marca = marca;
         bike.cor = cor;
 
-        Storage.saveClients(this.app.data.clients);
+        await Storage.saveClient(client);
         
         logAction('edit', 'bicicleta', bikeId, {
             modelo,
@@ -363,7 +373,7 @@ export class BicicletasManager {
 
         try {
             client.bicicletas.splice(bikeIndex, 1);
-            Storage.saveClients(this.app.data.clients);
+            await Storage.saveClient(client);
 
             logAction('delete', 'bicicleta', bikeId, {
                 modelo: bike.modelo,

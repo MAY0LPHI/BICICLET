@@ -123,7 +123,12 @@ export class AuditLogger {
             'change_password': 'Alterou Senha',
             'activate': 'Ativou',
             'deactivate': 'Desativou',
-            'change_theme': 'Alterou Tema'
+            'change_theme': 'Alterou Tema',
+            'restore': 'Restaurou',
+            'change_storage': 'Alterou Armazenamento',
+            'revert_action': 'Reverteu Ação',
+            'add_comment': 'Adicionou Comentário',
+            'delete_comment': 'Excluiu Comentário'
         };
         return labels[action] || action;
     }
@@ -136,7 +141,8 @@ export class AuditLogger {
             'usuario': 'Usuário',
             'sistema': 'Sistema',
             'configuracao': 'Configuração',
-            'dados': 'Dados'
+            'dados': 'Dados',
+            'backup': 'Backup'
         };
         return labels[entity] || entity;
     }

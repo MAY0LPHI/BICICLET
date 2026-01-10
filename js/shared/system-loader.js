@@ -17,12 +17,11 @@ export class SystemLoader {
         ];
         this.currentStepIndex = 0;
         
-        // Configurações de delay (em ms) - pode ser ajustado ou removido em produção
-        // Para produção, considere reduzir ou definir como 0 para inicialização mais rápida
+        // Configurações de delay (em ms) - otimizado para produção
         this.config = {
-            stepDelay: 1200,      // Delay entre etapas para visualização
-            errorDelay: 500,      // Delay após erro
-            completionDelay: 800  // Delay antes de remover a tela
+            stepDelay: 50,        // Delay mínimo entre etapas (era 1200ms)
+            errorDelay: 200,      // Delay após erro
+            completionDelay: 100  // Delay antes de remover a tela (era 800ms)
         };
     }
 

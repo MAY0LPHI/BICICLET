@@ -62,7 +62,7 @@ export class ClientesManager {
         });
     }
 
-    handleAddClient(e) {
+    async handleAddClient(e) {
         e.preventDefault();
         
         try {
@@ -105,7 +105,7 @@ export class ClientesManager {
             bicicletas: [] 
         };
         this.app.data.clients.push(newClient);
-        Storage.saveClients(this.app.data.clients);
+        await Storage.saveClient(newClient);
         
         logAction('create', 'cliente', newClient.id, { nome, cpf, telefone, categoria });
         
@@ -139,8 +139,13 @@ export class ClientesManager {
         }
         
         this.elements.clientList.innerHTML = filteredClients.map(client => {
-            const hasComments = client.comentarios && client.comentarios.length > 0;
-            const commentCount = hasComments ? client.comentarios.length : 0;
+            let comentarios = client.comentarios || [];
+            if (typeof comentarios === 'string') {
+                try { comentarios = JSON.parse(comentarios); } catch (e) { comentarios = []; }
+            }
+            if (!Array.isArray(comentarios)) { comentarios = []; }
+            const hasComments = comentarios.length > 0;
+            const commentCount = comentarios.length;
             const categoryBadge = client.categoria ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">${client.categoria}</span>` : '';
             
             return `
@@ -205,7 +210,7 @@ export class ClientesManager {
         this.app.toggleModal('edit-client-modal', true);
     }
 
-    handleEditClient(e) {
+    async handleEditClient(e) {
         e.preventDefault();
         
         try {
@@ -251,7 +256,7 @@ export class ClientesManager {
             client.categoria = categoria;
             if (!client.comentarios) client.comentarios = [];
             
-            Storage.saveClients(this.app.data.clients);
+            await Storage.saveClient(client);
             
             logAction('edit', 'cliente', clientId, { 
                 nome, 
@@ -271,7 +276,7 @@ export class ClientesManager {
         }
     }
 
-    addComment(clientId, comentario) {
+    async addComment(clientId, comentario) {
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (client) {
             if (!client.comentarios) client.comentarios = [];
@@ -283,7 +288,7 @@ export class ClientesManager {
                 texto: comentario
             };
             client.comentarios.push(newComment);
-            Storage.saveClients(this.app.data.clients);
+            await Storage.saveClient(client);
             
             logAction('add_comment', 'cliente', clientId, { 
                 comentario,
@@ -295,11 +300,11 @@ export class ClientesManager {
         }
     }
 
-    deleteComment(clientId, commentId) {
+    async deleteComment(clientId, commentId) {
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (client && client.comentarios) {
             client.comentarios = client.comentarios.filter(c => c.id !== commentId);
-            Storage.saveClients(this.app.data.clients);
+            await Storage.saveClient(client);
             
             logAction('delete_comment', 'cliente', clientId, { commentId });
             
@@ -309,24 +314,37 @@ export class ClientesManager {
     }
 
     applyPermissionsToUI() {
-        const addClientSection = document.querySelector('#clientes-tab-content .bg-white.rounded-lg.shadow-sm.p-6');
+        const canAdd = Auth.hasPermission('clientes', 'adicionar');
+        const canEdit = Auth.hasPermission('clientes', 'editar');
+        const canDelete = Auth.hasPermission('clientes', 'excluir');
         
-        if (!Auth.hasPermission('clientes', 'adicionar')) {
+        const addClientForm = this.elements.addClientForm;
+        if (addClientForm) {
+            const addClientSection = addClientForm.closest('.bg-white, .dark\\:bg-slate-800');
             if (addClientSection) {
-                addClientSection.style.display = 'none';
-            }
-            const submitBtn = this.elements.addClientForm?.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.disabled = true;
-        } else {
-            if (addClientSection) {
-                addClientSection.style.display = '';
+                addClientSection.style.display = canAdd ? '' : 'none';
             }
         }
 
-        if (!Auth.hasPermission('clientes', 'editar')) {
-            document.querySelectorAll('.edit-client-btn').forEach(btn => {
-                btn.style.display = 'none';
-            });
+        document.querySelectorAll('.edit-client-btn, #edit-client-btn').forEach(btn => {
+            btn.style.display = canEdit ? '' : 'none';
+        });
+
+        document.querySelectorAll('.edit-bike-btn').forEach(btn => {
+            btn.style.display = canEdit ? '' : 'none';
+        });
+
+        document.querySelectorAll('.delete-client-btn').forEach(btn => {
+            btn.style.display = canDelete ? '' : 'none';
+        });
+
+        document.querySelectorAll('.delete-bike-btn').forEach(btn => {
+            btn.style.display = canDelete ? '' : 'none';
+        });
+
+        const addBikeBtn = document.getElementById('add-bike-to-client-btn');
+        if (addBikeBtn) {
+            addBikeBtn.style.display = canEdit ? '' : 'none';
         }
     }
 }

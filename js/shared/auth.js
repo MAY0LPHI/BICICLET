@@ -52,12 +52,17 @@ export class Auth {
                     exportarDados: true,
                     importarDados: true,
                     exportarSistema: true,
-                    importarSistema: true
+                    importarSistema: true,
+                    limparDados: true
                 },
                 configuracao: { 
                     ver: true, 
                     gerenciarUsuarios: true,
-                    buscaAvancada: true
+                    buscaAvancada: true,
+                    backupVer: true,
+                    backupGerenciar: true,
+                    storageVer: true,
+                    storageGerenciar: true
                 },
                 jogos: { ver: true }
             },
@@ -92,12 +97,17 @@ export class Auth {
                     exportarDados: true,
                     importarDados: true,
                     exportarSistema: true,
-                    importarSistema: true
+                    importarSistema: true,
+                    limparDados: true
                 },
                 configuracao: { 
                     ver: true, 
                     gerenciarUsuarios: true,
-                    buscaAvancada: true
+                    buscaAvancada: true,
+                    backupVer: true,
+                    backupGerenciar: true,
+                    storageVer: true,
+                    storageGerenciar: true
                 },
                 jogos: { ver: true }
             },
@@ -122,12 +132,17 @@ export class Auth {
                     exportarDados: true,
                     importarDados: true,
                     exportarSistema: true,
-                    importarSistema: true
+                    importarSistema: true,
+                    limparDados: true
                 },
                 configuracao: { 
                     ver: true, 
                     gerenciarUsuarios: true,
-                    buscaAvancada: true
+                    buscaAvancada: true,
+                    backupVer: true,
+                    backupGerenciar: true,
+                    storageVer: true,
+                    storageGerenciar: true
                 },
                 jogos: { ver: true }
             },
@@ -148,7 +163,61 @@ export class Auth {
 
     static getAllUsers() {
         const data = localStorage.getItem(STORAGE_KEY_USERS);
-        return data ? JSON.parse(data) : [];
+        if (!data) return [];
+        
+        let users = JSON.parse(data);
+        let needsSave = false;
+        
+        users = users.map(user => {
+            if (!user.permissoes) {
+                user.permissoes = this.getDefaultPermissions(user.tipo);
+                needsSave = true;
+                return user;
+            }
+            
+            const isFullAccess = user.tipo === 'admin' || user.tipo === 'dono';
+            
+            if (!user.permissoes.dados) {
+                user.permissoes.dados = this.getDefaultPermissions(user.tipo).dados;
+                needsSave = true;
+            } else {
+                if (user.permissoes.dados.limparDados === undefined) {
+                    user.permissoes.dados.limparDados = isFullAccess;
+                    needsSave = true;
+                }
+            }
+            
+            if (!user.permissoes.configuracao) {
+                user.permissoes.configuracao = this.getDefaultPermissions(user.tipo).configuracao;
+                needsSave = true;
+            } else {
+                if (user.permissoes.configuracao.backupVer === undefined) {
+                    user.permissoes.configuracao.backupVer = isFullAccess;
+                    needsSave = true;
+                }
+                if (user.permissoes.configuracao.backupGerenciar === undefined) {
+                    user.permissoes.configuracao.backupGerenciar = isFullAccess;
+                    needsSave = true;
+                }
+                if (user.permissoes.configuracao.storageVer === undefined) {
+                    user.permissoes.configuracao.storageVer = isFullAccess;
+                    needsSave = true;
+                }
+                if (user.permissoes.configuracao.storageGerenciar === undefined) {
+                    user.permissoes.configuracao.storageGerenciar = isFullAccess;
+                    needsSave = true;
+                }
+            }
+            
+            return user;
+        });
+        
+        if (needsSave) {
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+            console.log('✅ Permissões de usuários migradas para nova estrutura');
+        }
+        
+        return users;
     }
 
     static saveUsers(users) {
@@ -419,9 +488,18 @@ export class Auth {
                 exportarDados: false,
                 importarDados: false,
                 exportarSistema: false,
-                importarSistema: false
+                importarSistema: false,
+                limparDados: false
             },
-            configuracao: { ver: false, gerenciarUsuarios: false, buscaAvancada: false },
+            configuracao: { 
+                ver: false, 
+                gerenciarUsuarios: false, 
+                buscaAvancada: false,
+                backupVer: false,
+                backupGerenciar: false,
+                storageVer: false,
+                storageGerenciar: false
+            },
             jogos: { ver: true }
         };
     }

@@ -469,6 +469,13 @@ export class RegistrosManager {
                 delete registro.acessoRemovido;
             }
             await Storage.saveRegistros(this.app.data.registros);
+            
+            const client = this.app.data.clients.find(c => c.id === registro.clientId);
+            logAction('revert_action', 'registro', registroId, { 
+                acao: tipoAcao === 'remoção de acesso' ? 'remocao_acesso' : 'saida',
+                clienteNome: client?.nome || 'desconhecido'
+            });
+            
             this.renderDailyRecords();
             this.app.bicicletasManager.renderClientDetails();
         }
@@ -857,6 +864,12 @@ export class RegistrosManager {
 
             this.app.data.registros.push(novoRegistro);
             await Storage.saveRegistros(this.app.data.registros);
+            
+            const client = this.app.data.clients.find(c => c.id === registro.clientId);
+            logAction('overnight_stay', 'registro', registroId, { 
+                clienteNome: client?.nome || 'desconhecido'
+            });
+            
             this.renderDailyRecords();
             await Modals.showAlert('Registro de PERNOITE criado com sucesso! Verifique o dia seguinte.', 'Sucesso');
         }
@@ -877,6 +890,8 @@ export class RegistrosManager {
 
         const confirmed = await Modals.showConfirm('Tem certeza que deseja reverter o PERNOITE?', 'Reverter Pernoite');
         if (confirmed) {
+            const client = this.app.data.clients.find(c => c.id === registro.clientId);
+            
             if (registro.registroPernoiteId) {
                 const indexPernoite = this.app.data.registros.findIndex(r => r.id === registro.registroPernoiteId);
                 if (indexPernoite >= 0) {
@@ -897,6 +912,12 @@ export class RegistrosManager {
             }
             
             await Storage.saveRegistros(this.app.data.registros);
+            
+            logAction('revert_action', 'registro', registroId, { 
+                acao: 'pernoite',
+                clienteNome: client?.nome || 'desconhecido'
+            });
+            
             this.renderDailyRecords();
             this.app.bicicletasManager.renderClientDetails();
         }
@@ -1131,14 +1152,18 @@ export class RegistrosManager {
                                 `}
                             </td>
                             <td class="p-3 align-top flex items-center gap-2">
-                                ${client.comentarios && client.comentarios.length > 0 ? `
+                                ${(() => {
+                                    let c = client.comentarios || [];
+                                    if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { c = []; } }
+                                    if (!Array.isArray(c)) { c = []; }
+                                    return c.length > 0 ? `
                                 <div class="relative">
                                     <button class="view-comments-btn flex items-center justify-center w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full cursor-pointer" 
                                             data-client-id="${client.id}"
                                             title="Ver comentários">
                                         <i data-lucide="message-circle" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
                                     </button>
-                                    <span class="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-amber-500 rounded-full">${client.comentarios.length}</span>
+                                    <span class="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-amber-500 rounded-full">${c.length}</span>
                                 </div>
                                 ` : `
                                 <button class="view-comments-btn text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 transition-colors p-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20" 
@@ -1146,7 +1171,8 @@ export class RegistrosManager {
                                         title="Ver comentários">
                                     <i data-lucide="message-circle" class="w-4 h-4"></i>
                                 </button>
-                                `}
+                                `;
+                                })()}
                                 ${canEditRegistros ? `
                                 <button class="edit-registro-btn text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" 
                                         data-registro-id="${registro.id}"
@@ -1393,18 +1419,37 @@ export class RegistrosManager {
     }
 
     applyPermissionsToUI() {
-        const canView = Auth.hasPermission('registros', 'ver');
         const canAdd = Auth.hasPermission('registros', 'adicionar');
         const canEdit = Auth.hasPermission('registros', 'editar');
+        const canDelete = Auth.hasPermission('registros', 'excluir');
 
-        if (!canView) {
-            if (this.elements.exportBtn) this.elements.exportBtn.style.display = 'none';
-        }
+        document.querySelectorAll('.add-registro-btn').forEach(btn => {
+            btn.style.display = canAdd ? '' : 'none';
+        });
 
-        if (!canAdd) {
-            if (this.elements.addRegistroBtn) this.elements.addRegistroBtn.style.display = 'none';
-        }
+        document.querySelectorAll('.edit-registro-btn').forEach(btn => {
+            btn.style.display = canEdit ? '' : 'none';
+        });
 
-        this.renderDailyRecords();
+        document.querySelectorAll('.register-saida-btn').forEach(btn => {
+            btn.style.display = canEdit ? '' : 'none';
+        });
+
+        document.querySelectorAll('.reverter-acao-btn').forEach(btn => {
+            btn.style.display = canEdit ? '' : 'none';
+        });
+
+        document.querySelectorAll('.reverter-pernoite-btn').forEach(btn => {
+            btn.style.display = canEdit ? '' : 'none';
+        });
+
+        document.querySelectorAll('.delete-registro-btn').forEach(btn => {
+            btn.style.display = canDelete ? '' : 'none';
+        });
+
+        document.querySelectorAll('.action-dropdown').forEach(dropdown => {
+            const hasAnyAction = canAdd || canEdit;
+            dropdown.style.display = hasAnyAction ? '' : 'none';
+        });
     }
 }

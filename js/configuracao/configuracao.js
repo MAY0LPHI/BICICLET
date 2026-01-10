@@ -3,6 +3,8 @@ import { Utils } from '../shared/utils.js';
 import { Modals } from '../shared/modals.js';
 import { Auth } from '../shared/auth.js';
 import { notificationManager } from '../shared/notifications.js';
+import { getJobMonitor } from '../shared/job-monitor.js';
+import { logAction } from '../shared/audit-logger.js';
 
 export class ConfiguracaoManager {
     emojiToIconMap = {
@@ -66,21 +68,25 @@ export class ConfiguracaoManager {
         this.init();
     }
 
-    init() {
-        this.cleanupCategoriesWithQuotes();
+    async init() {
+        await this.cleanupCategoriesWithQuotes();
         this.addEventListeners();
         this.setupSystemThemeListener();
         this.loadThemePreference();
         this.renderHistoricoOrganizado();
         this.setupNotificationSettings();
+        this.setupJobMonitorCallbacks();
         
-        // Pequeno atraso para garantir que o Storage carregou tudo (especialmente se houver async no futuro)
+        // Pequeno atraso para garantir que o Storage carregou tudo
         setTimeout(() => {
             this.renderCategorias();
         }, 100);
+        
+        // Carregar gerenciamento de backups
+        this.loadBackupManagement();
     }
 
-    cleanupCategoriesWithQuotes() {
+    async cleanupCategoriesWithQuotes() {
         const categorias = Storage.loadCategorias();
         const clientes = Storage.loadClientsSync();
         let categoriasChanged = false;
@@ -129,7 +135,7 @@ export class ConfiguracaoManager {
         });
         
         if (clientesChanged) {
-            Storage.saveClients(updatedClientes);
+            await Storage.saveClients(updatedClientes, true);
             if (this.app && this.app.data) {
                 this.app.data.clients = updatedClientes;
             }
@@ -923,6 +929,49 @@ export class ConfiguracaoManager {
         lucide.createIcons();
     }
 
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    showImportStatus(message, type, progress = null, current = null, total = null) {
+        const statusEl = this.elements.importStatus;
+        if (!statusEl) return;
+
+        const colorClass = type === 'success' ? 'text-green-600 dark:text-green-400' :
+            type === 'error' ? 'text-red-600 dark:text-red-400' :
+            type === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
+            'text-blue-600 dark:text-blue-400';
+
+        const progressColorClass = type === 'success' ? 'bg-green-500' :
+            type === 'error' ? 'bg-red-500' : 'bg-orange-500';
+
+        if (progress !== null && progress >= 0 && progress <= 100) {
+            const countDisplay = (current !== null && total !== null) 
+                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>` 
+                : '';
+            const progressDisplay = (current !== null && total !== null) 
+                ? `${countDisplay} <span class="text-slate-500 dark:text-slate-400">(${progress}%)</span>`
+                : `${progress}%`;
+            
+            statusEl.innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <p class="${colorClass} font-medium">${message}</p>
+                        <p class="text-sm font-medium">${progressDisplay}</p>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                        <div class="${progressColorClass} h-3 rounded-full transition-all duration-300 ease-out" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+            `;
+        } else {
+            statusEl.innerHTML = `<p class="${colorClass}">${message}</p>`;
+        }
+        
+        statusEl.className = 'text-sm mt-2';
+        statusEl.classList.remove('hidden');
+    }
+
     async handleImport() {
         try {
             Auth.requirePermission('configuracao', 'importar');
@@ -936,24 +985,44 @@ export class ConfiguracaoManager {
 
         const statusEl = this.elements.importStatus;
         statusEl.classList.remove('hidden');
-        statusEl.innerHTML = '<p class="text-blue-600 dark:text-blue-400">Importando...</p>';
 
         try {
+            this.showImportStatus('Lendo arquivo...', 'info', 0);
+            await this.delay(100);
+
+            this.showImportStatus('Processando arquivo...', 'info', 20);
+            await this.delay(100);
             const data = await this.readFile(file);
+
+            this.showImportStatus('Analisando dados...', 'info', 40);
+            await this.delay(100);
+
+            this.showImportStatus('Importando clientes...', 'info', 60);
+            await this.delay(100);
             const imported = this.processImportData(data);
             
             if (imported > 0) {
-                Storage.saveClients(this.app.data.clients);
+                const totalClients = this.app.data.clients.length;
+                this.showImportStatus('Salvando clientes...', 'info', 80, 0, totalClients);
+                await this.delay(100);
+                await Storage.saveClients(this.app.data.clients, true, (current, total) => {
+                    const progressPercent = 80 + Math.floor((current / total) * 10);
+                    this.showImportStatus('Salvando clientes...', 'info', progressPercent, current, total);
+                });
+
+                this.showImportStatus('Atualizando lista...', 'info', 90);
+                await this.delay(100);
                 this.app.clientesManager.renderClientList();
-                statusEl.innerHTML = `<p class="text-green-600 dark:text-green-400">✓ ${imported} cliente(s) importado(s) com sucesso!</p>`;
+
+                this.showImportStatus(`${imported} cliente(s) importado(s) com sucesso!`, 'success', 100);
                 this.elements.importFile.value = '';
                 this.elements.importBtn.disabled = true;
             } else {
-                statusEl.innerHTML = '<p class="text-yellow-600 dark:text-yellow-400">Nenhum cliente válido encontrado no arquivo.</p>';
+                this.showImportStatus('Nenhum cliente válido encontrado no arquivo.', 'warning', null);
             }
         } catch (error) {
             console.error('Erro ao importar:', error);
-            statusEl.innerHTML = `<p class="text-red-600 dark:text-red-400">✗ Erro ao importar: ${error.message}</p>`;
+            this.showImportStatus(`Erro ao importar: ${error.message}`, 'error', null);
         }
 
         setTimeout(() => {
@@ -1393,9 +1462,14 @@ export class ConfiguracaoManager {
                             <span class="font-semibold text-slate-800 dark:text-slate-100">${year}</span>
                             <span class="text-xs text-slate-500 dark:text-slate-400">(${yearData.totalMeses} ${yearData.totalMeses === 1 ? 'mês' : 'meses'})</span>
                         </div>
-                        <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">
-                            ${Object.values(yearData.meses).reduce((sum, m) => sum + m.totalRegistros, 0)} registros
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">
+                                ${Object.values(yearData.meses).reduce((sum, m) => sum + m.totalRegistros, 0)} registros
+                            </span>
+                            <button class="report-btn p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-colors" data-type="year" data-year="${year}" title="Gerar Relatório do Ano">
+                                <i data-lucide="file-bar-chart" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="year-content ${isExpanded ? '' : 'hidden'} p-2 space-y-2">
                         ${this.renderMonths(year, organized[year], yearData)}
@@ -1425,9 +1499,14 @@ export class ConfiguracaoManager {
                             <span class="text-sm font-medium text-slate-700 dark:text-slate-200">${monthInfo.nome}</span>
                             <span class="text-xs text-slate-500 dark:text-slate-400">(${monthInfo.totalDias} ${monthInfo.totalDias === 1 ? 'dia' : 'dias'})</span>
                         </div>
-                        <span class="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded-full">
-                            ${monthInfo.totalRegistros}
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded-full">
+                                ${monthInfo.totalRegistros}
+                            </span>
+                            <button class="report-btn p-1 rounded bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-colors" data-type="month" data-year="${year}" data-month="${month}" title="Gerar Relatório do Mês">
+                                <i data-lucide="file-bar-chart" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="month-content ${isExpanded ? '' : 'hidden'} p-2 pl-6 space-y-1">
                         ${this.renderDays(year, month, monthsData[month], monthInfo)}
@@ -1524,6 +1603,9 @@ export class ConfiguracaoManager {
                         ${totalPernoites > 0 ? `<span class="text-xs px-2 py-0.5 bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 rounded font-medium flex items-center gap-1" title="Total de pernoites"><i data-lucide="moon" class="w-3 h-3"></i> ${totalPernoites}</span>` : ''}
                         ${categoriaPernoitesBadges}
                         ${semCategoriaPernoitesBadge}
+                        <button class="report-btn p-1 rounded bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-colors" data-type="day" data-year="${year}" data-month="${month}" data-day="${day}" title="Gerar Relatório do Dia">
+                            <i data-lucide="file-bar-chart" class="w-3 h-3"></i>
+                        </button>
                     </div>
                 </div>
             `;
@@ -1533,6 +1615,7 @@ export class ConfiguracaoManager {
     attachHistoricoEventListeners() {
         document.querySelectorAll('.folder-header').forEach(header => {
             header.addEventListener('click', (e) => {
+                if (e.target.closest('.report-btn')) return;
                 const year = e.currentTarget.dataset.year;
                 const content = e.currentTarget.nextElementSibling;
                 const icon = e.currentTarget.querySelector('svg');
@@ -1551,6 +1634,7 @@ export class ConfiguracaoManager {
 
         document.querySelectorAll('.month-header').forEach(header => {
             header.addEventListener('click', (e) => {
+                if (e.target.closest('.report-btn')) return;
                 const year = e.currentTarget.dataset.year;
                 const month = e.currentTarget.dataset.month;
                 const key = `${year}-${month}`;
@@ -1568,6 +1652,523 @@ export class ConfiguracaoManager {
                 }
             });
         });
+
+        document.querySelectorAll('.report-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const type = btn.dataset.type;
+                const year = btn.dataset.year;
+                const month = btn.dataset.month;
+                const day = btn.dataset.day;
+                this.showReportExportModal(type, year, month, day);
+            });
+        });
+    }
+
+    async showReportExportModal(type, year, month, day) {
+        try {
+            Auth.requirePermission('configuracao', 'exportar');
+        } catch (error) {
+            Modals.alert(error.message, 'Permissão Negada');
+            return;
+        }
+
+        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        let periodLabel = '';
+        let periodSelectorHtml = '';
+        
+        if (type === 'year') {
+            periodLabel = `Ano ${year}`;
+        } else if (type === 'month') {
+            periodLabel = `${monthNames[parseInt(month) - 1]} de ${year}`;
+            const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+            const monthPadded = month.toString().padStart(2, '0');
+            periodSelectorHtml = `
+                <div class="mb-4 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                    <label class="flex items-center gap-2 mb-2">
+                        <input type="checkbox" id="use-custom-period" class="w-4 h-4 rounded text-emerald-600">
+                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Selecionar período personalizado</span>
+                    </label>
+                    <div id="custom-period-fields" class="hidden space-y-2">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500 dark:text-slate-400 w-10">De:</label>
+                            <input type="date" id="report-date-start" value="${year}-${monthPadded}-01" min="${year}-${monthPadded}-01" max="${year}-${monthPadded}-${lastDay.toString().padStart(2, '0')}" class="flex-1 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500 dark:text-slate-400 w-10">Até:</label>
+                            <input type="date" id="report-date-end" value="${year}-${monthPadded}-${lastDay.toString().padStart(2, '0')}" min="${year}-${monthPadded}-01" max="${year}-${monthPadded}-${lastDay.toString().padStart(2, '0')}" class="flex-1 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (type === 'day') {
+            periodLabel = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+        }
+
+        const modalHtml = `
+            <div id="report-export-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
+                            <i data-lucide="file-bar-chart" class="w-6 h-6 text-emerald-600 dark:text-emerald-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Gerar Relatório</h3>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">${periodLabel}</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                        O relatório incluirá estatísticas detalhadas: total de acessos, acessos por cliente, por categoria e pernoites.
+                    </p>
+                    ${periodSelectorHtml}
+                    <div class="flex flex-col gap-3">
+                        <button id="export-report-xlsx" class="flex items-center justify-center gap-2 w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                            <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                            Exportar como Excel (.xlsx)
+                        </button>
+                        <button id="export-report-pdf" class="flex items-center justify-center gap-2 w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">
+                            <i data-lucide="file-text" class="w-5 h-5"></i>
+                            Exportar como PDF
+                        </button>
+                        <button id="cancel-report-modal" class="w-full py-2 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        lucide.createIcons();
+
+        const modal = document.getElementById('report-export-modal');
+        const useCustomPeriod = document.getElementById('use-custom-period');
+        const customPeriodFields = document.getElementById('custom-period-fields');
+        
+        if (useCustomPeriod && customPeriodFields) {
+            useCustomPeriod.addEventListener('change', () => {
+                customPeriodFields.classList.toggle('hidden', !useCustomPeriod.checked);
+            });
+        }
+        
+        document.getElementById('cancel-report-modal').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+
+        const getReportParams = () => {
+            if (type === 'month' && useCustomPeriod?.checked) {
+                const startDate = document.getElementById('report-date-start')?.value;
+                const endDate = document.getElementById('report-date-end')?.value;
+                return { type: 'custom', year, month, startDate, endDate };
+            }
+            return { type, year, month, day };
+        };
+
+        document.getElementById('export-report-xlsx').addEventListener('click', async () => {
+            const params = getReportParams();
+            modal.remove();
+            await this.generatePeriodReportXLSX(params.type, params.year, params.month, params.day, params.startDate, params.endDate);
+        });
+
+        document.getElementById('export-report-pdf').addEventListener('click', async () => {
+            const params = getReportParams();
+            modal.remove();
+            await this.generatePeriodReportPDF(params.type, params.year, params.month, params.day, params.startDate, params.endDate);
+        });
+    }
+
+    async generatePeriodReportXLSX(type, year, month, day, startDate, endDate) {
+        const organized = await Storage.getOrganizedRegistros();
+        const categorias = Storage.loadCategorias();
+        const clients = Storage.loadClientsSync();
+        
+        let registros = [];
+        let periodLabel = '';
+        let fileName = '';
+        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+        if (type === 'year') {
+            periodLabel = `Ano ${year}`;
+            fileName = `relatorio_${year}`;
+            if (organized[year]) {
+                Object.values(organized[year]).forEach(monthData => {
+                    Object.values(monthData).forEach(dayData => {
+                        registros = registros.concat(dayData);
+                    });
+                });
+            }
+        } else if (type === 'month') {
+            periodLabel = `${monthNames[parseInt(month) - 1]} de ${year}`;
+            fileName = `relatorio_${year}_${month}`;
+            if (organized[year] && organized[year][month]) {
+                Object.values(organized[year][month]).forEach(dayData => {
+                    registros = registros.concat(dayData);
+                });
+            }
+        } else if (type === 'custom' && startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const startDay = start.getDate();
+            const endDay = end.getDate();
+            periodLabel = `${startDay.toString().padStart(2, '0')}/${month.padStart(2, '0')}/${year} a ${endDay.toString().padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+            fileName = `relatorio_${year}_${month}_${startDay}_a_${endDay}`;
+            if (organized[year] && organized[year][month]) {
+                Object.entries(organized[year][month]).forEach(([dayKey, dayData]) => {
+                    const dayNum = parseInt(dayKey);
+                    if (dayNum >= startDay && dayNum <= endDay) {
+                        registros = registros.concat(dayData);
+                    }
+                });
+            }
+        } else if (type === 'day') {
+            periodLabel = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+            fileName = `relatorio_${year}_${month}_${day}`;
+            if (organized[year] && organized[year][month] && organized[year][month][day]) {
+                registros = organized[year][month][day];
+            }
+        }
+
+        const stats = this.calculateReportStats(registros, clients, categorias);
+
+        const wb = XLSX.utils.book_new();
+
+        const resumoData = [
+            ['RELATÓRIO DE ACESSOS - ' + periodLabel.toUpperCase()],
+            ['Gerado em:', new Date().toLocaleString('pt-BR')],
+            [],
+            ['RESUMO GERAL'],
+            ['Total de Acessos:', stats.totalAcessos],
+            ['Total de Pernoites:', stats.totalPernoites],
+            ['Total de Clientes Únicos:', stats.clientesUnicos],
+            [],
+            ['ACESSOS POR CATEGORIA'],
+            ['Categoria', 'Acessos', 'Pernoites'],
+            ...Object.entries(stats.porCategoria).map(([cat, data]) => [cat === '' ? 'Sem categoria' : cat, data.acessos, data.pernoites]),
+            [],
+            ['ACESSOS POR CLIENTE'],
+            ['Cliente', 'CPF', 'Categoria', 'Acessos', 'Pernoites'],
+            ...Object.entries(stats.porCliente).sort((a, b) => b[1].acessos - a[1].acessos).map(([id, data]) => [
+                data.nome, data.cpf, data.categoria || 'Sem categoria', data.acessos, data.pernoites
+            ])
+        ];
+
+        const wsResumo = XLSX.utils.aoa_to_sheet(resumoData);
+        wsResumo['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+        XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
+
+        const registrosData = [
+            ['Data/Hora Entrada', 'Data/Hora Saída', 'Cliente', 'CPF', 'Bicicleta', 'Categoria', 'Pernoite'],
+            ...registros.map(r => {
+                const client = clients.find(c => c.id === r.clienteId) || {};
+                const bike = client.bicicletas?.find(b => b.id === r.bicicletaId) || {};
+                return [
+                    new Date(r.dataHoraEntrada).toLocaleString('pt-BR'),
+                    r.dataHoraSaida ? new Date(r.dataHoraSaida).toLocaleString('pt-BR') : 'Em aberto',
+                    client.nome || 'Desconhecido',
+                    client.cpf || '',
+                    bike.marca ? `${bike.marca} ${bike.modelo || ''} ${bike.cor || ''}`.trim() : 'Não identificada',
+                    client.categoria || 'Sem categoria',
+                    r.pernoite ? 'Sim' : 'Não'
+                ];
+            })
+        ];
+
+        const wsRegistros = XLSX.utils.aoa_to_sheet(registrosData);
+        wsRegistros['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 10 }];
+        XLSX.utils.book_append_sheet(wb, wsRegistros, 'Registros Detalhados');
+
+        XLSX.writeFile(wb, `${fileName}.xlsx`);
+        Modals.alert(`Relatório exportado com sucesso: ${fileName}.xlsx`, 'Sucesso');
+    }
+
+    async generatePeriodReportPDF(type, year, month, day, startDate, endDate) {
+        const organized = await Storage.getOrganizedRegistros();
+        const categorias = Storage.loadCategorias();
+        const clients = Storage.loadClientsSync();
+        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        
+        let registros = [];
+        let periodLabel = '';
+
+        if (type === 'year') {
+            periodLabel = `Ano ${year}`;
+            if (organized[year]) {
+                Object.values(organized[year]).forEach(monthData => {
+                    Object.values(monthData).forEach(dayData => {
+                        registros = registros.concat(dayData);
+                    });
+                });
+            }
+        } else if (type === 'month') {
+            periodLabel = `${monthNames[parseInt(month) - 1]} de ${year}`;
+            if (organized[year] && organized[year][month]) {
+                Object.values(organized[year][month]).forEach(dayData => {
+                    registros = registros.concat(dayData);
+                });
+            }
+        } else if (type === 'custom' && startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const startDay = start.getDate();
+            const endDay = end.getDate();
+            periodLabel = `${startDay.toString().padStart(2, '0')}/${month.padStart(2, '0')}/${year} a ${endDay.toString().padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+            if (organized[year] && organized[year][month]) {
+                Object.entries(organized[year][month]).forEach(([dayKey, dayData]) => {
+                    const dayNum = parseInt(dayKey);
+                    if (dayNum >= startDay && dayNum <= endDay) {
+                        registros = registros.concat(dayData);
+                    }
+                });
+            }
+        } else if (type === 'day') {
+            periodLabel = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+            if (organized[year] && organized[year][month] && organized[year][month][day]) {
+                registros = organized[year][month][day];
+            }
+        }
+
+        const stats = this.calculateReportStats(registros, clients, categorias);
+        
+        const printWindow = window.open('', '_blank');
+        const maxAcessos = Math.max(...Object.values(stats.porCliente).map(d => d.acessos), 1);
+        const categoriasArray = Object.entries(stats.porCategoria).filter(([_, d]) => d.acessos > 0 || d.pernoites > 0);
+        const maxCatAcessos = Math.max(...categoriasArray.map(([_, d]) => d.acessos + d.pernoites), 1);
+        
+        const printContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Relatório de Acessos - ${periodLabel}</title>
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; color: #334155; line-height: 1.6; }
+                    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+                    
+                    .header { background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 50%, #7c3aed 100%); color: white; padding: 30px; border-radius: 16px; margin-bottom: 24px; text-align: center; box-shadow: 0 10px 40px rgba(37, 99, 235, 0.3); }
+                    .header-icon { width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 28px; }
+                    .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                    .header-period { font-size: 18px; opacity: 0.95; font-weight: 500; }
+                    .header-date { font-size: 13px; opacity: 0.8; margin-top: 8px; }
+                    
+                    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+                    .stat-card { background: white; padding: 24px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+                    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+                    .stat-card.blue::before { background: linear-gradient(90deg, #0ea5e9, #2563eb); }
+                    .stat-card.purple::before { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+                    .stat-card.emerald::before { background: linear-gradient(90deg, #10b981, #059669); }
+                    .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 24px; }
+                    .stat-card.blue .stat-icon { background: #dbeafe; }
+                    .stat-card.purple .stat-icon { background: #ede9fe; }
+                    .stat-card.emerald .stat-icon { background: #d1fae5; }
+                    .stat-value { font-size: 36px; font-weight: 700; margin-bottom: 4px; }
+                    .stat-card.blue .stat-value { color: #2563eb; }
+                    .stat-card.purple .stat-value { color: #7c3aed; }
+                    .stat-card.emerald .stat-value { color: #059669; }
+                    .stat-label { font-size: 13px; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+                    
+                    .section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; }
+                    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #f1f5f9; }
+                    .section-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #0ea5e9, #2563eb); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; }
+                    .section-title { font-size: 18px; font-weight: 600; color: #1e293b; }
+                    
+                    .category-list { display: flex; flex-direction: column; gap: 12px; }
+                    .category-item { display: flex; align-items: center; gap: 16px; }
+                    .category-name { min-width: 140px; font-weight: 500; color: #475569; }
+                    .category-bar-container { flex: 1; height: 28px; background: #f1f5f9; border-radius: 14px; overflow: hidden; position: relative; }
+                    .category-bar { height: 100%; border-radius: 14px; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-size: 12px; font-weight: 600; color: white; transition: width 0.3s; }
+                    .category-bar.acessos { background: linear-gradient(90deg, #0ea5e9, #2563eb); }
+                    .category-bar.pernoites { background: linear-gradient(90deg, #8b5cf6, #7c3aed); margin-top: 4px; height: 20px; }
+                    .category-stats { min-width: 100px; text-align: right; font-size: 13px; color: #64748b; }
+                    
+                    table { width: 100%; border-collapse: separate; border-spacing: 0; }
+                    thead th { background: linear-gradient(135deg, #f8fafc, #f1f5f9); padding: 14px 12px; text-align: left; font-weight: 600; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e2e8f0; }
+                    thead th:first-child { border-radius: 8px 0 0 0; }
+                    thead th:last-child { border-radius: 0 8px 0 0; }
+                    tbody td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+                    tbody tr:hover { background: #f8fafc; }
+                    tbody tr:last-child td { border-bottom: none; }
+                    .client-name { font-weight: 600; color: #1e293b; }
+                    .client-cpf { color: #64748b; font-family: monospace; }
+                    .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+                    .badge-blue { background: #dbeafe; color: #2563eb; }
+                    .badge-purple { background: #ede9fe; color: #7c3aed; }
+                    .badge-gray { background: #f1f5f9; color: #64748b; }
+                    .access-bar { width: 60px; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; display: inline-block; margin-left: 8px; vertical-align: middle; }
+                    .access-bar-fill { height: 100%; background: linear-gradient(90deg, #0ea5e9, #2563eb); border-radius: 4px; }
+                    
+                    .footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 20px; }
+                    .footer-logo { font-size: 16px; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+                    
+                    @media print { 
+                        body { background: white; }
+                        .container { padding: 10px; }
+                        .section, .stat-card { box-shadow: none; border: 1px solid #e2e8f0; }
+                        .header { box-shadow: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="header-icon">🚲</div>
+                        <h1>Relatório de Acessos</h1>
+                        <div class="header-period">${periodLabel}</div>
+                        <div class="header-date">Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card blue">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-value">${stats.totalAcessos}</div>
+                            <div class="stat-label">Total de Acessos</div>
+                        </div>
+                        <div class="stat-card purple">
+                            <div class="stat-icon">🌙</div>
+                            <div class="stat-value">${stats.totalPernoites}</div>
+                            <div class="stat-label">Pernoites</div>
+                        </div>
+                        <div class="stat-card emerald">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-value">${stats.clientesUnicos}</div>
+                            <div class="stat-label">Clientes Únicos</div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-header">
+                            <div class="section-icon">📁</div>
+                            <div class="section-title">Acessos por Categoria</div>
+                        </div>
+                        <div class="category-list">
+                            ${categoriasArray.length > 0 ? categoriasArray.map(([cat, data]) => {
+                                const total = data.acessos + data.pernoites;
+                                const width = Math.max((total / maxCatAcessos) * 100, 10);
+                                return `
+                                    <div class="category-item">
+                                        <div class="category-name">${cat || 'Sem categoria'}</div>
+                                        <div class="category-bar-container">
+                                            <div class="category-bar acessos" style="width: ${width}%">${total}</div>
+                                        </div>
+                                        <div class="category-stats">
+                                            <span class="badge badge-blue">${data.acessos} acessos</span>
+                                            ${data.pernoites > 0 ? `<span class="badge badge-purple">${data.pernoites} pernoites</span>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('') : '<p style="color: #94a3b8; text-align: center;">Nenhuma categoria registrada</p>'}
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-header">
+                            <div class="section-icon">👤</div>
+                            <div class="section-title">Ranking de Clientes</div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px">#</th>
+                                    <th>Cliente</th>
+                                    <th>CPF</th>
+                                    <th>Categoria</th>
+                                    <th style="text-align: center">Acessos</th>
+                                    <th style="text-align: center">Pernoites</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(stats.porCliente).sort((a, b) => b[1].acessos - a[1].acessos).map(([id, data], index) => `
+                                    <tr>
+                                        <td style="font-weight: 700; color: ${index < 3 ? '#f59e0b' : '#94a3b8'}">${index + 1}</td>
+                                        <td class="client-name">${data.nome}</td>
+                                        <td class="client-cpf">${data.cpf || '-'}</td>
+                                        <td><span class="badge badge-gray">${data.categoria || 'Sem categoria'}</span></td>
+                                        <td style="text-align: center">
+                                            <strong>${data.acessos}</strong>
+                                            <div class="access-bar"><div class="access-bar-fill" style="width: ${(data.acessos / maxAcessos) * 100}%"></div></div>
+                                        </td>
+                                        <td style="text-align: center">
+                                            ${data.pernoites > 0 ? `<span class="badge badge-purple">${data.pernoites}</span>` : '<span style="color: #cbd5e1">-</span>'}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="footer">
+                        <div class="footer-logo">🚲 Bicicletário Shop</div>
+                        <div>Sistema de Gerenciamento de Bicicletário</div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        if (!printWindow) {
+            Modals.alert('Não foi possível abrir a janela de impressão. Verifique se o bloqueador de pop-ups está desativado.', 'Erro');
+            return;
+        }
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        setTimeout(() => {
+            try {
+                printWindow.print();
+            } catch (e) {
+                Modals.alert('Erro ao imprimir. Tente novamente.', 'Erro');
+            }
+        }, 500);
+    }
+
+    calculateReportStats(registros, clients, categorias) {
+        const stats = {
+            totalAcessos: registros.length,
+            totalPernoites: 0,
+            clientesUnicos: new Set(),
+            porCategoria: {},
+            porCliente: {}
+        };
+
+        Object.keys(categorias).forEach(cat => {
+            stats.porCategoria[cat] = { acessos: 0, pernoites: 0 };
+        });
+        stats.porCategoria[''] = { acessos: 0, pernoites: 0 };
+
+        registros.forEach(r => {
+            const client = clients.find(c => c.id === r.clienteId) || {};
+            const isPernoite = r.pernoite === true;
+            const cat = client.categoria || '';
+
+            if (isPernoite) stats.totalPernoites++;
+            stats.clientesUnicos.add(r.clienteId);
+
+            if (!stats.porCategoria[cat]) {
+                stats.porCategoria[cat] = { acessos: 0, pernoites: 0 };
+            }
+            if (isPernoite) {
+                stats.porCategoria[cat].pernoites++;
+            } else {
+                stats.porCategoria[cat].acessos++;
+            }
+
+            if (!stats.porCliente[r.clienteId]) {
+                stats.porCliente[r.clienteId] = {
+                    nome: client.nome || 'Desconhecido',
+                    cpf: client.cpf || '',
+                    categoria: client.categoria || '',
+                    acessos: 0,
+                    pernoites: 0
+                };
+            }
+            if (isPernoite) {
+                stats.porCliente[r.clienteId].pernoites++;
+            } else {
+                stats.porCliente[r.clienteId].acessos++;
+            }
+        });
+
+        stats.clientesUnicos = stats.clientesUnicos.size;
+        return stats;
     }
 
     exportSystemToExcel() {
@@ -1870,10 +2471,14 @@ export class ConfiguracaoManager {
         if (!confirmed) return;
 
         try {
-            this.showImportSystemStatus('Importando dados...', 'info');
+            this.showImportSystemStatus('Lendo arquivo...', 'info', 0);
+            await this.delay(100);
             
             const fileExtension = file.name.split('.').pop().toLowerCase();
             let importedData;
+
+            this.showImportSystemStatus('Processando arquivo...', 'info', 10);
+            await this.delay(100);
 
             if (fileExtension === 'csv') {
                 importedData = await this.processSystemCSVImport(file);
@@ -1881,27 +2486,51 @@ export class ConfiguracaoManager {
                 importedData = await this.processSystemExcelImport(file);
             }
 
+            this.showImportSystemStatus('Analisando dados...', 'info', 30);
+            await this.delay(100);
+
             const mergedData = this.mergeSystemData(importedData);
 
-            await Storage.saveClients(mergedData.clients);
-            await Storage.saveRegistros(mergedData.registros);
+            const totalClients = mergedData.clients.length;
+            this.showImportSystemStatus('Salvando clientes...', 'info', 50, 0, totalClients);
+            await this.delay(100);
+            await Storage.saveClients(mergedData.clients, true, (current, total) => {
+                const progressPercent = 50 + Math.floor((current / total) * 15);
+                this.showImportSystemStatus('Salvando clientes...', 'info', progressPercent, current, total);
+            });
+
+            const totalRegistros = mergedData.registros.length;
+            this.showImportSystemStatus('Salvando registros...', 'info', 65, 0, totalRegistros);
+            await this.delay(100);
+            await Storage.saveRegistros(mergedData.registros, (current, total) => {
+                const progressPercent = 65 + Math.floor((current / total) * 15);
+                this.showImportSystemStatus('Salvando registros...', 'info', progressPercent, current, total);
+            });
+
+            this.showImportSystemStatus('Salvando usuários...', 'info', 80);
+            await this.delay(100);
             Auth.saveUsers(mergedData.usuarios);
+
             if (mergedData.categorias) {
+                this.showImportSystemStatus('Salvando categorias...', 'info', 90);
+                await this.delay(100);
                 Storage.saveCategorias(mergedData.categorias);
             }
 
             this.app.data.clients = mergedData.clients;
             this.app.data.registros = mergedData.registros;
 
-            this.showImportSystemStatus(`✅ Backup importado com sucesso! ${mergedData.stats.clientesNovos} clientes novos, ${mergedData.stats.clientesMesclados} mesclados, ${mergedData.stats.bicicletasAdicionadas} bicicletas adicionadas, ${mergedData.stats.registrosNovos} registros novos, ${mergedData.stats.usuariosNovos} usuários novos, ${mergedData.stats.categoriasImportadas} categorias.`, 'success');
+            this.showImportSystemStatus('Finalizando importação...', 'info', 95);
+            await this.delay(200);
+
+            this.showImportSystemStatus(`Backup importado com sucesso! ${mergedData.stats.clientesNovos} clientes novos, ${mergedData.stats.clientesMesclados} mesclados, ${mergedData.stats.bicicletasAdicionadas} bicicletas adicionadas, ${mergedData.stats.registrosNovos} registros novos, ${mergedData.stats.usuariosNovos} usuários novos, ${mergedData.stats.categoriasImportadas} categorias.`, 'success', 100);
             
             this.app.clientesManager.renderClientList();
             
-            // Pular tela de carregamento ao recarregar após importar dados
             sessionStorage.setItem('skipLoadingScreen', 'true');
             
             setTimeout(() => {
-                Modals.alert('Dados importados com sucesso! A página será recarregada.');
+                Modals.alert('Dados importados com sucesso! A página será recarregada.', 'Importação Concluída', 'check-circle');
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
@@ -1909,7 +2538,7 @@ export class ConfiguracaoManager {
 
         } catch (error) {
             console.error('Erro ao importar backup:', error);
-            this.showImportSystemStatus(`❌ Erro ao importar: ${error.message}`, 'error');
+            this.showImportSystemStatus(`Erro ao importar: ${error.message}`, 'error', null);
         }
     }
 
@@ -2126,8 +2755,8 @@ export class ConfiguracaoManager {
                 if (client) {
                     client.bicicletas.push({
                         id: row[0],
-                        modelo: row[2],
-                        marca: row[3],
+                        marca: row[2],
+                        modelo: row[3],
                         cor: row[4]
                     });
                 }
@@ -2204,6 +2833,16 @@ export class ConfiguracaoManager {
             const row = usuariosData[i];
             if (!row[0]) continue;
 
+            let permissoes = {};
+            if (row[6]) {
+                try {
+                    permissoes = JSON.parse(row[6]);
+                } catch (e) {
+                    console.warn(`Erro ao parsear permissões para usuário ${row[1]}:`, e);
+                    permissoes = {};
+                }
+            }
+
             usuarios.push({
                 id: row[0],
                 username: row[1],
@@ -2211,7 +2850,7 @@ export class ConfiguracaoManager {
                 nome: row[3],
                 tipo: row[4],
                 ativo: row[5] === 'Sim',
-                permissoes: JSON.parse(row[6])
+                permissoes: permissoes
             });
         }
 
@@ -2231,41 +2870,99 @@ export class ConfiguracaoManager {
         return categorias;
     }
 
-    showImportSystemStatus(message, type) {
+    showImportSystemStatus(message, type, progress = null, current = null, total = null) {
         const statusEl = this.elements.importSystemStatus;
         if (!statusEl) return;
 
-        statusEl.textContent = message;
-        statusEl.className = `text-sm ${
-            type === 'success' ? 'text-green-600 dark:text-green-400' :
+        const colorClass = type === 'success' ? 'text-green-600 dark:text-green-400' :
             type === 'error' ? 'text-red-600 dark:text-red-400' :
-            'text-blue-600 dark:text-blue-400'
-        }`;
+            'text-blue-600 dark:text-blue-400';
+
+        const progressColorClass = type === 'success' ? 'bg-green-500' :
+            type === 'error' ? 'bg-red-500' : 'bg-orange-500';
+
+        if (progress !== null && progress >= 0 && progress <= 100) {
+            const countDisplay = (current !== null && total !== null) 
+                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>` 
+                : '';
+            const progressDisplay = (current !== null && total !== null) 
+                ? `${countDisplay} <span class="text-slate-500 dark:text-slate-400">(${progress}%)</span>`
+                : `${progress}%`;
+            
+            statusEl.innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <p class="${colorClass} font-medium">${message}</p>
+                        <p class="text-sm font-medium">${progressDisplay}</p>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                        <div class="${progressColorClass} h-3 rounded-full transition-all duration-300 ease-out" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+            `;
+        } else {
+            statusEl.innerHTML = `<p class="${colorClass}">${message}</p>`;
+        }
+        
+        statusEl.className = 'text-sm mt-2';
         statusEl.classList.remove('hidden');
     }
 
     applyPermissionsToUI() {
-        const canExport = Auth.hasPermission('configuracao', 'exportar');
-        const canImport = Auth.hasPermission('configuracao', 'importar');
+        const canBuscaAvancada = Auth.hasPermission('configuracao', 'buscaAvancada');
+        const canBackupVer = Auth.hasPermission('configuracao', 'backupVer');
+        const canBackupGerenciar = Auth.hasPermission('configuracao', 'backupGerenciar');
+        const canStorageVer = Auth.hasPermission('configuracao', 'storageVer');
+        const canStorageGerenciar = Auth.hasPermission('configuracao', 'storageGerenciar');
 
-        if (!canExport) {
-            if (this.elements.exportExcelBtn) this.elements.exportExcelBtn.style.display = 'none';
-            if (this.elements.exportCsvBtn) this.elements.exportCsvBtn.style.display = 'none';
-            if (this.elements.exportSystemExcelBtn) this.elements.exportSystemExcelBtn.style.display = 'none';
-            if (this.elements.exportSystemCsvBtn) this.elements.exportSystemCsvBtn.style.display = 'none';
+        const globalSearchSection = document.getElementById('section-busca-avancada');
+        if (globalSearchSection) {
+            globalSearchSection.style.display = canBuscaAvancada ? '' : 'none';
         }
 
-        if (!canImport) {
-            if (this.elements.importFile) this.elements.importFile.style.display = 'none';
-            if (this.elements.importBtn) this.elements.importBtn.style.display = 'none';
-            if (this.elements.importSystemFile) this.elements.importSystemFile.style.display = 'none';
-            if (this.elements.importSystemBtn) this.elements.importSystemBtn.style.display = 'none';
+        if (this.elements.globalSearch) {
+            const searchContainer = this.elements.globalSearch.closest('.bg-white, .dark\\:bg-slate-800');
+            if (searchContainer && searchContainer.id === 'section-busca-avancada') {
+                searchContainer.style.display = canBuscaAvancada ? '' : 'none';
+            }
+        }
+
+        const backupSection = document.getElementById('backup-management-container');
+        if (backupSection) {
+            backupSection.style.display = canBackupVer ? '' : 'none';
+        }
+
+        const storageSection = document.getElementById('storage-mode-container');
+        if (storageSection) {
+            storageSection.style.display = canStorageVer ? '' : 'none';
+        }
+    }
+    
+    setupJobMonitorCallbacks() {
+        try {
+            const jobMonitor = getJobMonitor();
+            const self = this;
             
-            const importSection = document.querySelector('#configuracao-tab-content .bg-white.rounded-lg.shadow-sm.p-6:nth-of-type(2)');
-            if (importSection) importSection.style.display = 'none';
-            
-            const systemImportSection = document.querySelector('#configuracao-tab-content .bg-white.rounded-lg.shadow-sm.p-6:nth-of-type(3)');
-            if (systemImportSection) systemImportSection.style.display = 'none';
+            jobMonitor.onChanges(async (changes) => {
+                try {
+                    if (changes.clients || changes.registros || changes.categorias) {
+                        if (typeof self.loadStorageModeSettings === 'function') {
+                            await self.loadStorageModeSettings();
+                        }
+                        if (typeof self.renderHistoricoOrganizado === 'function') {
+                            await self.renderHistoricoOrganizado();
+                        }
+                        
+                        if (changes.categorias && typeof self.renderCategorias === 'function') {
+                            self.renderCategorias();
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Erro ao processar mudanças no ConfiguracaoManager:', err.message);
+                }
+            });
+        } catch (e) {
+            console.warn('Erro ao configurar callbacks do JobMonitor:', e);
         }
     }
     
@@ -2366,8 +3063,631 @@ export class ConfiguracaoManager {
                 
                 notificationManager.saveSettings(newSettings);
                 
-                Modals.alert('Configurações de notificações salvas com sucesso!', '✅ Configurações Salvas');
+                Modals.alert('Configurações de notificações salvas com sucesso!', 'Configurações Salvas', 'check-circle');
             });
+        }
+        
+        this.loadStorageModeSettings();
+    }
+    
+    async loadStorageModeSettings() {
+        const container = document.getElementById('storage-mode-container');
+        if (!container) return;
+        
+        try {
+            const response = await fetch('/api/storage-mode');
+            if (!response.ok) throw new Error('API not available');
+            
+            const stats = await response.json();
+            this.renderStorageModeUI(container, stats);
+        } catch (error) {
+            console.warn('Storage mode API not available:', error);
+            container.innerHTML = `
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 p-4 rounded-lg">
+                    <div class="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                        <span class="font-medium">Configuração de armazenamento indisponível</span>
+                    </div>
+                    <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                        O servidor não está disponível para gerenciar modos de armazenamento.
+                    </p>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+    
+    renderStorageModeUI(container, stats) {
+        const currentMode = stats.current_mode || 'sqlite';
+        const sqliteActive = currentMode === 'sqlite';
+        const lastMigration = stats.last_migration ? new Date(stats.last_migration).toLocaleString('pt-BR') : 'Nunca';
+        const canStorageGerenciar = Auth.hasPermission('configuracao', 'storageGerenciar');
+        
+        container.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="border-2 rounded-lg p-4 cursor-pointer transition-all ${sqliteActive ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-purple-300'}" data-mode="sqlite">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="database" class="w-5 h-5 ${sqliteActive ? 'text-purple-600' : 'text-slate-400'}"></i>
+                            <span class="font-semibold ${sqliteActive ? 'text-purple-700 dark:text-purple-300' : 'text-slate-700 dark:text-slate-300'}">SQLite</span>
+                        </div>
+                        ${sqliteActive ? '<span class="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">Ativo</span>' : ''}
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Banco de dados único, mais rápido e confiável. Recomendado.</p>
+                    <div class="space-y-1 text-xs">
+                        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>Clientes:</span>
+                            <span class="font-medium">${stats.sqlite?.clientes || 0}</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>Bicicletas:</span>
+                            <span class="font-medium">${stats.sqlite?.bicicletas || 0}</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>Registros:</span>
+                            <span class="font-medium">${stats.sqlite?.registros || 0}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="border-2 rounded-lg p-4 cursor-pointer transition-all ${!sqliteActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-blue-300'}" data-mode="json">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="file-json" class="w-5 h-5 ${!sqliteActive ? 'text-blue-600' : 'text-slate-400'}"></i>
+                            <span class="font-semibold ${!sqliteActive ? 'text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'}">Arquivos JSON</span>
+                        </div>
+                        ${!sqliteActive ? '<span class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Ativo</span>' : ''}
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Arquivos separados por pasta. Compatível com versões antigas.</p>
+                    <div class="space-y-1 text-xs">
+                        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>Clientes:</span>
+                            <span class="font-medium">${stats.json?.clientes || 0}</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>Bicicletas:</span>
+                            <span class="font-medium">${stats.json?.bicicletas || 0}</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>Registros:</span>
+                            <span class="font-medium">${stats.json?.registros || 0}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between bg-slate-100 dark:bg-slate-900/50 p-3 rounded-lg">
+                <div class="text-xs text-slate-600 dark:text-slate-400">
+                    <span>Última migração: </span>
+                    <span class="font-medium">${lastMigration}</span>
+                    ${stats.migration_status && stats.migration_status !== 'idle' ? `<span class="ml-2 text-yellow-600">(${stats.migration_status})</span>` : ''}
+                </div>
+                ${canStorageGerenciar ? `
+                <div class="flex gap-2">
+                    <button id="migrate-to-sqlite-btn" class="text-xs px-3 py-1.5 rounded-md transition-colors ${sqliteActive ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-700'}" ${sqliteActive ? 'disabled' : ''}>
+                        <i data-lucide="arrow-right" class="w-3 h-3 inline mr-1"></i>
+                        Migrar para SQLite
+                    </button>
+                    <button id="migrate-to-json-btn" class="text-xs px-3 py-1.5 rounded-md transition-colors ${!sqliteActive ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}" ${!sqliteActive ? 'disabled' : ''}>
+                        <i data-lucide="arrow-right" class="w-3 h-3 inline mr-1"></i>
+                        Migrar para JSON
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        
+        if (window.lucide) lucide.createIcons();
+        
+        const sqliteCard = container.querySelector('[data-mode="sqlite"]');
+        const jsonCard = container.querySelector('[data-mode="json"]');
+        const migrateToSqliteBtn = document.getElementById('migrate-to-sqlite-btn');
+        const migrateToJsonBtn = document.getElementById('migrate-to-json-btn');
+        
+        sqliteCard?.addEventListener('click', () => {
+            if (!sqliteActive) this.changeStorageMode('sqlite');
+        });
+        
+        jsonCard?.addEventListener('click', () => {
+            if (sqliteActive) this.changeStorageMode('json');
+        });
+        
+        migrateToSqliteBtn?.addEventListener('click', () => {
+            if (!sqliteActive) this.confirmMigration('json_to_sqlite');
+        });
+        
+        migrateToJsonBtn?.addEventListener('click', () => {
+            if (sqliteActive) this.confirmMigration('sqlite_to_json');
+        });
+    }
+    
+    async changeStorageMode(newMode) {
+        const confirmed = await Modals.confirm(
+            `Deseja alterar o modo de armazenamento para ${newMode === 'sqlite' ? 'SQLite' : 'Arquivos JSON'}?`,
+            'Alterar Modo de Armazenamento'
+        );
+        
+        if (!confirmed) return;
+        
+        try {
+            const response = await fetch('/api/storage-mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: newMode })
+            });
+            
+            if (response.ok) {
+                Modals.alert(`Modo alterado para ${newMode === 'sqlite' ? 'SQLite' : 'JSON'} com sucesso!`, 'Sucesso', 'check-circle');
+                this.loadStorageModeSettings();
+            } else {
+                const error = await response.json();
+                Modals.alert(`Erro ao alterar modo: ${error.error}`, 'Erro', 'alert-circle');
+            }
+        } catch (error) {
+            console.error('Erro ao alterar modo:', error);
+            Modals.alert('Erro ao conectar com o servidor.', 'Erro', 'alert-circle');
+        }
+    }
+    
+    async confirmMigration(direction) {
+        const isToSqlite = direction === 'json_to_sqlite';
+        const title = isToSqlite ? 'Migrar para SQLite' : 'Migrar para JSON';
+        const message = isToSqlite
+            ? 'Esta ação irá copiar todos os dados dos arquivos JSON para o banco de dados SQLite. Um backup será criado automaticamente. Deseja continuar?'
+            : 'Esta ação irá exportar todos os dados do SQLite para arquivos JSON. Um backup será criado automaticamente. Deseja continuar?';
+        
+        const confirmed = await Modals.confirm(message, title);
+        if (!confirmed) return;
+        
+        const container = document.getElementById('storage-mode-container');
+        container.innerHTML = `
+            <div class="flex items-center justify-center py-8">
+                <div class="text-center">
+                    <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-purple-600 mx-auto mb-3"></i>
+                    <p class="text-slate-600 dark:text-slate-400">Migrando dados... Por favor, aguarde.</p>
+                </div>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        
+        try {
+            const response = await fetch('/api/migrate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ direction })
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                Modals.alert(`Erro na migração: ${error.error || 'Serviço indisponível'}`, 'Erro', 'alert-circle');
+                this.loadStorageModeSettings();
+                return;
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                const oldMode = isToSqlite ? 'json' : 'sqlite';
+                const newMode = isToSqlite ? 'sqlite' : 'json';
+                await fetch('/api/storage-mode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: newMode })
+                });
+                
+                logAction('change_storage', 'sistema', null, { 
+                    de: oldMode, 
+                    para: newMode,
+                    clientesMigrados: result.migrated?.clientes || 0,
+                    registrosMigrados: result.migrated?.registros || 0
+                });
+                
+                Modals.alert(
+                    `Migração concluída com sucesso!\n\nClientes migrados: ${result.migrated?.clientes || 0}\nBicicletas migradas: ${result.migrated?.bicicletas || 0}\nRegistros migrados: ${result.migrated?.registros || 0}`,
+                    'Migração Concluída',
+                    'check-circle'
+                );
+            } else {
+                Modals.alert(
+                    `Migração concluída com alguns erros:\n\n${result.errors?.slice(0, 5).join('\n') || 'Erro desconhecido'}`,
+                    'Migração com Erros',
+                    'alert-triangle'
+                );
+            }
+            
+            this.loadStorageModeSettings();
+        } catch (error) {
+            console.error('Erro na migração:', error);
+            Modals.alert('Erro ao executar a migração. Verifique os logs do servidor.', 'Erro', 'alert-circle');
+            this.loadStorageModeSettings();
+        }
+    }
+    
+    // ==================== BACKUP MANAGEMENT ====================
+    
+    async loadBackupManagement() {
+        const container = document.getElementById('backup-management-container');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="flex items-center justify-center py-8">
+                <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-blue-600"></i>
+                <span class="ml-2 text-slate-600 dark:text-slate-400">Carregando...</span>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        
+        try {
+            const [backupsResponse, settingsResponse] = await Promise.all([
+                fetch('/api/backups'),
+                fetch('/api/backup/settings')
+            ]);
+            
+            const backups = await backupsResponse.json();
+            const settings = await settingsResponse.json();
+            
+            this.renderBackupManagement(backups, settings);
+        } catch (error) {
+            console.error('Erro ao carregar backups:', error);
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <i data-lucide="alert-circle" class="w-8 h-8 text-red-500 mx-auto mb-2"></i>
+                    <p class="text-red-600 dark:text-red-400">Erro ao carregar backups</p>
+                    <button id="retry-backups-btn" class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        Tentar Novamente
+                    </button>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+            
+            document.getElementById('retry-backups-btn')?.addEventListener('click', () => {
+                this.loadBackupManagement();
+            });
+        }
+    }
+    
+    renderBackupManagement(backups, settings) {
+        const container = document.getElementById('backup-management-container');
+        if (!container) return;
+        
+        const canBackupGerenciar = Auth.hasPermission('configuracao', 'backupGerenciar');
+        
+        const intervalLabels = {
+            'daily': 'Diário',
+            'weekly': 'Semanal',
+            'monthly': 'Mensal'
+        };
+        
+        const backupsList = backups.length > 0 ? backups.map(backup => {
+            const date = new Date(backup.created_at);
+            const formattedDate = date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
+            return `
+                <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <i data-lucide="file-archive" class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0"></i>
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">${backup.filename}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">${formattedDate} • ${backup.size_formatted}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        ${canBackupGerenciar ? `
+                        <button class="backup-restore-btn p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" data-filename="${backup.filename}" title="Restaurar">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        </button>
+                        ` : ''}
+                        <button class="backup-download-btn p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" data-filename="${backup.filename}" title="Download">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                        </button>
+                        ${canBackupGerenciar ? `
+                        <button class="backup-delete-btn p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" data-filename="${backup.filename}" title="Excluir">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('') : `
+            <div class="text-center py-6 text-slate-500 dark:text-slate-400">
+                <i data-lucide="archive" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                <p class="text-sm">Nenhum backup disponível</p>
+            </div>
+        `;
+        
+        container.innerHTML = `
+            <div class="space-y-6">
+                <!-- Ações de Backup -->
+                ${canBackupGerenciar ? `
+                <div class="flex flex-wrap gap-3">
+                    <button id="create-backup-btn" class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Criar Backup Agora
+                    </button>
+                    <label class="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg cursor-pointer transition-colors">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        Importar Backup
+                        <input type="file" id="backup-upload-input" accept=".json" class="hidden">
+                    </label>
+                </div>
+                ` : ''}
+                
+                <!-- Lista de Backups -->
+                <div>
+                    <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                        <i data-lucide="folder-archive" class="w-4 h-4"></i>
+                        Backups Disponíveis (${backups.length})
+                    </h4>
+                    <div id="backups-list" class="space-y-2 max-h-[300px] overflow-y-auto">
+                        ${backupsList}
+                    </div>
+                </div>
+                
+                <!-- Configurações de Backup Automático -->
+                ${canBackupGerenciar ? `
+                <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        Backup Automático
+                    </h4>
+                    <div class="space-y-4">
+                        <label class="flex items-center gap-3">
+                            <input type="checkbox" id="backup-auto-enabled" ${settings.enabled ? 'checked' : ''} class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Ativar backup automático</span>
+                        </label>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Intervalo</label>
+                                <select id="backup-interval" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                    <option value="daily" ${settings.interval === 'daily' ? 'selected' : ''}>Diário</option>
+                                    <option value="weekly" ${settings.interval === 'weekly' ? 'selected' : ''}>Semanal</option>
+                                    <option value="monthly" ${settings.interval === 'monthly' ? 'selected' : ''}>Mensal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Máximo de backups a manter</label>
+                                <input type="number" id="backup-max-count" value="${settings.max_backups || 10}" min="1" max="50" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                            </div>
+                        </div>
+                        
+                        <button id="save-backup-settings-btn" class="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            Salvar Configurações
+                        </button>
+                        
+                        ${settings.last_backup ? `
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
+                                Último backup automático: ${new Date(settings.last_backup).toLocaleDateString('pt-BR')} às ${new Date(settings.last_backup).toLocaleTimeString('pt-BR')}
+                            </p>
+                        ` : ''}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        
+        if (window.lucide) lucide.createIcons();
+        this.setupBackupEventListeners();
+    }
+    
+    setupBackupEventListeners() {
+        document.getElementById('create-backup-btn')?.addEventListener('click', () => this.createBackup());
+        
+        document.getElementById('backup-upload-input')?.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.uploadBackup(e.target.files[0]);
+            }
+        });
+        
+        document.getElementById('save-backup-settings-btn')?.addEventListener('click', () => this.saveBackupSettings());
+        
+        document.querySelectorAll('.backup-restore-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.restoreBackup(btn.dataset.filename));
+        });
+        
+        document.querySelectorAll('.backup-download-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.downloadBackup(btn.dataset.filename));
+        });
+        
+        document.querySelectorAll('.backup-delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.deleteBackup(btn.dataset.filename));
+        });
+    }
+    
+    async createBackup() {
+        const btn = document.getElementById('create-backup-btn');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Criando...';
+        btn.disabled = true;
+        if (window.lucide) lucide.createIcons();
+        
+        try {
+            const response = await fetch('/api/backup', { method: 'POST' });
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                logAction('create', 'backup', result.filename, { 
+                    tipo: 'manual',
+                    clientes: result.stats?.clientes || 0,
+                    registros: result.stats?.registros || 0
+                });
+                Modals.alert(
+                    `Backup criado com sucesso!\n\nArquivo: ${result.filename}\nClientes: ${result.stats?.clientes || 0}\nRegistros: ${result.stats?.registros || 0}\nCategorias: ${result.stats?.categorias || 0}`,
+                    'Backup Criado',
+                    'check-circle'
+                );
+                this.loadBackupManagement();
+            } else {
+                throw new Error(result.error || 'Erro desconhecido');
+            }
+        } catch (error) {
+            console.error('Erro ao criar backup:', error);
+            Modals.alert('Erro ao criar backup: ' + error.message, 'Erro', 'alert-circle');
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+    
+    async restoreBackup(filename) {
+        const confirmed = await Modals.confirm(
+            `Deseja restaurar o backup "${filename}"?\n\nAVISO: Os dados atuais serão substituídos pelos dados do backup.`,
+            'Restaurar Backup'
+        );
+        
+        if (!confirmed) return;
+        
+        try {
+            const response = await fetch('/api/backup/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                logAction('restore', 'backup', filename, { 
+                    tipo: 'restauracao',
+                    clientes: result.restored?.clientes || 0,
+                    registros: result.restored?.registros || 0
+                });
+                Modals.alert(
+                    `Backup restaurado com sucesso!\n\nClientes: ${result.restored?.clientes || 0}\nRegistros: ${result.restored?.registros || 0}\nCategorias: ${result.restored?.categorias || 0}\nUsuários: ${result.restored?.usuarios || 0}`,
+                    'Backup Restaurado',
+                    'check-circle'
+                );
+                
+                if (this.app && this.app.loadData) {
+                    await this.app.loadData();
+                }
+            } else {
+                const errors = result.errors?.slice(0, 3).join('\n') || 'Erro desconhecido';
+                Modals.alert(`Erro ao restaurar backup:\n\n${errors}`, 'Erro', 'alert-circle');
+            }
+        } catch (error) {
+            console.error('Erro ao restaurar backup:', error);
+            Modals.alert('Erro ao restaurar backup: ' + error.message, 'Erro', 'alert-circle');
+        }
+    }
+    
+    async downloadBackup(filename) {
+        try {
+            const response = await fetch(`/api/backup/download/${filename}`);
+            
+            if (!response.ok) {
+                throw new Error('Falha ao baixar backup');
+            }
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        } catch (error) {
+            console.error('Erro ao baixar backup:', error);
+            Modals.alert('Erro ao baixar backup: ' + error.message, 'Erro', 'alert-circle');
+        }
+    }
+    
+    async deleteBackup(filename) {
+        const confirmed = await Modals.confirm(
+            `Deseja excluir o backup "${filename}"?\n\nEsta ação não pode ser desfeita.`,
+            'Excluir Backup'
+        );
+        
+        if (!confirmed) return;
+        
+        try {
+            const response = await fetch(`/api/backup/${filename}`, { method: 'DELETE' });
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                logAction('delete', 'backup', filename, {});
+                Modals.alert('Backup excluído com sucesso!', 'Sucesso', 'check-circle');
+                this.loadBackupManagement();
+            } else {
+                throw new Error(result.error || 'Erro desconhecido');
+            }
+        } catch (error) {
+            console.error('Erro ao excluir backup:', error);
+            Modals.alert('Erro ao excluir backup: ' + error.message, 'Erro', 'alert-circle');
+        }
+    }
+    
+    async uploadBackup(file) {
+        try {
+            const text = await file.text();
+            const backupData = JSON.parse(text);
+            
+            if (!backupData.data) {
+                throw new Error('Estrutura de backup inválida');
+            }
+            
+            const response = await fetch('/api/backup/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    backup_data: backupData,
+                    filename: file.name
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                logAction('import', 'backup', result.filename, { 
+                    tipo: 'upload'
+                });
+                Modals.alert(`Backup importado com sucesso!\n\nArquivo salvo: ${result.filename}`, 'Sucesso', 'check-circle');
+                this.loadBackupManagement();
+            } else {
+                throw new Error(result.error || 'Erro desconhecido');
+            }
+        } catch (error) {
+            console.error('Erro ao importar backup:', error);
+            Modals.alert('Erro ao importar backup: ' + error.message, 'Erro', 'alert-circle');
+        }
+        
+        document.getElementById('backup-upload-input').value = '';
+    }
+    
+    async saveBackupSettings() {
+        const enabled = document.getElementById('backup-auto-enabled')?.checked || false;
+        const interval = document.getElementById('backup-interval')?.value || 'daily';
+        const maxBackups = parseInt(document.getElementById('backup-max-count')?.value) || 10;
+        
+        try {
+            const response = await fetch('/api/backup/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    enabled,
+                    interval,
+                    max_backups: maxBackups
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                logAction('edit', 'configuracao', null, { 
+                    tipo: 'backup_automatico',
+                    habilitado: enabled,
+                    intervalo: interval,
+                    maxBackups: maxBackups
+                });
+                Modals.alert('Configurações de backup salvas com sucesso!', 'Sucesso', 'check-circle');
+            } else {
+                throw new Error(result.error || 'Erro desconhecido');
+            }
+        } catch (error) {
+            console.error('Erro ao salvar configurações:', error);
+            Modals.alert('Erro ao salvar configurações: ' + error.message, 'Erro', 'alert-circle');
         }
     }
 }
