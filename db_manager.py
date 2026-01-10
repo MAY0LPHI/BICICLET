@@ -145,6 +145,26 @@ class DatabaseManager:
                     )
                 """)
                 
+                # Tabela de configurações do sistema
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS configuracoes (
+                        chave TEXT PRIMARY KEY,
+                        valor TEXT NOT NULL,
+                        atualizado_em TEXT NOT NULL
+                    )
+                """)
+                
+                # Tabela de categorias
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS categorias (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        nome TEXT UNIQUE NOT NULL,
+                        emoji TEXT NOT NULL,
+                        criada_em TEXT NOT NULL,
+                        atualizada_em TEXT NOT NULL
+                    )
+                """)
+                
                 # Índices para melhor performance
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_clientes_cpf ON clientes(cpf)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_bicicletas_cliente ON bicicletas(cliente_id)")
@@ -167,6 +187,16 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 now = datetime.now().isoformat()
                 
+                # Extrai bicicletas do cliente para salvar separadamente
+                bicicletas = cliente.pop('bicicletas', []) if isinstance(cliente.get('bicicletas'), list) else []
+                
+                # Garante que comentarios seja string
+                comentarios = cliente.get('comentarios', '')
+                if isinstance(comentarios, list):
+                    comentarios = json.dumps(comentarios)
+                elif not isinstance(comentarios, str):
+                    comentarios = str(comentarios) if comentarios else ''
+                
                 # Verifica se cliente já existe
                 cursor.execute("SELECT id FROM clientes WHERE id = ?", (cliente['id'],))
                 exists = cursor.fetchone()
@@ -180,7 +210,7 @@ class DatabaseManager:
                         WHERE id = ?
                     """, (
                         cliente['cpf'], cliente['nome'], cliente.get('telefone', ''),
-                        cliente.get('categoria', ''), cliente.get('comentarios', ''),
+                        cliente.get('categoria', ''), comentarios,
                         1 if cliente.get('ativo', True) else 0, now, cliente['id']
                     ))
                 else:
@@ -193,12 +223,28 @@ class DatabaseManager:
                     """, (
                         cliente['id'], cliente['cpf'], cliente['nome'],
                         cliente.get('telefone', ''), cliente.get('categoria', ''),
-                        cliente.get('comentarios', ''), 1 if cliente.get('ativo', True) else 0,
+                        comentarios, 1 if cliente.get('ativo', True) else 0,
                         cliente.get('dataCadastro', now), now, now
                     ))
                 
                 conn.commit()
                 logger.debug(f"Cliente salvo: {cliente['id']}")
+                
+                # Salva as bicicletas separadamente
+                for bike in bicicletas:
+                    if isinstance(bike, dict) and bike.get('id'):
+                        bike_data = {
+                            'id': bike['id'],
+                            'clienteId': cliente['id'],
+                            'descricao': f"{bike.get('marca', '')} {bike.get('modelo', '')}".strip(),
+                            'marca': bike.get('marca', ''),
+                            'modelo': bike.get('modelo', ''),
+                            'cor': bike.get('cor', ''),
+                            'aro': bike.get('aro', ''),
+                            'ativa': bike.get('ativa', True)
+                        }
+                        self.save_bicicleta(bike_data)
+                
                 return True
         except Exception as e:
             logger.error(f"Erro ao salvar cliente: {e}", exc_info=True)
@@ -323,11 +369,37 @@ class DatabaseManager:
             logger.error(f"Erro ao buscar bicicletas: {e}", exc_info=True)
             return []
     
+    def get_all_bicicletas(self) -> List[Dict[str, Any]]:
+        """Retorna todas as bicicletas do banco"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM bicicletas ORDER BY cliente_id, descricao")
+                rows = cursor.fetchall()
+                
+                bicicletas = []
+                for row in rows:
+                    bicicleta = dict(row)
+                    bicicleta['clienteId'] = bicicleta.pop('cliente_id')
+                    bicicleta['ativa'] = bool(bicicleta['ativa'])
+                    bicicletas.append(bicicleta)
+                
+                return bicicletas
+        except Exception as e:
+            logger.error(f"Erro ao buscar todas bicicletas: {e}", exc_info=True)
+            return []
+    
     # ==================== REGISTROS ====================
     
     def save_registro(self, registro: Dict[str, Any]) -> bool:
         """Salva ou atualiza um registro"""
         try:
+            # Normaliza campos: frontend usa clientId/bikeId, banco usa clienteId/bicicletaId
+            if 'clientId' in registro and 'clienteId' not in registro:
+                registro['clienteId'] = registro['clientId']
+            if 'bikeId' in registro and 'bicicletaId' not in registro:
+                registro['bicicletaId'] = registro['bikeId']
+            
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 now = datetime.now().isoformat()
@@ -405,7 +477,7 @@ class DatabaseManager:
     
     # ==================== AUDITORIA ====================
     
-    def log_audit(self, usuario: str, acao: str, detalhes: str = None) -> bool:
+    def log_audit(self, usuario: str, acao: str, detalhes: Optional[str] = None) -> bool:
         """Registra uma ação de auditoria"""
         try:
             with self._get_connection() as conn:
@@ -435,6 +507,118 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Erro ao buscar logs de auditoria: {e}", exc_info=True)
             return []
+    
+    # ==================== CATEGORIAS ====================
+    
+    def save_categorias(self, categorias: Dict[str, str]) -> bool:
+        """Salva todas as categorias (substitui as existentes)"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                now = datetime.now().isoformat()
+                
+                # Remove todas as categorias existentes
+                cursor.execute("DELETE FROM categorias")
+                
+                # Insere as novas categorias
+                for nome, emoji in categorias.items():
+                    cursor.execute("""
+                        INSERT INTO categorias (nome, emoji, criada_em, atualizada_em)
+                        VALUES (?, ?, ?, ?)
+                    """, (nome, emoji, now, now))
+                
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao salvar categorias: {e}", exc_info=True)
+            return False
+    
+    def get_all_categorias(self) -> Dict[str, str]:
+        """Retorna todas as categorias como dicionário {nome: emoji}"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT nome, emoji FROM categorias")
+                rows = cursor.fetchall()
+                return {row['nome']: row['emoji'] for row in rows}
+        except Exception as e:
+            logger.error(f"Erro ao buscar categorias: {e}", exc_info=True)
+            return {}
+    
+    def delete_registro(self, registro_id: str) -> bool:
+        """Deleta um registro pelo ID"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM registros WHERE id = ?", (registro_id,))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            logger.error(f"Erro ao deletar registro: {e}", exc_info=True)
+            return False
+    
+    # ==================== LIMPAR TODOS OS DADOS ====================
+    
+    def clear_all_clientes(self) -> Dict[str, Any]:
+        """Limpa todos os clientes e suas bicicletas"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) as count FROM clientes")
+                count = cursor.fetchone()['count']
+                cursor.execute("DELETE FROM bicicletas")
+                cursor.execute("DELETE FROM clientes")
+                conn.commit()
+                logger.info(f"Todos os {count} clientes foram removidos")
+                return {'success': True, 'deleted': count}
+        except Exception as e:
+            logger.error(f"Erro ao limpar clientes: {e}", exc_info=True)
+            return {'success': False, 'error': str(e)}
+    
+    def clear_all_registros(self) -> Dict[str, Any]:
+        """Limpa todos os registros de entrada/saída"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) as count FROM registros")
+                count = cursor.fetchone()['count']
+                cursor.execute("DELETE FROM registros")
+                conn.commit()
+                logger.info(f"Todos os {count} registros foram removidos")
+                return {'success': True, 'deleted': count}
+        except Exception as e:
+            logger.error(f"Erro ao limpar registros: {e}", exc_info=True)
+            return {'success': False, 'error': str(e)}
+    
+    def clear_all_bicicletas(self) -> Dict[str, Any]:
+        """Limpa todas as bicicletas"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) as count FROM bicicletas")
+                count = cursor.fetchone()['count']
+                cursor.execute("DELETE FROM bicicletas")
+                conn.commit()
+                logger.info(f"Todas as {count} bicicletas foram removidas")
+                return {'success': True, 'deleted': count}
+        except Exception as e:
+            logger.error(f"Erro ao limpar bicicletas: {e}", exc_info=True)
+            return {'success': False, 'error': str(e)}
+    
+    def clear_all_categorias(self) -> Dict[str, Any]:
+        """Limpa todas as categorias"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) as count FROM categorias")
+                count = cursor.fetchone()['count']
+                cursor.execute("DELETE FROM categorias")
+                conn.commit()
+                logger.info(f"Todas as {count} categorias foram removidas")
+                return {'success': True, 'deleted': count}
+        except Exception as e:
+            logger.error(f"Erro ao limpar categorias: {e}", exc_info=True)
+            return {'success': False, 'error': str(e)}
     
     # ==================== BACKUP ====================
     
@@ -570,6 +754,602 @@ class DatabaseManager:
                 return True
         except Exception as e:
             logger.error(f"Erro ao marcar sincronização como completa: {e}", exc_info=True)
+            return False
+    
+    # ==================== CONFIGURAÇÕES ====================
+    
+    def get_config(self, chave: str, default: Optional[str] = None) -> Optional[str]:
+        """Obtém uma configuração do sistema"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT valor FROM configuracoes WHERE chave = ?", (chave,))
+                row = cursor.fetchone()
+                return row['valor'] if row else default
+        except Exception as e:
+            logger.error(f"Erro ao obter configuração: {e}", exc_info=True)
+            return default
+    
+    def set_config(self, chave: str, valor: str) -> bool:
+        """Define uma configuração do sistema"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                now = datetime.now().isoformat()
+                cursor.execute("""
+                    INSERT OR REPLACE INTO configuracoes (chave, valor, atualizado_em)
+                    VALUES (?, ?, ?)
+                """, (chave, valor, now))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao definir configuração: {e}", exc_info=True)
+            return False
+    
+    def get_storage_mode(self) -> str:
+        """Retorna o modo de armazenamento atual"""
+        return self.get_config('storage_mode', 'sqlite') or 'sqlite'
+    
+    def set_storage_mode(self, mode: str) -> bool:
+        """Define o modo de armazenamento (sqlite ou json)"""
+        if mode not in ('sqlite', 'json'):
+            return False
+        return self.set_config('storage_mode', mode)
+    
+    def get_storage_stats(self) -> Dict[str, Any]:
+        """Retorna estatísticas de armazenamento para ambos os modos"""
+        stats = {
+            'current_mode': self.get_storage_mode(),
+            'sqlite': {'clientes': 0, 'bicicletas': 0, 'registros': 0, 'categorias': 0},
+            'json': {'clientes': 0, 'bicicletas': 0, 'registros': 0},
+            'last_migration': self.get_config('last_migration_date'),
+            'migration_status': self.get_config('migration_status', 'idle')
+        }
+        
+        # Estatísticas SQLite
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) as count FROM clientes")
+                stats['sqlite']['clientes'] = cursor.fetchone()['count']
+                cursor.execute("SELECT COUNT(*) as count FROM bicicletas")
+                stats['sqlite']['bicicletas'] = cursor.fetchone()['count']
+                cursor.execute("SELECT COUNT(*) as count FROM registros")
+                stats['sqlite']['registros'] = cursor.fetchone()['count']
+                cursor.execute("SELECT COUNT(*) as count FROM categorias")
+                stats['sqlite']['categorias'] = cursor.fetchone()['count']
+        except Exception as e:
+            logger.error(f"Erro ao obter estatísticas SQLite: {e}")
+        
+        # Estatísticas JSON
+        try:
+            json_clients_dir = "dados/navegador/clientes"
+            bicicletas_count = 0
+            if os.path.exists(json_clients_dir):
+                client_files = [f for f in os.listdir(json_clients_dir) if f.endswith('.json')]
+                stats['json']['clientes'] = len(client_files)
+                
+                for filename in client_files:
+                    try:
+                        filepath = os.path.join(json_clients_dir, filename)
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            client_data = json.load(f)
+                            if 'bicicletas' in client_data and isinstance(client_data['bicicletas'], list):
+                                bicicletas_count += len(client_data['bicicletas'])
+                    except:
+                        pass
+            
+            stats['json']['bicicletas'] = bicicletas_count
+            
+            json_registros_dir = "dados/navegador/registros"
+            if os.path.exists(json_registros_dir):
+                count = 0
+                for year in os.listdir(json_registros_dir):
+                    year_path = os.path.join(json_registros_dir, year)
+                    if os.path.isdir(year_path):
+                        for month in os.listdir(year_path):
+                            month_path = os.path.join(year_path, month)
+                            if os.path.isdir(month_path):
+                                for day in os.listdir(month_path):
+                                    day_path = os.path.join(month_path, day)
+                                    if os.path.isdir(day_path):
+                                        count += len([f for f in os.listdir(day_path) if f.endswith('.json')])
+                stats['json']['registros'] = count
+        except Exception as e:
+            logger.error(f"Erro ao obter estatísticas JSON: {e}")
+        
+        return stats
+    
+    # ==================== MIGRAÇÃO DE DADOS ====================
+    
+    def migrate_json_to_sqlite(self) -> Dict[str, Any]:
+        """Migra dados de arquivos JSON para SQLite"""
+        result = {'success': False, 'migrated': {'clientes': 0, 'bicicletas': 0, 'registros': 0}, 'errors': []}
+        
+        try:
+            self.set_config('migration_status', 'running')
+            
+            # Cria backup antes da migração
+            self.create_backup('json')
+            
+            # Migra clientes (inclui bicicletas embutidas)
+            json_clients_dir = "dados/navegador/clientes"
+            if os.path.exists(json_clients_dir):
+                for filename in os.listdir(json_clients_dir):
+                    if filename.endswith('.json'):
+                        try:
+                            filepath = os.path.join(json_clients_dir, filename)
+                            with open(filepath, 'r', encoding='utf-8') as f:
+                                client = json.load(f)
+                            if self.save_cliente(client):
+                                result['migrated']['clientes'] += 1
+                                # Conta bicicletas embutidas no cliente
+                                result['migrated']['bicicletas'] += len(client.get('bicicletas', []))
+                        except Exception as e:
+                            result['errors'].append(f"Cliente {filename}: {str(e)}")
+            
+            # Migra registros
+            json_registros_dir = "dados/navegador/registros"
+            if os.path.exists(json_registros_dir):
+                for year in os.listdir(json_registros_dir):
+                    year_path = os.path.join(json_registros_dir, year)
+                    if not os.path.isdir(year_path):
+                        continue
+                    for month in os.listdir(year_path):
+                        month_path = os.path.join(year_path, month)
+                        if not os.path.isdir(month_path):
+                            continue
+                        for day in os.listdir(month_path):
+                            day_path = os.path.join(month_path, day)
+                            if not os.path.isdir(day_path):
+                                continue
+                            for filename in os.listdir(day_path):
+                                if filename.endswith('.json'):
+                                    try:
+                                        filepath = os.path.join(day_path, filename)
+                                        with open(filepath, 'r', encoding='utf-8') as f:
+                                            registro = json.load(f)
+                                        if self.save_registro(registro):
+                                            result['migrated']['registros'] += 1
+                                    except Exception as e:
+                                        result['errors'].append(f"Registro {filename}: {str(e)}")
+            
+            result['success'] = len(result['errors']) == 0
+            self.set_config('migration_status', 'completed' if result['success'] else 'completed_with_errors')
+            self.set_config('last_migration_date', datetime.now().isoformat())
+            self.set_config('last_migration_direction', 'json_to_sqlite')
+            
+        except Exception as e:
+            logger.error(f"Erro na migração JSON→SQLite: {e}", exc_info=True)
+            result['errors'].append(str(e))
+            self.set_config('migration_status', 'failed')
+        
+        return result
+    
+    def migrate_sqlite_to_json(self) -> Dict[str, Any]:
+        """Migra dados de SQLite para arquivos JSON"""
+        result = {'success': False, 'migrated': {'clientes': 0, 'bicicletas': 0, 'registros': 0}, 'errors': []}
+        
+        try:
+            self.set_config('migration_status', 'running')
+            
+            # Cria backup antes da migração
+            self.create_backup('json')
+            
+            json_clients_dir = "dados/navegador/clientes"
+            json_bicicletas_dir = "dados/navegador/bicicletas"
+            json_registros_dir = "dados/navegador/registros"
+            os.makedirs(json_clients_dir, exist_ok=True)
+            os.makedirs(json_bicicletas_dir, exist_ok=True)
+            os.makedirs(json_registros_dir, exist_ok=True)
+            
+            # Exporta clientes (já incluem bicicletas no objeto)
+            clientes = self.get_all_clientes()
+            for cliente in clientes:
+                try:
+                    filename = f"{cliente['cpf'].replace('.', '').replace('-', '')}.json"
+                    filepath = os.path.join(json_clients_dir, filename)
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        json.dump(cliente, f, ensure_ascii=False, indent=2)
+                    result['migrated']['clientes'] += 1
+                    # Conta bicicletas embutidas no cliente
+                    result['migrated']['bicicletas'] += len(cliente.get('bicicletas', []))
+                except Exception as e:
+                    result['errors'].append(f"Cliente {cliente.get('cpf', 'unknown')}: {str(e)}")
+            
+            # Exporta registros
+            registros = self.get_all_registros()
+            for registro in registros:
+                try:
+                    dt = datetime.fromisoformat(registro['dataHoraEntrada'].replace('Z', '+00:00'))
+                    year = str(dt.year)
+                    month = str(dt.month).zfill(2)
+                    day = str(dt.day).zfill(2)
+                    
+                    day_dir = os.path.join(json_registros_dir, year, month, day)
+                    os.makedirs(day_dir, exist_ok=True)
+                    
+                    filename = f"{registro['id']}.json"
+                    filepath = os.path.join(day_dir, filename)
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        json.dump(registro, f, ensure_ascii=False, indent=2)
+                    result['migrated']['registros'] += 1
+                except Exception as e:
+                    result['errors'].append(f"Registro {registro.get('id', 'unknown')}: {str(e)}")
+            
+            result['success'] = len(result['errors']) == 0
+            self.set_config('migration_status', 'completed' if result['success'] else 'completed_with_errors')
+            self.set_config('last_migration_date', datetime.now().isoformat())
+            self.set_config('last_migration_direction', 'sqlite_to_json')
+            
+        except Exception as e:
+            logger.error(f"Erro na migração SQLite→JSON: {e}", exc_info=True)
+            result['errors'].append(str(e))
+            self.set_config('migration_status', 'failed')
+        
+        return result
+    
+    # ==================== BACKUP COMPLETO ====================
+    
+    def list_backups(self) -> List[Dict[str, Any]]:
+        """Lista todos os arquivos de backup disponíveis"""
+        try:
+            backups = []
+            if os.path.exists(BACKUP_DIR):
+                for filename in os.listdir(BACKUP_DIR):
+                    if filename.endswith('.json') and filename.startswith('backup_'):
+                        filepath = os.path.join(BACKUP_DIR, filename)
+                        stat = os.stat(filepath)
+                        
+                        # Extrai data do nome do arquivo (backup_YYYYMMDD_HHMMSS.json)
+                        try:
+                            date_str = filename.replace('backup_', '').replace('.json', '')
+                            dt = datetime.strptime(date_str, '%Y%m%d_%H%M%S')
+                            created_at = dt.isoformat()
+                        except:
+                            created_at = datetime.fromtimestamp(stat.st_mtime).isoformat()
+                        
+                        backups.append({
+                            'filename': filename,
+                            'filepath': filepath,
+                            'size': stat.st_size,
+                            'size_formatted': self._format_size(stat.st_size),
+                            'created_at': created_at,
+                            'type': 'json'
+                        })
+            
+            # Ordena por data de criação (mais recente primeiro)
+            backups.sort(key=lambda x: x['created_at'], reverse=True)
+            return backups
+        except Exception as e:
+            logger.error(f"Erro ao listar backups: {e}", exc_info=True)
+            return []
+    
+    def _format_size(self, size_bytes: int) -> str:
+        """Formata tamanho de arquivo em formato legível"""
+        if size_bytes < 1024:
+            return f"{size_bytes} B"
+        elif size_bytes < 1024 * 1024:
+            return f"{size_bytes / 1024:.1f} KB"
+        else:
+            return f"{size_bytes / (1024 * 1024):.1f} MB"
+    
+    def create_full_backup(self) -> Optional[Dict[str, Any]]:
+        """Cria um backup completo do sistema e retorna os dados do backup"""
+        try:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            backup_filename = f"backup_{timestamp}.json"
+            backup_filepath = os.path.join(BACKUP_DIR, backup_filename)
+            
+            # Coleta todos os dados do sistema
+            clientes = self.get_all_clientes()
+            registros = self.get_all_registros()
+            categorias = self.get_all_categorias()
+            usuarios = self.get_all_usuarios()
+            
+            # Estrutura do backup
+            backup_data = {
+                'version': '1.0',
+                'created_at': datetime.now().isoformat(),
+                'system': 'bicicletario',
+                'data': {
+                    'clientes': clientes,
+                    'registros': registros,
+                    'categorias': categorias,
+                    'usuarios': usuarios
+                },
+                'stats': {
+                    'clientes': len(clientes),
+                    'registros': len(registros),
+                    'categorias': len(categorias),
+                    'usuarios': len(usuarios)
+                }
+            }
+            
+            # Salva o arquivo de backup
+            os.makedirs(BACKUP_DIR, exist_ok=True)
+            with open(backup_filepath, 'w', encoding='utf-8') as f:
+                json.dump(backup_data, f, ensure_ascii=False, indent=2)
+            
+            logger.info(f"Backup completo criado: {backup_filename}")
+            
+            # Limpar backups antigos conforme configuração
+            self._cleanup_old_backups()
+            
+            return {
+                'success': True,
+                'filename': backup_filename,
+                'filepath': backup_filepath,
+                'size': os.path.getsize(backup_filepath),
+                'created_at': backup_data['created_at'],
+                'stats': backup_data['stats']
+            }
+        except Exception as e:
+            logger.error(f"Erro ao criar backup completo: {e}", exc_info=True)
+            return None
+    
+    def get_backup_content(self, filename: str) -> Optional[Dict[str, Any]]:
+        """Retorna o conteúdo de um arquivo de backup"""
+        try:
+            filepath = os.path.join(BACKUP_DIR, filename)
+            if not os.path.exists(filepath):
+                return None
+            
+            with open(filepath, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Erro ao ler backup {filename}: {e}", exc_info=True)
+            return None
+    
+    def restore_from_backup(self, backup_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Restaura dados de um backup"""
+        result = {'success': False, 'restored': {'clientes': 0, 'registros': 0, 'categorias': 0, 'usuarios': 0}, 'errors': []}
+        
+        try:
+            # Validar estrutura do backup
+            if 'data' not in backup_data:
+                result['errors'].append('Estrutura de backup inválida: campo "data" não encontrado')
+                return result
+            
+            data = backup_data['data']
+            
+            # Restaurar categorias primeiro (são referenciadas por clientes)
+            if 'categorias' in data and isinstance(data['categorias'], dict):
+                try:
+                    self.save_categorias(data['categorias'])
+                    result['restored']['categorias'] = len(data['categorias'])
+                except Exception as e:
+                    result['errors'].append(f"Erro ao restaurar categorias: {str(e)}")
+            
+            # Restaurar clientes (inclui bicicletas)
+            if 'clientes' in data:
+                for cliente in data['clientes']:
+                    try:
+                        if self.save_cliente(cliente):
+                            result['restored']['clientes'] += 1
+                    except Exception as e:
+                        result['errors'].append(f"Erro ao restaurar cliente {cliente.get('cpf', 'unknown')}: {str(e)}")
+            
+            # Restaurar registros
+            if 'registros' in data:
+                for registro in data['registros']:
+                    try:
+                        if self.save_registro(registro):
+                            result['restored']['registros'] += 1
+                    except Exception as e:
+                        result['errors'].append(f"Erro ao restaurar registro {registro.get('id', 'unknown')}: {str(e)}")
+            
+            # Restaurar usuários
+            if 'usuarios' in data:
+                for usuario in data['usuarios']:
+                    try:
+                        if self.save_usuario(usuario):
+                            result['restored']['usuarios'] += 1
+                    except Exception as e:
+                        result['errors'].append(f"Erro ao restaurar usuário {usuario.get('username', 'unknown')}: {str(e)}")
+            
+            result['success'] = len(result['errors']) == 0
+            logger.info(f"Backup restaurado: {result['restored']}")
+            
+        except Exception as e:
+            logger.error(f"Erro ao restaurar backup: {e}", exc_info=True)
+            result['errors'].append(str(e))
+        
+        return result
+    
+    def delete_backup(self, filename: str) -> bool:
+        """Remove um arquivo de backup"""
+        try:
+            filepath = os.path.join(BACKUP_DIR, filename)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                logger.info(f"Backup removido: {filename}")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Erro ao remover backup {filename}: {e}", exc_info=True)
+            return False
+    
+    def save_backup_file(self, backup_data: Dict[str, Any], filename: Optional[str] = None) -> Optional[str]:
+        """Salva um backup enviado por upload"""
+        try:
+            # Validar estrutura básica
+            if 'data' not in backup_data:
+                raise ValueError("Estrutura de backup inválida")
+            
+            # Gerar nome do arquivo se não fornecido
+            if not filename:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"backup_{timestamp}.json"
+            
+            # Garantir que tem extensão .json
+            if not filename.endswith('.json'):
+                filename += '.json'
+            
+            filepath = os.path.join(BACKUP_DIR, filename)
+            os.makedirs(BACKUP_DIR, exist_ok=True)
+            
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(backup_data, f, ensure_ascii=False, indent=2)
+            
+            logger.info(f"Backup salvo: {filename}")
+            return filename
+        except Exception as e:
+            logger.error(f"Erro ao salvar backup: {e}", exc_info=True)
+            return None
+    
+    def get_backup_settings(self) -> Dict[str, Any]:
+        """Retorna as configurações de backup automático"""
+        settings_json = self.get_config('backup_settings', '{}')
+        try:
+            settings = json.loads(settings_json)
+        except:
+            settings = {}
+        
+        # Valores padrão
+        default_settings = {
+            'enabled': False,
+            'interval': 'daily',  # 'daily', 'weekly', 'monthly'
+            'max_backups': 10,
+            'last_backup': None
+        }
+        
+        return {**default_settings, **settings}
+    
+    def save_backup_settings(self, settings: Dict[str, Any]) -> bool:
+        """Salva as configurações de backup automático"""
+        try:
+            return self.set_config('backup_settings', json.dumps(settings))
+        except Exception as e:
+            logger.error(f"Erro ao salvar configurações de backup: {e}", exc_info=True)
+            return False
+    
+    def _cleanup_old_backups(self):
+        """Remove backups antigos conforme configuração de max_backups"""
+        try:
+            settings = self.get_backup_settings()
+            max_backups = settings.get('max_backups', 10)
+            
+            backups = self.list_backups()
+            
+            # Se há mais backups que o permitido, remove os mais antigos
+            if len(backups) > max_backups:
+                backups_to_delete = backups[max_backups:]
+                for backup in backups_to_delete:
+                    self.delete_backup(backup['filename'])
+                    logger.info(f"Backup antigo removido: {backup['filename']}")
+        except Exception as e:
+            logger.error(f"Erro ao limpar backups antigos: {e}", exc_info=True)
+    
+    def check_automatic_backup(self) -> Optional[Dict[str, Any]]:
+        """Verifica se é hora de fazer backup automático e executa se necessário"""
+        try:
+            settings = self.get_backup_settings()
+            
+            if not settings.get('enabled', False):
+                return None
+            
+            last_backup = settings.get('last_backup')
+            interval = settings.get('interval', 'daily')
+            
+            should_backup = False
+            
+            if not last_backup:
+                should_backup = True
+            else:
+                last_dt = datetime.fromisoformat(last_backup)
+                now = datetime.now()
+                
+                if interval == 'daily':
+                    should_backup = (now - last_dt).days >= 1
+                elif interval == 'weekly':
+                    should_backup = (now - last_dt).days >= 7
+                elif interval == 'monthly':
+                    should_backup = (now - last_dt).days >= 30
+            
+            if should_backup:
+                result = self.create_full_backup()
+                if result and result.get('success'):
+                    settings['last_backup'] = datetime.now().isoformat()
+                    self.save_backup_settings(settings)
+                    logger.info("Backup automático realizado com sucesso")
+                    return result
+            
+            return None
+        except Exception as e:
+            logger.error(f"Erro no backup automático: {e}", exc_info=True)
+            return None
+    
+    # ==================== USUÁRIOS ====================
+    
+    def get_all_usuarios(self) -> List[Dict[str, Any]]:
+        """Retorna todos os usuários"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM usuarios ORDER BY username")
+                rows = cursor.fetchall()
+                
+                usuarios = []
+                for row in rows:
+                    usuario = dict(row)
+                    usuario['ativo'] = bool(usuario.get('ativo', 1))
+                    if usuario.get('permissoes'):
+                        try:
+                            usuario['permissoes'] = json.loads(usuario['permissoes'])
+                        except:
+                            pass
+                    usuarios.append(usuario)
+                
+                return usuarios
+        except Exception as e:
+            logger.error(f"Erro ao buscar usuários: {e}", exc_info=True)
+            return []
+    
+    def save_usuario(self, usuario: Dict[str, Any]) -> bool:
+        """Salva ou atualiza um usuário"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                now = datetime.now().isoformat()
+                
+                permissoes = usuario.get('permissoes', {})
+                if isinstance(permissoes, dict):
+                    permissoes = json.dumps(permissoes)
+                
+                cursor.execute("SELECT id FROM usuarios WHERE id = ?", (usuario['id'],))
+                exists = cursor.fetchone()
+                
+                if exists:
+                    cursor.execute("""
+                        UPDATE usuarios SET
+                            username = ?, password_hash = ?, nome = ?, tipo = ?,
+                            ativo = ?, permissoes = ?, atualizado_em = ?
+                        WHERE id = ?
+                    """, (
+                        usuario['username'], usuario.get('password_hash', ''),
+                        usuario.get('nome', ''), usuario.get('tipo', 'operador'),
+                        1 if usuario.get('ativo', True) else 0, permissoes,
+                        now, usuario['id']
+                    ))
+                else:
+                    cursor.execute("""
+                        INSERT INTO usuarios (
+                            id, username, password_hash, nome, tipo,
+                            ativo, permissoes, criado_em, atualizado_em
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        usuario['id'], usuario['username'],
+                        usuario.get('password_hash', ''), usuario.get('nome', ''),
+                        usuario.get('tipo', 'operador'),
+                        1 if usuario.get('ativo', True) else 0,
+                        permissoes, now, now
+                    ))
+                
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao salvar usuário: {e}", exc_info=True)
             return False
 
 
