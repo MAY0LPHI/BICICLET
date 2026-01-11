@@ -4149,10 +4149,19 @@ export class ConfiguracaoManager {
             const intervalSelect = document.getElementById('desktop-backup-interval');
             const maxCountInput = document.getElementById('desktop-backup-max-count');
             
+            // Parse and validate max_backups value
+            let maxBackups = 10; // default value
+            if (maxCountInput && maxCountInput.value) {
+                const parsed = parseInt(maxCountInput.value, 10);
+                if (!isNaN(parsed) && parsed > 0 && parsed <= 50) {
+                    maxBackups = parsed;
+                }
+            }
+            
             const settings = {
                 enabled: enabledCheckbox ? enabledCheckbox.checked : false,
                 interval: intervalSelect ? intervalSelect.value : 'daily',
-                max_backups: maxCountInput ? parseInt(maxCountInput.value) : 10
+                max_backups: maxBackups
             };
             
             const result = await window.electronAPI.saveBackupSettings(settings);

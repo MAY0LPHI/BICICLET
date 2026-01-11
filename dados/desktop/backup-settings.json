@@ -1,0 +1,5 @@
+{
+  "enabled": true,
+  "interval": "weekly",
+  "max_backups": 15
+}
