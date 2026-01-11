@@ -3915,7 +3915,7 @@ export class ConfiguracaoManager {
             }
             
             if (maxCountInput) {
-                maxCountInput.value = settings.max_backups || 10;
+                maxCountInput.value = settings.max_backups || ConfiguracaoManager.BACKUP_MAX_COUNT_DEFAULT;
             }
         } catch (error) {
             console.error('Erro ao carregar configurações de backup:', error);

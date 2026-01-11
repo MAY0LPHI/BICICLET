@@ -231,7 +231,14 @@ class StorageBackend {
       
       // Read backup file
       const data = fs.readFileSync(backupPath, 'utf8');
-      const backup = JSON.parse(data);
+      
+      // Parse JSON with explicit error handling
+      let backup;
+      try {
+        backup = JSON.parse(data);
+      } catch (parseError) {
+        throw new Error('Arquivo de backup corrompido ou inválido - erro ao parsear JSON');
+      }
       
       // Validate backup structure
       const validation = this.validateBackupStructure(backup);
@@ -308,8 +315,17 @@ class StorageBackend {
 
   importBackup(backupData) {
     try {
-      // Parse backup data if it's a string
-      const backup = typeof backupData === 'string' ? JSON.parse(backupData) : backupData;
+      // Parse backup data if it's a string with explicit error handling
+      let backup;
+      if (typeof backupData === 'string') {
+        try {
+          backup = JSON.parse(backupData);
+        } catch (parseError) {
+          throw new Error('Dados de backup corrompidos ou inválidos - erro ao parsear JSON');
+        }
+      } else {
+        backup = backupData;
+      }
       
       // Validate backup structure
       const validation = this.validateBackupStructure(backup);
@@ -341,7 +357,14 @@ class StorageBackend {
       
       if (fs.existsSync(settingsFile)) {
         const data = fs.readFileSync(settingsFile, 'utf8');
-        return JSON.parse(data);
+        
+        // Parse JSON with explicit error handling
+        try {
+          return JSON.parse(data);
+        } catch (parseError) {
+          console.warn('\x1b[33m%s\x1b[0m', '⚠️ [AVISO] Arquivo de configurações corrompido, usando padrões');
+          // Fall through to return defaults
+        }
       }
       
       // Return default settings
