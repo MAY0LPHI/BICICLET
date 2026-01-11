@@ -181,6 +181,34 @@ function setupIPCHandlers() {
   ipcMain.handle('list-backups', () => {
     return storage.listBackups();
   });
+
+  ipcMain.handle('create-backup', () => {
+    return storage.createBackup();
+  });
+
+  ipcMain.handle('restore-backup', (event, filename) => {
+    return storage.restoreBackup(filename);
+  });
+
+  ipcMain.handle('download-backup', (event, filename) => {
+    return storage.downloadBackup(filename);
+  });
+
+  ipcMain.handle('delete-backup', (event, filename) => {
+    return storage.deleteBackup(filename);
+  });
+
+  ipcMain.handle('import-backup', (event, backupData) => {
+    return storage.importBackup(backupData);
+  });
+
+  ipcMain.handle('load-backup-settings', () => {
+    return storage.loadBackupSettings();
+  });
+
+  ipcMain.handle('save-backup-settings', (event, settings) => {
+    return storage.saveBackupSettings(settings);
+  });
 }
 
 app.on('window-all-closed', () => {

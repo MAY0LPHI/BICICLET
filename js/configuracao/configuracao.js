@@ -7,6 +7,11 @@ import { getJobMonitor } from '../shared/job-monitor.js';
 import { logAction } from '../shared/audit-logger.js';
 
 export class ConfiguracaoManager {
+    // Constants for backup settings validation
+    static BACKUP_MAX_COUNT_MIN = 1;
+    static BACKUP_MAX_COUNT_MAX = 50;
+    static BACKUP_MAX_COUNT_DEFAULT = 10;
+
     emojiToIconMap = {
         '👤': 'user',
         '🏢': 'building',
@@ -3773,8 +3778,23 @@ export class ConfiguracaoManager {
                         <i data-lucide="file-archive" class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0"></i>
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">${backup.filename || backup.name}</p>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">${formattedDate}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">${formattedDate}${backup.size_formatted ? ' • ' + backup.size_formatted : ''}</p>
                         </div>
+                    </div>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        ${canBackupGerenciar ? `
+                        <button class="desktop-backup-restore-btn p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" data-filename="${backup.filename || backup.name}" title="Restaurar">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        </button>
+                        ` : ''}
+                        <button class="desktop-backup-download-btn p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" data-filename="${backup.filename || backup.name}" title="Download">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                        </button>
+                        ${canBackupGerenciar ? `
+                        <button class="desktop-backup-delete-btn p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" data-filename="${backup.filename || backup.name}" title="Excluir">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -3782,44 +3802,81 @@ export class ConfiguracaoManager {
             <div class="text-center py-6 text-slate-500 dark:text-slate-400">
                 <i data-lucide="archive" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
                 <p class="text-sm">Nenhum backup disponível</p>
-                <p class="text-xs mt-1">Backups são criados automaticamente ao exportar dados do sistema</p>
             </div>
         `;
         
         container.innerHTML = `
             <div class="space-y-6">
-                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-4 rounded-lg">
-                    <div class="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                        <i data-lucide="info" class="w-5 h-5"></i>
-                        <span class="font-medium">Backup no Modo Desktop</span>
-                    </div>
-                    <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                        Use as funções de exportação do sistema (Excel/CSV) na aba "Dados" para criar backups.
-                        Os backups automáticos são salvos na pasta de dados do desktop.
-                    </p>
-                </div>
-                
-                ${backups && backups.length > 0 ? `
-                <div>
-                    <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                        <i data-lucide="folder-archive" class="w-4 h-4"></i>
-                        Backups Disponíveis (${backups.length})
-                    </h4>
-                    <div id="backups-list" class="space-y-2 max-h-[300px] overflow-y-auto">
-                        ${backupsList}
-                    </div>
+                <!-- Ações de Backup -->
+                ${canBackupGerenciar ? `
+                <div class="flex flex-wrap gap-3">
+                    <button id="desktop-create-backup-btn" class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Criar Backup Agora
+                    </button>
+                    <label class="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg cursor-pointer transition-colors">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        Importar Backup
+                        <input type="file" id="desktop-backup-upload-input" accept=".json" class="hidden">
+                    </label>
                 </div>
                 ` : ''}
                 
-                <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">
-                        <strong>Dica:</strong> Para restaurar dados, use a função "Importar Backup do Sistema" na seção de Importação/Exportação acima.
-                    </p>
+                <!-- Lista de Backups -->
+                <div>
+                    <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                        <i data-lucide="folder-archive" class="w-4 h-4"></i>
+                        Backups Disponíveis (${backups ? backups.length : 0})
+                    </h4>
+                    <div id="desktop-backups-list" class="space-y-2 max-h-[300px] overflow-y-auto">
+                        ${backupsList}
+                    </div>
                 </div>
+                
+                <!-- Configurações de Backup Automático -->
+                ${canBackupGerenciar ? `
+                <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        Backup Automático
+                    </h4>
+                    <div class="space-y-4">
+                        <label class="flex items-center gap-3">
+                            <input type="checkbox" id="desktop-backup-auto-enabled" class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Ativar backup automático</span>
+                        </label>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Intervalo</label>
+                                <select id="desktop-backup-interval" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                    <option value="daily">Diário</option>
+                                    <option value="weekly">Semanal</option>
+                                    <option value="monthly">Mensal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Máximo de backups a manter</label>
+                                <input type="number" id="desktop-backup-max-count" min="1" max="50" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                            </div>
+                        </div>
+                        
+                        <button id="desktop-save-backup-settings-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm">
+                            Salvar Configurações
+                        </button>
+                    </div>
+                </div>
+                ` : ''}
             </div>
         `;
         
         if (window.lucide) lucide.createIcons();
+        
+        // Load backup settings
+        this.loadDesktopBackupSettings();
+        
+        // Add event listeners
+        this.attachDesktopBackupEventListeners();
     }
     
     renderDesktopBackupError(container) {
@@ -3835,5 +3892,293 @@ export class ConfiguracaoManager {
             </div>
         `;
         if (window.lucide) lucide.createIcons();
+    }
+    
+    async loadDesktopBackupSettings() {
+        if (!window.electronAPI || typeof window.electronAPI.loadBackupSettings !== 'function') {
+            return;
+        }
+        
+        try {
+            const settings = await window.electronAPI.loadBackupSettings();
+            
+            const enabledCheckbox = document.getElementById('desktop-backup-auto-enabled');
+            const intervalSelect = document.getElementById('desktop-backup-interval');
+            const maxCountInput = document.getElementById('desktop-backup-max-count');
+            
+            if (enabledCheckbox) {
+                enabledCheckbox.checked = settings.enabled || false;
+            }
+            
+            if (intervalSelect) {
+                intervalSelect.value = settings.interval || 'daily';
+            }
+            
+            if (maxCountInput) {
+                maxCountInput.value = settings.max_backups || ConfiguracaoManager.BACKUP_MAX_COUNT_DEFAULT;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar configurações de backup:', error);
+        }
+    }
+    
+    attachDesktopBackupEventListeners() {
+        const self = this;
+        
+        // Create backup button
+        const createBtn = document.getElementById('desktop-create-backup-btn');
+        if (createBtn) {
+            createBtn.addEventListener('click', () => this.handleDesktopCreateBackup());
+        }
+        
+        // Import backup button
+        const uploadInput = document.getElementById('desktop-backup-upload-input');
+        if (uploadInput) {
+            uploadInput.addEventListener('change', (e) => this.handleDesktopImportBackup(e));
+        }
+        
+        // Save settings button
+        const saveSettingsBtn = document.getElementById('desktop-save-backup-settings-btn');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', () => this.handleDesktopSaveBackupSettings());
+        }
+        
+        // Restore buttons
+        document.querySelectorAll('.desktop-backup-restore-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const filename = this.getAttribute('data-filename');
+                self.handleDesktopRestoreBackup(filename);
+            });
+        });
+        
+        // Download buttons
+        document.querySelectorAll('.desktop-backup-download-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const filename = this.getAttribute('data-filename');
+                self.handleDesktopDownloadBackup(filename);
+            });
+        });
+        
+        // Delete buttons
+        document.querySelectorAll('.desktop-backup-delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const filename = this.getAttribute('data-filename');
+                self.handleDesktopDeleteBackup(filename);
+            });
+        });
+    }
+    
+    async handleDesktopCreateBackup() {
+        if (!window.electronAPI || typeof window.electronAPI.createBackup !== 'function') {
+            Modals.alert('Funcionalidade de criar backup não disponível', 'Erro');
+            return;
+        }
+        
+        try {
+            const result = await window.electronAPI.createBackup();
+            
+            if (result.success) {
+                Modals.alert(`Backup criado com sucesso: ${result.filename}`, 'Sucesso');
+                // Reload backup list
+                const container = document.getElementById('backup-management-container');
+                if (container) {
+                    await this.loadDesktopBackupManagement(container);
+                }
+            } else {
+                Modals.alert(`Erro ao criar backup: ${result.error}`, 'Erro');
+            }
+        } catch (error) {
+            console.error('Erro ao criar backup:', error);
+            Modals.alert(`Erro ao criar backup: ${error.message}`, 'Erro');
+        }
+    }
+    
+    async handleDesktopRestoreBackup(filename) {
+        if (!window.electronAPI || typeof window.electronAPI.restoreBackup !== 'function') {
+            Modals.alert('Funcionalidade de restaurar backup não disponível', 'Erro');
+            return;
+        }
+        
+        const confirmed = await Modals.showConfirm(
+            `Tem certeza que deseja restaurar o backup "${filename}"?\n\nEsta ação irá substituir todos os dados atuais!`
+        );
+        
+        if (!confirmed) return;
+        
+        try {
+            const result = await window.electronAPI.restoreBackup(filename);
+            
+            if (result.success) {
+                const message = `Backup restaurado com sucesso!\n\n` +
+                    `Clientes: ${result.stats.clients}\n` +
+                    `Registros: ${result.stats.registros}\n` +
+                    `Categorias: ${result.stats.categorias}\n\n` +
+                    `A página será recarregada.`;
+                
+                Modals.alert(message, 'Sucesso');
+                
+                // Reload page after a short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                Modals.alert(`Erro ao restaurar backup: ${result.error}`, 'Erro');
+            }
+        } catch (error) {
+            console.error('Erro ao restaurar backup:', error);
+            Modals.alert(`Erro ao restaurar backup: ${error.message}`, 'Erro');
+        }
+    }
+    
+    async handleDesktopDownloadBackup(filename) {
+        if (!window.electronAPI || typeof window.electronAPI.downloadBackup !== 'function') {
+            Modals.alert('Funcionalidade de download de backup não disponível', 'Erro');
+            return;
+        }
+        
+        try {
+            const result = await window.electronAPI.downloadBackup(filename);
+            
+            if (result.success) {
+                // Create a download link
+                const blob = new Blob([result.data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.style.display = 'none';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                URL.revokeObjectURL(url);
+                
+                Modals.alert(`Backup baixado com sucesso: ${filename}`, 'Sucesso');
+            } else {
+                Modals.alert(`Erro ao baixar backup: ${result.error}`, 'Erro');
+            }
+        } catch (error) {
+            console.error('Erro ao baixar backup:', error);
+            Modals.alert(`Erro ao baixar backup: ${error.message}`, 'Erro');
+        }
+    }
+    
+    async handleDesktopDeleteBackup(filename) {
+        if (!window.electronAPI || typeof window.electronAPI.deleteBackup !== 'function') {
+            Modals.alert('Funcionalidade de excluir backup não disponível', 'Erro');
+            return;
+        }
+        
+        const confirmed = await Modals.showConfirm(
+            `Tem certeza que deseja excluir o backup "${filename}"?\n\nEsta ação não pode ser desfeita!`
+        );
+        
+        if (!confirmed) return;
+        
+        try {
+            const result = await window.electronAPI.deleteBackup(filename);
+            
+            if (result.success) {
+                Modals.alert(`Backup excluído com sucesso: ${filename}`, 'Sucesso');
+                // Reload backup list
+                const container = document.getElementById('backup-management-container');
+                if (container) {
+                    await this.loadDesktopBackupManagement(container);
+                }
+            } else {
+                Modals.alert(`Erro ao excluir backup: ${result.error}`, 'Erro');
+            }
+        } catch (error) {
+            console.error('Erro ao excluir backup:', error);
+            Modals.alert(`Erro ao excluir backup: ${error.message}`, 'Erro');
+        }
+    }
+    
+    async handleDesktopImportBackup(event) {
+        if (!window.electronAPI || typeof window.electronAPI.importBackup !== 'function') {
+            Modals.alert('Funcionalidade de importar backup não disponível', 'Erro');
+            return;
+        }
+        
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        try {
+            const reader = new FileReader();
+            
+            reader.onload = async (e) => {
+                try {
+                    const backupData = e.target.result;
+                    const result = await window.electronAPI.importBackup(backupData);
+                    
+                    if (result.success) {
+                        Modals.alert(`Backup importado com sucesso: ${result.filename}`, 'Sucesso');
+                        // Reload backup list
+                        const container = document.getElementById('backup-management-container');
+                        if (container) {
+                            await this.loadDesktopBackupManagement(container);
+                        }
+                    } else {
+                        Modals.alert(`Erro ao importar backup: ${result.error}`, 'Erro');
+                    }
+                } catch (error) {
+                    console.error('Erro ao processar arquivo de backup:', error);
+                    Modals.alert(`Erro ao processar arquivo: ${error.message}`, 'Erro');
+                }
+                
+                // Clear file input
+                event.target.value = '';
+            };
+            
+            reader.onerror = () => {
+                Modals.alert('Erro ao ler arquivo de backup', 'Erro');
+                event.target.value = '';
+            };
+            
+            reader.readAsText(file);
+        } catch (error) {
+            console.error('Erro ao importar backup:', error);
+            Modals.alert(`Erro ao importar backup: ${error.message}`, 'Erro');
+        }
+    }
+    
+    async handleDesktopSaveBackupSettings() {
+        if (!window.electronAPI || typeof window.electronAPI.saveBackupSettings !== 'function') {
+            Modals.alert('Funcionalidade de salvar configurações não disponível', 'Erro');
+            return;
+        }
+        
+        try {
+            const enabledCheckbox = document.getElementById('desktop-backup-auto-enabled');
+            const intervalSelect = document.getElementById('desktop-backup-interval');
+            const maxCountInput = document.getElementById('desktop-backup-max-count');
+            
+            // Parse and validate max_backups value
+            let maxBackups = ConfiguracaoManager.BACKUP_MAX_COUNT_DEFAULT;
+            if (maxCountInput && maxCountInput.value) {
+                const parsed = parseInt(maxCountInput.value, 10);
+                if (!isNaN(parsed) && parsed >= ConfiguracaoManager.BACKUP_MAX_COUNT_MIN && parsed <= ConfiguracaoManager.BACKUP_MAX_COUNT_MAX) {
+                    maxBackups = parsed;
+                }
+            }
+            
+            const settings = {
+                enabled: enabledCheckbox ? enabledCheckbox.checked : false,
+                interval: intervalSelect ? intervalSelect.value : 'daily',
+                max_backups: maxBackups
+            };
+            
+            const result = await window.electronAPI.saveBackupSettings(settings);
+            
+            if (result.success) {
+                Modals.alert('Configurações de backup salvas com sucesso!', 'Sucesso');
+            } else {
+                Modals.alert(`Erro ao salvar configurações: ${result.error}`, 'Erro');
+            }
+        } catch (error) {
+            console.error('Erro ao salvar configurações de backup:', error);
+            Modals.alert(`Erro ao salvar configurações: ${error.message}`, 'Erro');
+        }
     }
 }
