@@ -164,6 +164,28 @@ class StorageBackend {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   }
 
+  // Helper method to validate backup structure
+  validateBackupStructure(backup) {
+    if (!backup || !backup.data) {
+      return { valid: false, error: 'Formato de backup inválido - estrutura ausente' };
+    }
+    
+    if (!Array.isArray(backup.data.clients)) {
+      return { valid: false, error: 'Formato de backup inválido - dados de clientes inválidos' };
+    }
+    
+    if (!Array.isArray(backup.data.registros)) {
+      return { valid: false, error: 'Formato de backup inválido - dados de registros inválidos' };
+    }
+    
+    return { valid: true };
+  }
+
+  // Helper method to check if categorias is valid
+  isCategoriesValid(categorias) {
+    return categorias && typeof categorias === 'object' && !Array.isArray(categorias);
+  }
+
   createBackup() {
     try {
       // Generate backup filename with timestamp
@@ -212,15 +234,16 @@ class StorageBackend {
       const backup = JSON.parse(data);
       
       // Validate backup structure
-      if (!backup.data || !Array.isArray(backup.data.clients) || !Array.isArray(backup.data.registros)) {
-        throw new Error('Formato de backup inválido - faltam dados de clientes ou registros');
+      const validation = this.validateBackupStructure(backup);
+      if (!validation.valid) {
+        throw new Error(validation.error);
       }
       
       // Restore data
       this.saveAllClients(backup.data.clients);
       this.saveAllRegistros(backup.data.registros);
       
-      if (backup.data.categorias && typeof backup.data.categorias === 'object' && !Array.isArray(backup.data.categorias)) {
+      if (this.isCategoriesValid(backup.data.categorias)) {
         this.saveCategorias(backup.data.categorias);
       }
       
@@ -231,7 +254,7 @@ class StorageBackend {
         stats: {
           clients: backup.data.clients.length,
           registros: backup.data.registros.length,
-          categorias: (backup.data.categorias && typeof backup.data.categorias === 'object' && !Array.isArray(backup.data.categorias)) ? Object.keys(backup.data.categorias).length : 0
+          categorias: this.isCategoriesValid(backup.data.categorias) ? Object.keys(backup.data.categorias).length : 0
         }
       };
     } catch (error) {
@@ -289,8 +312,9 @@ class StorageBackend {
       const backup = typeof backupData === 'string' ? JSON.parse(backupData) : backupData;
       
       // Validate backup structure
-      if (!backup.data || !Array.isArray(backup.data.clients) || !Array.isArray(backup.data.registros)) {
-        throw new Error('Formato de backup inválido - faltam dados de clientes ou registros');
+      const validation = this.validateBackupStructure(backup);
+      if (!validation.valid) {
+        throw new Error(validation.error);
       }
       
       // Generate filename with timestamp

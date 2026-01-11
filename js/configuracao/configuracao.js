@@ -7,6 +7,11 @@ import { getJobMonitor } from '../shared/job-monitor.js';
 import { logAction } from '../shared/audit-logger.js';
 
 export class ConfiguracaoManager {
+    // Constants for backup settings validation
+    static BACKUP_MAX_COUNT_MIN = 1;
+    static BACKUP_MAX_COUNT_MAX = 50;
+    static BACKUP_MAX_COUNT_DEFAULT = 10;
+
     emojiToIconMap = {
         '👤': 'user',
         '🏢': 'building',
@@ -4150,10 +4155,10 @@ export class ConfiguracaoManager {
             const maxCountInput = document.getElementById('desktop-backup-max-count');
             
             // Parse and validate max_backups value
-            let maxBackups = 10; // default value
+            let maxBackups = ConfiguracaoManager.BACKUP_MAX_COUNT_DEFAULT;
             if (maxCountInput && maxCountInput.value) {
                 const parsed = parseInt(maxCountInput.value, 10);
-                if (!isNaN(parsed) && parsed > 0 && parsed <= 50) {
+                if (!isNaN(parsed) && parsed >= ConfiguracaoManager.BACKUP_MAX_COUNT_MIN && parsed <= ConfiguracaoManager.BACKUP_MAX_COUNT_MAX) {
                     maxBackups = parsed;
                 }
             }
