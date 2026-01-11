@@ -155,9 +155,12 @@ class StorageBackend {
 
   formatBytes(bytes) {
     if (bytes === 0) return '0 Bytes';
+    if (bytes < 0 || typeof bytes !== 'number') return 'N/A';
+    
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
+    
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   }
 }

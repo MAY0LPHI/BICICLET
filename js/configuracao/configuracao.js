@@ -3075,7 +3075,7 @@ export class ConfiguracaoManager {
         if (!container) return;
         
         // Check if running in Electron (desktop mode)
-        const isDesktop = window.AppPlatform && window.AppPlatform.isDesktop();
+        const isDesktop = window.AppPlatform && typeof window.AppPlatform.isDesktop === 'function' && window.AppPlatform.isDesktop();
         
         if (isDesktop) {
             // Desktop mode - storage is file-based only
@@ -3342,7 +3342,7 @@ export class ConfiguracaoManager {
         if (window.lucide) lucide.createIcons();
         
         // Check if running in Electron (desktop mode)
-        const isDesktop = window.AppPlatform && window.AppPlatform.isDesktop();
+        const isDesktop = window.AppPlatform && typeof window.AppPlatform.isDesktop === 'function' && window.AppPlatform.isDesktop();
         
         if (isDesktop) {
             // Desktop mode - use Electron IPC to list backups
@@ -3737,11 +3737,18 @@ export class ConfiguracaoManager {
     async loadDesktopBackupManagement(container) {
         // In desktop mode, backups are stored in dados/database/backups/
         try {
+            // Check if Electron IPC is available
+            if (!window.electronAPI || typeof window.electronAPI.listBackups !== 'function') {
+                console.warn('Electron IPC not available for backup listing');
+                this.renderDesktopBackupManagement(container, []);
+                return;
+            }
+            
             // Use Electron IPC to list backup files
             const backups = await window.electronAPI.listBackups();
-            this.renderDesktopBackupManagement(container, backups);
+            this.renderDesktopBackupManagement(container, backups || []);
         } catch (error) {
-            console.warn('Backup listing not available via IPC, using simple UI');
+            console.warn('Backup listing not available via IPC, using simple UI:', error);
             this.renderDesktopBackupManagement(container, []);
         }
     }
@@ -3750,8 +3757,16 @@ export class ConfiguracaoManager {
         const canBackupGerenciar = Auth.hasPermission('configuracao', 'backupGerenciar');
         
         const backupsList = backups && backups.length > 0 ? backups.map(backup => {
-            const date = new Date(backup.created_at || backup.timestamp);
-            const formattedDate = date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
+            const dateValue = backup.created_at || backup.timestamp;
+            let formattedDate = 'Data desconhecida';
+            
+            if (dateValue) {
+                const date = new Date(dateValue);
+                if (!isNaN(date.getTime())) {
+                    formattedDate = date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
+                }
+            }
+            
             return `
                 <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -3780,7 +3795,7 @@ export class ConfiguracaoManager {
                     </div>
                     <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
                         Use as funções de exportação do sistema (Excel/CSV) na aba "Dados" para criar backups.
-                        Os backups automáticos são salvos na pasta <code class="bg-blue-100 dark:bg-blue-900/40 px-1 py-0.5 rounded">dados/database/backups/</code>
+                        Os backups automáticos são salvos na pasta de dados do desktop.
                     </p>
                 </div>
                 
