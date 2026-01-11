@@ -101,11 +101,28 @@ dados/desktop/categorias.json
 
 ## 📋 Detecção Automática de Plataforma
 
-O arquivo `js/shared/platform.js` detecta automaticamente:
+O arquivo `js/shared/platform.js` detecta automaticamente usando múltiplos métodos:
 
 ```javascript
-// Detecta se está rodando em Electron
-const isElectron = window.electron !== undefined;
+// Detecção robusta de Electron
+function isElectron() {
+    // Verifica tipo de processo Electron
+    if (window.process && window.process.type === 'renderer') return true;
+    
+    // Verifica versões do Electron no Node.js
+    if (process.versions && process.versions.electron) return true;
+    
+    // Verifica user agent
+    if (navigator.userAgent.indexOf('Electron') >= 0) return true;
+    
+    // Verifica API exposta pelo preload
+    if (window.electronAPI || window.electron) return true;
+    
+    return false;
+}
+
+// Uso no storage.js
+const isElectron = typeof window !== 'undefined' && window.electron;
 
 if (isElectron) {
     // Usa IPC do Electron para salvar arquivos
@@ -146,7 +163,7 @@ if (isElectron) {
 
 ## 🔍 Verificação do Código-Fonte
 
-### app-modular.js (Linha ~370)
+### app-modular.js (Final do arquivo)
 ```javascript
 document.addEventListener('DOMContentLoaded', async () => {
     Debug.init();
@@ -159,6 +176,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (systemReady) {
         window.app = new App();
         window.app.init();
+    } else {
+        console.error('Sistema não pôde ser iniciado devido a erros críticos');
     }
 });
 ```
