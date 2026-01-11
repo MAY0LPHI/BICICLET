@@ -50,12 +50,17 @@ dados/auth/tokens.json
 dados/auth/users.json
 dados/database/*.db
 dados/database/backups/*.zip
+dados/database/backups/*.json
 dados/logs/*.log
 dados/logs/*.csv
 dados/logs/*.txt
 dados/relatorios/*.csv
 dados/relatorios/*.txt
 dados/relatorios/*.pdf
+
+# Desktop data files (generated at runtime)
+dados/desktop/*.json
+dados/navegador/clientes/*.json
 
 # Manter apenas estrutura de diretórios (add .gitkeep files se necessário)
 # dados/auth/
