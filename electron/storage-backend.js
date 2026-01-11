@@ -186,6 +186,15 @@ class StorageBackend {
     return categorias && typeof categorias === 'object' && !Array.isArray(categorias);
   }
 
+  // Helper method to safely parse JSON data
+  parseJSON(data, errorMessage) {
+    try {
+      return { success: true, data: JSON.parse(data) };
+    } catch (error) {
+      return { success: false, error: errorMessage || 'Erro ao parsear JSON' };
+    }
+  }
+
   createBackup() {
     try {
       // Generate backup filename with timestamp
@@ -229,16 +238,15 @@ class StorageBackend {
         throw new Error('Arquivo de backup não encontrado');
       }
       
-      // Read backup file
+      // Read and parse backup file
       const data = fs.readFileSync(backupPath, 'utf8');
+      const parseResult = this.parseJSON(data, 'Arquivo de backup corrompido ou inválido');
       
-      // Parse JSON with explicit error handling
-      let backup;
-      try {
-        backup = JSON.parse(data);
-      } catch (parseError) {
-        throw new Error('Arquivo de backup corrompido ou inválido - erro ao parsear JSON');
+      if (!parseResult.success) {
+        throw new Error(parseResult.error);
       }
+      
+      const backup = parseResult.data;
       
       // Validate backup structure
       const validation = this.validateBackupStructure(backup);
@@ -315,14 +323,14 @@ class StorageBackend {
 
   importBackup(backupData) {
     try {
-      // Parse backup data if it's a string with explicit error handling
+      // Parse backup data if it's a string
       let backup;
       if (typeof backupData === 'string') {
-        try {
-          backup = JSON.parse(backupData);
-        } catch (parseError) {
-          throw new Error('Dados de backup corrompidos ou inválidos - erro ao parsear JSON');
+        const parseResult = this.parseJSON(backupData, 'Dados de backup corrompidos ou inválidos');
+        if (!parseResult.success) {
+          throw new Error(parseResult.error);
         }
+        backup = parseResult.data;
       } else {
         backup = backupData;
       }
@@ -357,11 +365,11 @@ class StorageBackend {
       
       if (fs.existsSync(settingsFile)) {
         const data = fs.readFileSync(settingsFile, 'utf8');
+        const parseResult = this.parseJSON(data, 'Arquivo de configurações corrompido');
         
-        // Parse JSON with explicit error handling
-        try {
-          return JSON.parse(data);
-        } catch (parseError) {
+        if (parseResult.success) {
+          return parseResult.data;
+        } else {
           console.warn('\x1b[33m%s\x1b[0m', '⚠️ [AVISO] Arquivo de configurações corrompido, usando padrões');
           // Fall through to return defaults
         }
