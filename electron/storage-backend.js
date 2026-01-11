@@ -4,6 +4,7 @@ const path = require('path');
 class StorageBackend {
   constructor() {
     this.basePath = path.join(__dirname, '..', 'dados', 'desktop');
+    this.backupsPath = path.join(__dirname, '..', 'dados', 'database', 'backups');
     this.clientesFile = path.join(this.basePath, 'clientes.json');
     this.registrosFile = path.join(this.basePath, 'registros.json');
     this.categoriasFile = path.join(this.basePath, 'categorias.json');
@@ -13,9 +14,16 @@ class StorageBackend {
   }
 
   ensureDirectories() {
+    // Ensure data directories exist
     if (!fs.existsSync(this.basePath)) {
       fs.mkdirSync(this.basePath, { recursive: true });
       console.log('\x1b[32m%s\x1b[0m', '✅ [SISTEMA] Pasta de dados criada:', this.basePath);
+    }
+    
+    // Ensure backups directory exists
+    if (!fs.existsSync(this.backupsPath)) {
+      fs.mkdirSync(this.backupsPath, { recursive: true });
+      console.log('\x1b[32m%s\x1b[0m', '✅ [SISTEMA] Pasta de backups criada:', this.backupsPath);
     }
     
     if (!fs.existsSync(this.clientesFile)) {
@@ -111,6 +119,49 @@ class StorageBackend {
 
   getStoragePath() {
     return this.basePath;
+  }
+
+  listBackups() {
+    try {
+      if (!fs.existsSync(this.backupsPath)) {
+        console.log('\x1b[33m%s\x1b[0m', '⚠️ [SISTEMA] Pasta de backups não existe:', this.backupsPath);
+        return [];
+      }
+
+      const files = fs.readdirSync(this.backupsPath);
+      const backups = files
+        .filter(file => file.endsWith('.json'))
+        .map(file => {
+          const filepath = path.join(this.backupsPath, file);
+          const stats = fs.statSync(filepath);
+          return {
+            filename: file,
+            name: file,
+            created_at: stats.mtime.toISOString(),
+            timestamp: stats.mtime.toISOString(),
+            size: stats.size,
+            size_formatted: this.formatBytes(stats.size)
+          };
+        })
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      console.log('\x1b[34m%s\x1b[0m', `📋 [SISTEMA] ${backups.length} backup(s) encontrado(s)`);
+      return backups;
+    } catch (error) {
+      console.error('\x1b[31m%s\x1b[0m', '❌ [ERRO] Falha ao listar backups:', error);
+      return [];
+    }
+  }
+
+  formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    if (bytes < 0 || typeof bytes !== 'number') return 'N/A';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
+    
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   }
 }
 

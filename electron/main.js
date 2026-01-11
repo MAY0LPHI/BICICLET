@@ -177,6 +177,10 @@ function setupIPCHandlers() {
   ipcMain.handle('save-categorias', (event, categorias) => {
     return storage.saveCategorias(categorias);
   });
+
+  ipcMain.handle('list-backups', () => {
+    return storage.listBackups();
+  });
 }
 
 app.on('window-all-closed', () => {
