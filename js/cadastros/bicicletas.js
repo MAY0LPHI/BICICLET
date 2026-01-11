@@ -30,6 +30,8 @@ export class BicicletasManager {
         const bikeModelo = document.getElementById('bike-modelo');
         const bikeMarca = document.getElementById('bike-marca');
         const bikeCor = document.getElementById('bike-cor');
+        const bikeImage = document.getElementById('bike-image');
+        const editBikeImage = document.getElementById('edit-bike-image');
         
         this.elements.addBikeForm.addEventListener('submit', this.handleAddBike.bind(this));
         this.elements.cancelAddBikeBtn.addEventListener('click', () => this.app.toggleModal('add-bike-modal', false));
@@ -52,6 +54,10 @@ export class BicicletasManager {
             });
         }
         
+        if (bikeImage) {
+            bikeImage.addEventListener('change', (e) => this.handleImagePreview(e, 'bike-image-preview', 'bike-image-preview-img'));
+        }
+        
         this.elements.editBikeForm.addEventListener('submit', this.handleEditBike.bind(this));
         this.elements.cancelEditBike.addEventListener('click', () => this.app.toggleModal('edit-bike-modal', false));
         
@@ -65,6 +71,44 @@ export class BicicletasManager {
         
         this.elements.editBikeCor.addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
+        });
+        
+        if (editBikeImage) {
+            editBikeImage.addEventListener('change', (e) => this.handleImagePreview(e, 'edit-bike-image-preview', 'edit-bike-image-preview-img'));
+        }
+    }
+
+    handleImagePreview(event, previewDivId, previewImgId) {
+        const file = event.target.files[0];
+        const previewDiv = document.getElementById(previewDivId);
+        const previewImg = document.getElementById(previewImgId);
+        
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                previewDiv.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewDiv.classList.add('hidden');
+            previewImg.src = '';
+        }
+    }
+
+    async getImageAsBase64(fileInputId) {
+        const fileInput = document.getElementById(fileInputId);
+        const file = fileInput?.files[0];
+        
+        if (!file || !file.type.startsWith('image/')) {
+            return null;
+        }
+        
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
         });
     }
 
@@ -82,10 +126,14 @@ export class BicicletasManager {
         const modelo = document.getElementById('bike-modelo').value;
         const marca = document.getElementById('bike-marca').value;
         const cor = document.getElementById('bike-cor').value;
+        const imageData = await this.getImageAsBase64('bike-image');
 
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (client) {
             const newBike = { id: Utils.generateUUID(), modelo, marca, cor };
+            if (imageData) {
+                newBike.image = imageData;
+            }
             client.bicicletas.push(newBike);
             await Storage.saveClient(client);
             
@@ -93,6 +141,7 @@ export class BicicletasManager {
                 modelo, 
                 marca, 
                 cor,
+                hasImage: !!imageData,
                 cliente: client.nome,
                 clienteCpf: client.cpf
             });
@@ -112,6 +161,17 @@ export class BicicletasManager {
 
         this.elements.addBikeForm.reset();
         this.elements.bikeClientIdInput.value = clientId;
+        
+        // Reset image preview
+        const previewDiv = document.getElementById('bike-image-preview');
+        if (previewDiv) {
+            previewDiv.classList.add('hidden');
+        }
+        const previewImg = document.getElementById('bike-image-preview-img');
+        if (previewImg) {
+            previewImg.src = '';
+        }
+        
         this.app.toggleModal('add-bike-modal', true);
     }
 
@@ -133,23 +193,32 @@ export class BicicletasManager {
 
         const bikesHTML = client.bicicletas.length > 0 ? client.bicicletas.map(bike => `
             <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 dark:bg-slate-700/40 dark:border-slate-700">
-               <div class="flex justify-between items-start">
-                    <div class="flex items-start gap-2 flex-1">
-                        <div>
-                            <p class="font-semibold text-slate-800 dark:text-slate-100">${bike.modelo} <span class="font-normal text-slate-600 dark:text-slate-300">(${bike.marca})</span></p>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Cor: ${bike.cor}</p>
+               <div class="flex justify-between items-start gap-4">
+                    <div class="flex items-start gap-3 flex-1">
+                        ${bike.image ? `
+                        <div class="flex-shrink-0">
+                            <img src="${bike.image}" alt="${bike.modelo}" class="w-20 h-20 object-cover rounded-md border border-slate-300 dark:border-slate-600">
                         </div>
-                        ${canEditClients ? `
-                        <button class="edit-bike-btn text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" data-bike-id="${bike.id}" title="Editar bicicleta">
-                            <i data-lucide="pencil" class="h-4 w-4"></i>
-                        </button>
-                        <button class="delete-bike-btn text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" data-bike-id="${bike.id}" title="Excluir bicicleta">
-                            <i data-lucide="trash-2" class="h-4 w-4"></i>
-                        </button>
                         ` : ''}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start gap-2">
+                                <div>
+                                    <p class="font-semibold text-slate-800 dark:text-slate-100">${bike.modelo} <span class="font-normal text-slate-600 dark:text-slate-300">(${bike.marca})</span></p>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Cor: ${bike.cor}</p>
+                                </div>
+                                ${canEditClients ? `
+                                <button class="edit-bike-btn text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" data-bike-id="${bike.id}" title="Editar bicicleta">
+                                    <i data-lucide="pencil" class="h-4 w-4"></i>
+                                </button>
+                                <button class="delete-bike-btn text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" data-bike-id="${bike.id}" title="Excluir bicicleta">
+                                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                </button>
+                                ` : ''}
+                            </div>
+                        </div>
                     </div>
                     ${canAddRegistros ? `
-                    <button class="add-registro-btn flex items-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-md shadow-sm transition-colors dark:bg-blue-500 dark:hover:bg-blue-600" data-bike-id="${bike.id}">
+                    <button class="add-registro-btn flex items-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md shadow-sm transition-colors dark:bg-blue-500 dark:hover:bg-blue-600 whitespace-nowrap" data-bike-id="${bike.id}">
                         <i data-lucide="log-in" class="h-4 w-4 mr-1"></i>
                         Registrar Entrada
                     </button>
@@ -290,6 +359,23 @@ export class BicicletasManager {
         this.elements.editBikeMarca.value = bike.marca;
         this.elements.editBikeCor.value = bike.cor;
 
+        // Show existing image if available
+        const previewDiv = document.getElementById('edit-bike-image-preview');
+        const previewImg = document.getElementById('edit-bike-image-preview-img');
+        const fileInput = document.getElementById('edit-bike-image');
+        
+        if (fileInput) {
+            fileInput.value = ''; // Reset file input
+        }
+        
+        if (bike.image && previewDiv && previewImg) {
+            previewImg.src = bike.image;
+            previewDiv.classList.remove('hidden');
+        } else if (previewDiv && previewImg) {
+            previewDiv.classList.add('hidden');
+            previewImg.src = '';
+        }
+
         // Setup delete button in modal
         const deleteBtn = document.getElementById('delete-bike-from-modal');
         if (deleteBtn) {
@@ -321,6 +407,7 @@ export class BicicletasManager {
         const modelo = this.elements.editBikeModelo.value;
         const marca = this.elements.editBikeMarca.value;
         const cor = this.elements.editBikeCor.value;
+        const newImageData = await this.getImageAsBase64('edit-bike-image');
 
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (!client) return;
@@ -328,10 +415,15 @@ export class BicicletasManager {
         const bike = client.bicicletas.find(b => b.id === bikeId);
         if (!bike) return;
 
-        const oldData = { modelo: bike.modelo, marca: bike.marca, cor: bike.cor };
+        const oldData = { modelo: bike.modelo, marca: bike.marca, cor: bike.cor, hasImage: !!bike.image };
         bike.modelo = modelo;
         bike.marca = marca;
         bike.cor = cor;
+        
+        // Update image only if a new one was selected
+        if (newImageData) {
+            bike.image = newImageData;
+        }
 
         await Storage.saveClient(client);
         
@@ -339,9 +431,11 @@ export class BicicletasManager {
             modelo,
             marca,
             cor,
+            hasImage: !!bike.image,
+            imageUpdated: !!newImageData,
             cliente: client.nome,
             clienteCpf: client.cpf,
-            changes: { before: oldData, after: { modelo, marca, cor } }
+            changes: { before: oldData, after: { modelo, marca, cor, hasImage: !!bike.image } }
         });
         
         this.renderClientDetails();

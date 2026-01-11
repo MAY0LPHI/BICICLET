@@ -937,6 +937,13 @@
                         <label for="bike-cor" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Cor</label>
                         <input type="text" id="bike-cor" required="" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
                     </div>
+                    <div>
+                        <label for="bike-image" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Foto da Bicicleta (opcional)</label>
+                        <input type="file" id="bike-image" accept="image/*" class="mt-1 block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400 dark:hover:file:bg-blue-900/30">
+                        <div id="bike-image-preview" class="mt-2 hidden">
+                            <img id="bike-image-preview-img" src="" alt="Preview" class="max-w-full h-32 object-contain rounded-md border border-slate-200 dark:border-slate-600">
+                        </div>
+                    </div>
                     <div class="pt-4 flex justify-end space-x-3">
                          <button type="button" id="cancel-add-bike" class="bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancelar</button>
                         <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600">Adicionar</button>
@@ -1091,6 +1098,13 @@
                     <div>
                         <label for="edit-bike-cor" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Cor</label>
                         <input type="text" id="edit-bike-cor" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-bike-image" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Foto da Bicicleta (opcional)</label>
+                        <input type="file" id="edit-bike-image" accept="image/*" class="mt-1 block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400 dark:hover:file:bg-blue-900/30">
+                        <div id="edit-bike-image-preview" class="mt-2 hidden">
+                            <img id="edit-bike-image-preview-img" src="" alt="Preview" class="max-w-full h-32 object-contain rounded-md border border-slate-200 dark:border-slate-600">
+                        </div>
                     </div>
                     <div class="pt-4 flex justify-between">
                         <button type="button" id="delete-bike-from-modal" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md shadow-sm text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-600 dark:hover:bg-red-700">
