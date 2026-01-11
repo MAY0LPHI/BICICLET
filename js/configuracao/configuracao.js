@@ -3074,6 +3074,30 @@ export class ConfiguracaoManager {
         const container = document.getElementById('storage-mode-container');
         if (!container) return;
         
+        // Check if running in Electron (desktop mode)
+        const isDesktop = window.AppPlatform && window.AppPlatform.isDesktop();
+        
+        if (isDesktop) {
+            // Desktop mode - storage is file-based only
+            container.innerHTML = `
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-4 rounded-lg">
+                    <div class="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                        <i data-lucide="info" class="w-5 h-5"></i>
+                        <span class="font-medium">Modo Desktop</span>
+                    </div>
+                    <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        No modo desktop, os dados são armazenados automaticamente em arquivos JSON locais.
+                    </p>
+                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                        Localização: dados/desktop/
+                    </p>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+        
+        // Browser mode - try to fetch from API
         try {
             const response = await fetch('/api/storage-mode');
             if (!response.ok) throw new Error('API not available');
@@ -3317,11 +3341,30 @@ export class ConfiguracaoManager {
         `;
         if (window.lucide) lucide.createIcons();
         
+        // Check if running in Electron (desktop mode)
+        const isDesktop = window.AppPlatform && window.AppPlatform.isDesktop();
+        
+        if (isDesktop) {
+            // Desktop mode - use Electron IPC to list backups
+            try {
+                await this.loadDesktopBackupManagement(container);
+            } catch (error) {
+                console.error('Erro ao carregar backups (desktop):', error);
+                this.renderDesktopBackupError(container);
+            }
+            return;
+        }
+        
+        // Browser mode - use HTTP API
         try {
             const [backupsResponse, settingsResponse] = await Promise.all([
                 fetch('/api/backups'),
                 fetch('/api/backup/settings')
             ]);
+            
+            if (!backupsResponse.ok || !settingsResponse.ok) {
+                throw new Error('API not available');
+            }
             
             const backups = await backupsResponse.json();
             const settings = await settingsResponse.json();
@@ -3330,19 +3373,17 @@ export class ConfiguracaoManager {
         } catch (error) {
             console.error('Erro ao carregar backups:', error);
             container.innerHTML = `
-                <div class="text-center py-8">
-                    <i data-lucide="alert-circle" class="w-8 h-8 text-red-500 mx-auto mb-2"></i>
-                    <p class="text-red-600 dark:text-red-400">Erro ao carregar backups</p>
-                    <button id="retry-backups-btn" class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                        Tentar Novamente
-                    </button>
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 p-4 rounded-lg">
+                    <div class="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                        <span class="font-medium">Gerenciamento de backup indisponível</span>
+                    </div>
+                    <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                        O servidor não está disponível para gerenciar backups.
+                    </p>
                 </div>
             `;
             if (window.lucide) lucide.createIcons();
-            
-            document.getElementById('retry-backups-btn')?.addEventListener('click', () => {
-                this.loadBackupManagement();
-            });
         }
     }
     
@@ -3689,5 +3730,95 @@ export class ConfiguracaoManager {
             console.error('Erro ao salvar configurações:', error);
             Modals.alert('Erro ao salvar configurações: ' + error.message, 'Erro', 'alert-circle');
         }
+    }
+    
+    // ==================== DESKTOP BACKUP MANAGEMENT ====================
+    
+    async loadDesktopBackupManagement(container) {
+        // In desktop mode, backups are stored in dados/database/backups/
+        try {
+            // Use Electron IPC to list backup files
+            const backups = await window.electronAPI.listBackups();
+            this.renderDesktopBackupManagement(container, backups);
+        } catch (error) {
+            console.warn('Backup listing not available via IPC, using simple UI');
+            this.renderDesktopBackupManagement(container, []);
+        }
+    }
+    
+    renderDesktopBackupManagement(container, backups) {
+        const canBackupGerenciar = Auth.hasPermission('configuracao', 'backupGerenciar');
+        
+        const backupsList = backups && backups.length > 0 ? backups.map(backup => {
+            const date = new Date(backup.created_at || backup.timestamp);
+            const formattedDate = date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
+            return `
+                <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <i data-lucide="file-archive" class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0"></i>
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">${backup.filename || backup.name}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">${formattedDate}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('') : `
+            <div class="text-center py-6 text-slate-500 dark:text-slate-400">
+                <i data-lucide="archive" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                <p class="text-sm">Nenhum backup disponível</p>
+                <p class="text-xs mt-1">Backups são criados automaticamente ao exportar dados do sistema</p>
+            </div>
+        `;
+        
+        container.innerHTML = `
+            <div class="space-y-6">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-4 rounded-lg">
+                    <div class="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                        <i data-lucide="info" class="w-5 h-5"></i>
+                        <span class="font-medium">Backup no Modo Desktop</span>
+                    </div>
+                    <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        Use as funções de exportação do sistema (Excel/CSV) na aba "Dados" para criar backups.
+                        Os backups automáticos são salvos na pasta <code class="bg-blue-100 dark:bg-blue-900/40 px-1 py-0.5 rounded">dados/database/backups/</code>
+                    </p>
+                </div>
+                
+                ${backups && backups.length > 0 ? `
+                <div>
+                    <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                        <i data-lucide="folder-archive" class="w-4 h-4"></i>
+                        Backups Disponíveis (${backups.length})
+                    </h4>
+                    <div id="backups-list" class="space-y-2 max-h-[300px] overflow-y-auto">
+                        ${backupsList}
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        <strong>Dica:</strong> Para restaurar dados, use a função "Importar Backup do Sistema" na seção de Importação/Exportação acima.
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        if (window.lucide) lucide.createIcons();
+    }
+    
+    renderDesktopBackupError(container) {
+        container.innerHTML = `
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 p-4 rounded-lg">
+                <div class="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    <span class="font-medium">Erro ao carregar backups</span>
+                </div>
+                <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                    Não foi possível listar os backups. Use as funções de exportação manual.
+                </p>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
     }
 }
