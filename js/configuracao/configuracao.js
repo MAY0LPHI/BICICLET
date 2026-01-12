@@ -3542,6 +3542,12 @@ export class ConfiguracaoManager {
     
     async createBackup() {
         const btn = document.getElementById('create-backup-btn');
+        if (!btn) {
+            console.error('Botão de criar backup não encontrado');
+            Modals.alert('Erro: Botão de criar backup não encontrado', 'Erro', 'alert-circle');
+            return;
+        }
+        
         const originalContent = btn.innerHTML;
         btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Criando...';
         btn.disabled = true;
@@ -3569,9 +3575,12 @@ export class ConfiguracaoManager {
         } catch (error) {
             console.error('Erro ao criar backup:', error);
             Modals.alert('Erro ao criar backup: ' + error.message, 'Erro', 'alert-circle');
-            btn.innerHTML = originalContent;
-            btn.disabled = false;
-            if (window.lucide) lucide.createIcons();
+        } finally {
+            if (btn) {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            }
         }
     }
     
@@ -3974,6 +3983,15 @@ export class ConfiguracaoManager {
             return;
         }
         
+        const btn = document.getElementById('desktop-create-backup-btn');
+        const originalContent = btn ? btn.innerHTML : null;
+        
+        if (btn) {
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Criando...';
+            btn.disabled = true;
+            if (window.lucide) lucide.createIcons();
+        }
+        
         try {
             const result = await window.electronAPI.createBackup();
             
@@ -3990,6 +4008,12 @@ export class ConfiguracaoManager {
         } catch (error) {
             console.error('Erro ao criar backup:', error);
             Modals.alert(`Erro ao criar backup: ${error.message}`, 'Erro');
+        } finally {
+            if (btn) {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            }
         }
     }
     
