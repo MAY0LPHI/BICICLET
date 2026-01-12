@@ -3576,7 +3576,7 @@ export class ConfiguracaoManager {
             console.error('Erro ao criar backup:', error);
             Modals.alert('Erro ao criar backup: ' + error.message, 'Erro', 'alert-circle');
         } finally {
-            if (btn && originalContent) {
+            if (btn) {
                 btn.innerHTML = originalContent;
                 btn.disabled = false;
                 if (window.lucide) lucide.createIcons();
@@ -4009,7 +4009,7 @@ export class ConfiguracaoManager {
             console.error('Erro ao criar backup:', error);
             Modals.alert(`Erro ao criar backup: ${error.message}`, 'Erro');
         } finally {
-            if (btn && originalContent) {
+            if (btn) {
                 btn.innerHTML = originalContent;
                 btn.disabled = false;
                 if (window.lucide) lucide.createIcons();
