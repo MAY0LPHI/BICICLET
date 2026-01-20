@@ -24,6 +24,12 @@ export class BicicletasManager {
             cancelEditBike: document.getElementById('cancel-edit-bike'),
         };
         this.webcamStream = null;
+        // Constants for image processing
+        this.MAX_IMAGE_WIDTH = 800;
+        this.MAX_IMAGE_HEIGHT = 800;
+        this.IMAGE_QUALITY = 0.8;
+        this.MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+        
         this.setupEventListeners();
         this.setupPhotoUpload('add');
         this.setupPhotoUpload('edit');
@@ -138,9 +144,8 @@ export class BicicletasManager {
             return;
         }
         
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.size > maxSize) {
+        // Validate file size
+        if (file.size > this.MAX_FILE_SIZE) {
             Modals.alert('A imagem deve ter no máximo 5MB.', 'Arquivo muito grande');
             return;
         }
@@ -149,20 +154,21 @@ export class BicicletasManager {
         reader.onload = (e) => {
             this.resizeAndSetPhoto(e.target.result, mode);
         };
+        reader.onerror = () => {
+            Modals.alert('Erro ao ler o arquivo. Por favor, tente outro arquivo.', 'Erro ao carregar imagem');
+        };
         reader.readAsDataURL(file);
     }
     
     resizeAndSetPhoto(dataUrl, mode) {
         const img = new Image();
         img.onload = () => {
-            // Resize image to max 800px width while maintaining aspect ratio
-            const maxWidth = 800;
-            const maxHeight = 800;
+            // Resize image to max dimensions while maintaining aspect ratio
             let width = img.width;
             let height = img.height;
             
-            if (width > maxWidth || height > maxHeight) {
-                const ratio = Math.min(maxWidth / width, maxHeight / height);
+            if (width > this.MAX_IMAGE_WIDTH || height > this.MAX_IMAGE_HEIGHT) {
+                const ratio = Math.min(this.MAX_IMAGE_WIDTH / width, this.MAX_IMAGE_HEIGHT / height);
                 width = width * ratio;
                 height = height * ratio;
             }
@@ -173,9 +179,12 @@ export class BicicletasManager {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            // Convert to JPEG with 80% quality for compression
-            const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            // Convert to JPEG with quality setting for compression
+            const resizedDataUrl = canvas.toDataURL('image/jpeg', this.IMAGE_QUALITY);
             this.setPhoto(resizedDataUrl, mode);
+        };
+        img.onerror = () => {
+            Modals.alert('Erro ao processar a imagem. O arquivo pode estar corrompido.', 'Erro ao processar imagem');
         };
         img.src = dataUrl;
     }
@@ -272,13 +281,11 @@ export class BicicletasManager {
             const canvas = document.createElement('canvas');
             
             // Limit capture resolution to avoid huge file sizes
-            const maxWidth = 800;
-            const maxHeight = 800;
             let width = videoElem.videoWidth;
             let height = videoElem.videoHeight;
             
-            if (width > maxWidth || height > maxHeight) {
-                const ratio = Math.min(maxWidth / width, maxHeight / height);
+            if (width > this.MAX_IMAGE_WIDTH || height > this.MAX_IMAGE_HEIGHT) {
+                const ratio = Math.min(this.MAX_IMAGE_WIDTH / width, this.MAX_IMAGE_HEIGHT / height);
                 width = width * ratio;
                 height = height * ratio;
             }
@@ -287,7 +294,7 @@ export class BicicletasManager {
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(videoElem, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            const dataUrl = canvas.toDataURL('image/jpeg', this.IMAGE_QUALITY);
             this.setPhoto(dataUrl, mode);
             this.stopWebcam(mode);
         }
