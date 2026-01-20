@@ -132,11 +132,52 @@ export class BicicletasManager {
     }
 
     handlePhotoFile(file, mode) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            Modals.alert('Por favor, selecione apenas arquivos de imagem.', 'Tipo de arquivo inválido');
+            return;
+        }
+        
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            Modals.alert('A imagem deve ter no máximo 5MB.', 'Arquivo muito grande');
+            return;
+        }
+        
         const reader = new FileReader();
         reader.onload = (e) => {
-            this.setPhoto(e.target.result, mode);
+            this.resizeAndSetPhoto(e.target.result, mode);
         };
         reader.readAsDataURL(file);
+    }
+    
+    resizeAndSetPhoto(dataUrl, mode) {
+        const img = new Image();
+        img.onload = () => {
+            // Resize image to max 800px width while maintaining aspect ratio
+            const maxWidth = 800;
+            const maxHeight = 800;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width = width * ratio;
+                height = height * ratio;
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert to JPEG with 80% quality for compression
+            const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            this.setPhoto(resizedDataUrl, mode);
+        };
+        img.src = dataUrl;
     }
 
     setPhoto(dataUrl, mode) {
@@ -178,7 +219,11 @@ export class BicicletasManager {
 
         try {
             this.webcamStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment' } 
+                video: { 
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                } 
             });
             if (videoElem) {
                 videoElem.srcObject = this.webcamStream;
@@ -187,7 +232,17 @@ export class BicicletasManager {
             if (photoUpload) photoUpload.classList.add('hidden');
         } catch (error) {
             console.error('Error accessing webcam:', error);
-            Modals.alert('Não foi possível acessar a webcam. Verifique as permissões.', 'Erro');
+            let errorMessage = 'Não foi possível acessar a webcam.';
+            
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                errorMessage = 'Permissão para acessar a webcam foi negada. Por favor, verifique as configurações do navegador.';
+            } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                errorMessage = 'Nenhuma webcam foi encontrada neste dispositivo.';
+            } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                errorMessage = 'A webcam está sendo usada por outro aplicativo.';
+            }
+            
+            Modals.alert(errorMessage, 'Erro ao acessar webcam');
         }
     }
 
@@ -197,10 +252,23 @@ export class BicicletasManager {
         
         if (videoElem) {
             const canvas = document.createElement('canvas');
-            canvas.width = videoElem.videoWidth;
-            canvas.height = videoElem.videoHeight;
+            
+            // Limit capture resolution to avoid huge file sizes
+            const maxWidth = 800;
+            const maxHeight = 800;
+            let width = videoElem.videoWidth;
+            let height = videoElem.videoHeight;
+            
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width = width * ratio;
+                height = height * ratio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(videoElem, 0, 0);
+            ctx.drawImage(videoElem, 0, 0, width, height);
             const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
             this.setPhoto(dataUrl, mode);
             this.stopWebcam(mode);
