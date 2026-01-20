@@ -218,13 +218,25 @@ export class BicicletasManager {
         const photoUpload = document.getElementById(`${prefix}-photo-upload`);
 
         try {
-            this.webcamStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                } 
-            });
+            // Try with environment-facing camera first
+            try {
+                this.webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                });
+            } catch (envError) {
+                // Fallback to any available camera if environment-facing not available
+                this.webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+            }
+            
             if (videoElem) {
                 videoElem.srcObject = this.webcamStream;
             }
@@ -244,6 +256,12 @@ export class BicicletasManager {
             
             Modals.alert(errorMessage, 'Erro ao acessar webcam');
         }
+    }
+    
+    getPhotoData(mode) {
+        const prefix = mode === 'add' ? 'add-bike' : 'edit-bike';
+        const photoDataElement = document.getElementById(`${prefix}-photo-data`);
+        return photoDataElement ? photoDataElement.value : '';
     }
 
     capturePhoto(mode) {
@@ -304,7 +322,7 @@ export class BicicletasManager {
         const modelo = document.getElementById('bike-modelo').value;
         const marca = document.getElementById('bike-marca').value;
         const cor = document.getElementById('bike-cor').value;
-        const photoData = document.getElementById('bike-photo-data').value;
+        const photoData = this.getPhotoData('add');
 
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (client) {
@@ -572,7 +590,7 @@ export class BicicletasManager {
         const modelo = this.elements.editBikeModelo.value;
         const marca = this.elements.editBikeMarca.value;
         const cor = this.elements.editBikeCor.value;
-        const photoData = document.getElementById('edit-bike-photo-data').value;
+        const photoData = this.getPhotoData('edit');
 
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (!client) return;
