@@ -23,7 +23,10 @@ export class BicicletasManager {
             editBikeCor: document.getElementById('edit-bike-cor'),
             cancelEditBike: document.getElementById('cancel-edit-bike'),
         };
+        this.webcamStream = null;
         this.setupEventListeners();
+        this.setupPhotoUpload('add');
+        this.setupPhotoUpload('edit');
     }
 
     setupEventListeners() {
@@ -68,6 +71,157 @@ export class BicicletasManager {
         });
     }
 
+    setupPhotoUpload(mode) {
+        const prefix = mode === 'add' ? 'add-bike' : 'edit-bike';
+        
+        const fileInput = document.getElementById(`${prefix}-photo-file`);
+        const dropzone = document.getElementById(`${prefix}-photo-dropzone`);
+        const captureBtn = document.getElementById(`${prefix}-capture-photo`);
+        const removeBtn = document.getElementById(`${prefix}-remove-photo`);
+        const takePhotoBtn = document.getElementById(`${prefix}-take-photo`);
+        const cancelWebcamBtn = document.getElementById(`${prefix}-cancel-webcam`);
+
+        // File input
+        if (fileInput && dropzone) {
+            dropzone.addEventListener('click', () => fileInput.click());
+            
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    this.handlePhotoFile(file, mode);
+                }
+            });
+
+            // Drag and drop
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('drag-over');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('drag-over');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    this.handlePhotoFile(file, mode);
+                }
+            });
+        }
+
+        // Webcam capture
+        if (captureBtn) {
+            captureBtn.addEventListener('click', () => this.startWebcam(mode));
+        }
+
+        if (takePhotoBtn) {
+            takePhotoBtn.addEventListener('click', () => this.capturePhoto(mode));
+        }
+
+        if (cancelWebcamBtn) {
+            cancelWebcamBtn.addEventListener('click', () => this.stopWebcam(mode));
+        }
+
+        // Remove photo
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => this.removePhoto(mode));
+        }
+    }
+
+    handlePhotoFile(file, mode) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.setPhoto(e.target.result, mode);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    setPhoto(dataUrl, mode) {
+        const prefix = mode === 'add' ? 'add-bike' : 'edit-bike';
+        const photoData = document.getElementById(`${prefix}-photo-data`);
+        const photoPreview = document.getElementById(`${prefix}-photo-preview`);
+        const photoImg = document.getElementById(`${prefix}-photo-img`);
+        const photoUpload = document.getElementById(`${prefix}-photo-upload`);
+
+        if (photoData) photoData.value = dataUrl;
+        if (photoImg) photoImg.src = dataUrl;
+        if (photoPreview) photoPreview.classList.remove('hidden');
+        if (photoUpload) photoUpload.classList.add('hidden');
+        
+        // Refresh icons
+        lucide.createIcons();
+    }
+
+    removePhoto(mode) {
+        const prefix = mode === 'add' ? 'add-bike' : 'edit-bike';
+        const photoData = document.getElementById(`${prefix}-photo-data`);
+        const photoPreview = document.getElementById(`${prefix}-photo-preview`);
+        const photoImg = document.getElementById(`${prefix}-photo-img`);
+        const photoUpload = document.getElementById(`${prefix}-photo-upload`);
+        const fileInput = document.getElementById(`${prefix}-photo-file`);
+
+        if (photoData) photoData.value = '';
+        if (photoImg) photoImg.src = '';
+        if (photoPreview) photoPreview.classList.add('hidden');
+        if (photoUpload) photoUpload.classList.remove('hidden');
+        if (fileInput) fileInput.value = '';
+    }
+
+    async startWebcam(mode) {
+        const prefix = mode === 'add' ? 'add-bike' : 'edit-bike';
+        const videoElem = document.getElementById(`${prefix}-webcam-video`);
+        const webcamContainer = document.getElementById(`${prefix}-webcam-container`);
+        const photoUpload = document.getElementById(`${prefix}-photo-upload`);
+
+        try {
+            this.webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' } 
+            });
+            if (videoElem) {
+                videoElem.srcObject = this.webcamStream;
+            }
+            if (webcamContainer) webcamContainer.classList.remove('hidden');
+            if (photoUpload) photoUpload.classList.add('hidden');
+        } catch (error) {
+            console.error('Error accessing webcam:', error);
+            Modals.alert('Não foi possível acessar a webcam. Verifique as permissões.', 'Erro');
+        }
+    }
+
+    capturePhoto(mode) {
+        const prefix = mode === 'add' ? 'add-bike' : 'edit-bike';
+        const videoElem = document.getElementById(`${prefix}-webcam-video`);
+        
+        if (videoElem) {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElem.videoWidth;
+            canvas.height = videoElem.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoElem, 0, 0);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            this.setPhoto(dataUrl, mode);
+            this.stopWebcam(mode);
+        }
+    }
+
+    stopWebcam(mode) {
+        const prefix = mode === 'add' ? 'add-bike' : 'edit-bike';
+        const webcamContainer = document.getElementById(`${prefix}-webcam-container`);
+        const photoUpload = document.getElementById(`${prefix}-photo-upload`);
+        const videoElem = document.getElementById(`${prefix}-webcam-video`);
+
+        if (this.webcamStream) {
+            this.webcamStream.getTracks().forEach(track => track.stop());
+            this.webcamStream = null;
+        }
+        if (videoElem) videoElem.srcObject = null;
+        if (webcamContainer) webcamContainer.classList.add('hidden');
+        if (photoUpload) photoUpload.classList.remove('hidden');
+    }
+
     async handleAddBike(e) {
         e.preventDefault();
         
@@ -82,10 +236,14 @@ export class BicicletasManager {
         const modelo = document.getElementById('bike-modelo').value;
         const marca = document.getElementById('bike-marca').value;
         const cor = document.getElementById('bike-cor').value;
+        const photoData = document.getElementById('bike-photo-data').value;
 
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (client) {
             const newBike = { id: Utils.generateUUID(), modelo, marca, cor };
+            if (photoData) {
+                newBike.foto = photoData;
+            }
             client.bicicletas.push(newBike);
             await Storage.saveClient(client);
             
@@ -93,12 +251,14 @@ export class BicicletasManager {
                 modelo, 
                 marca, 
                 cor,
+                temFoto: !!photoData,
                 cliente: client.nome,
                 clienteCpf: client.cpf
             });
             
             this.renderClientDetails();
             this.app.toggleModal('add-bike-modal', false);
+            this.removePhoto('add');
         }
     }
 
@@ -112,7 +272,11 @@ export class BicicletasManager {
 
         this.elements.addBikeForm.reset();
         this.elements.bikeClientIdInput.value = clientId;
+        this.removePhoto('add');
         this.app.toggleModal('add-bike-modal', true);
+        
+        // Refresh icons after modal is shown
+        setTimeout(() => lucide.createIcons(), 100);
     }
 
     renderClientDetails() {
@@ -133,20 +297,29 @@ export class BicicletasManager {
 
         const bikesHTML = client.bicicletas.length > 0 ? client.bicicletas.map(bike => `
             <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 dark:bg-slate-700/40 dark:border-slate-700">
-               <div class="flex justify-between items-start">
-                    <div class="flex items-start gap-2 flex-1">
-                        <div>
-                            <p class="font-semibold text-slate-800 dark:text-slate-100">${bike.modelo} <span class="font-normal text-slate-600 dark:text-slate-300">(${bike.marca})</span></p>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Cor: ${bike.cor}</p>
+               <div class="flex justify-between items-start gap-3">
+                    <div class="flex items-start gap-3 flex-1">
+                        ${bike.foto ? `
+                        <div class="flex-shrink-0">
+                            <img src="${bike.foto}" alt="Foto da bicicleta" class="w-20 h-20 object-cover rounded-md border border-slate-200 dark:border-slate-600">
                         </div>
-                        ${canEditClients ? `
-                        <button class="edit-bike-btn text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" data-bike-id="${bike.id}" title="Editar bicicleta">
-                            <i data-lucide="pencil" class="h-4 w-4"></i>
-                        </button>
-                        <button class="delete-bike-btn text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" data-bike-id="${bike.id}" title="Excluir bicicleta">
-                            <i data-lucide="trash-2" class="h-4 w-4"></i>
-                        </button>
                         ` : ''}
+                        <div class="flex-1">
+                            <div class="flex items-start gap-2">
+                                <div>
+                                    <p class="font-semibold text-slate-800 dark:text-slate-100">${bike.modelo} <span class="font-normal text-slate-600 dark:text-slate-300">(${bike.marca})</span></p>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Cor: ${bike.cor}</p>
+                                </div>
+                                ${canEditClients ? `
+                                <button class="edit-bike-btn text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" data-bike-id="${bike.id}" title="Editar bicicleta">
+                                    <i data-lucide="pencil" class="h-4 w-4"></i>
+                                </button>
+                                <button class="delete-bike-btn text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" data-bike-id="${bike.id}" title="Excluir bicicleta">
+                                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                </button>
+                                ` : ''}
+                            </div>
+                        </div>
                     </div>
                     ${canAddRegistros ? `
                     <button class="add-registro-btn flex items-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-md shadow-sm transition-colors dark:bg-blue-500 dark:hover:bg-blue-600" data-bike-id="${bike.id}">
@@ -290,6 +463,13 @@ export class BicicletasManager {
         this.elements.editBikeMarca.value = bike.marca;
         this.elements.editBikeCor.value = bike.cor;
 
+        // Load existing photo if available
+        if (bike.foto) {
+            this.setPhoto(bike.foto, 'edit');
+        } else {
+            this.removePhoto('edit');
+        }
+
         // Setup delete button in modal
         const deleteBtn = document.getElementById('delete-bike-from-modal');
         if (deleteBtn) {
@@ -304,6 +484,9 @@ export class BicicletasManager {
         }
 
         this.app.toggleModal('edit-bike-modal', true);
+        
+        // Refresh icons after modal is shown
+        setTimeout(() => lucide.createIcons(), 100);
     }
 
     async handleEditBike(e) {
@@ -321,6 +504,7 @@ export class BicicletasManager {
         const modelo = this.elements.editBikeModelo.value;
         const marca = this.elements.editBikeMarca.value;
         const cor = this.elements.editBikeCor.value;
+        const photoData = document.getElementById('edit-bike-photo-data').value;
 
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (!client) return;
@@ -328,10 +512,16 @@ export class BicicletasManager {
         const bike = client.bicicletas.find(b => b.id === bikeId);
         if (!bike) return;
 
-        const oldData = { modelo: bike.modelo, marca: bike.marca, cor: bike.cor };
+        const oldData = { modelo: bike.modelo, marca: bike.marca, cor: bike.cor, temFoto: !!bike.foto };
         bike.modelo = modelo;
         bike.marca = marca;
         bike.cor = cor;
+        
+        if (photoData) {
+            bike.foto = photoData;
+        } else {
+            delete bike.foto;
+        }
 
         await Storage.saveClient(client);
         
@@ -339,9 +529,10 @@ export class BicicletasManager {
             modelo,
             marca,
             cor,
+            temFoto: !!photoData,
             cliente: client.nome,
             clienteCpf: client.cpf,
-            changes: { before: oldData, after: { modelo, marca, cor } }
+            changes: { before: oldData, after: { modelo, marca, cor, temFoto: !!photoData } }
         });
         
         this.renderClientDetails();

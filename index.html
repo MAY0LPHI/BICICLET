@@ -925,6 +925,7 @@
                 <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100 mb-4">Adicionar Bicicleta</h3>
                 <form id="add-bike-form" class="space-y-4">
                     <input type="hidden" id="bike-client-id">
+                    <input type="hidden" id="bike-photo-data">
                     <div>
                         <label for="bike-marca" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Marca</label>
                         <input type="text" id="bike-marca" required="" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
@@ -936,6 +937,44 @@
                     <div>
                         <label for="bike-cor" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Cor</label>
                         <input type="text" id="bike-cor" required="" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            <i data-lucide="camera" class="w-4 h-4 inline mr-1"></i>
+                            Foto da Bicicleta (opcional)
+                        </label>
+                        <div id="add-bike-photo-container" class="photo-upload-container">
+                            <div id="add-bike-photo-preview" class="hidden mb-2">
+                                <img id="add-bike-photo-img" class="photo-preview" alt="Preview da foto">
+                                <button type="button" id="add-bike-remove-photo" class="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
+                                    <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>
+                                    Remover foto
+                                </button>
+                            </div>
+                            <div id="add-bike-photo-upload" class="space-y-2">
+                                <div id="add-bike-photo-dropzone" class="photo-upload-dropzone">
+                                    <i data-lucide="upload" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
+                                    <p class="text-sm text-slate-600 dark:text-slate-300">Arraste uma foto ou clique para selecionar</p>
+                                    <input type="file" id="add-bike-photo-file" accept="image/*" class="hidden">
+                                </div>
+                                <button type="button" id="add-bike-capture-photo" class="w-full flex items-center justify-center py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <i data-lucide="camera" class="w-4 h-4 mr-2"></i>
+                                    Capturar com webcam
+                                </button>
+                            </div>
+                            <div id="add-bike-webcam-container" class="hidden space-y-2">
+                                <video id="add-bike-webcam-video" class="webcam-video" autoplay playsinline></video>
+                                <div class="flex space-x-2">
+                                    <button type="button" id="add-bike-take-photo" class="flex-1 flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        <i data-lucide="camera" class="w-4 h-4 mr-2"></i>
+                                        Tirar foto
+                                    </button>
+                                    <button type="button" id="add-bike-cancel-webcam" class="flex-1 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="pt-4 flex justify-end space-x-3">
                          <button type="button" id="cancel-add-bike" class="bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancelar</button>
@@ -1080,6 +1119,7 @@
                 <form id="edit-bike-form" class="space-y-4">
                     <input type="hidden" id="edit-bike-client-id">
                     <input type="hidden" id="edit-bike-id">
+                    <input type="hidden" id="edit-bike-photo-data">
                     <div>
                         <label for="edit-bike-marca" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Marca</label>
                         <input type="text" id="edit-bike-marca" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -1091,6 +1131,44 @@
                     <div>
                         <label for="edit-bike-cor" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Cor</label>
                         <input type="text" id="edit-bike-cor" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            <i data-lucide="camera" class="w-4 h-4 inline mr-1"></i>
+                            Foto da Bicicleta (opcional)
+                        </label>
+                        <div id="edit-bike-photo-container" class="photo-upload-container">
+                            <div id="edit-bike-photo-preview" class="hidden mb-2">
+                                <img id="edit-bike-photo-img" class="photo-preview" alt="Preview da foto">
+                                <button type="button" id="edit-bike-remove-photo" class="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
+                                    <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>
+                                    Remover foto
+                                </button>
+                            </div>
+                            <div id="edit-bike-photo-upload" class="space-y-2">
+                                <div id="edit-bike-photo-dropzone" class="photo-upload-dropzone">
+                                    <i data-lucide="upload" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
+                                    <p class="text-sm text-slate-600 dark:text-slate-300">Arraste uma foto ou clique para selecionar</p>
+                                    <input type="file" id="edit-bike-photo-file" accept="image/*" class="hidden">
+                                </div>
+                                <button type="button" id="edit-bike-capture-photo" class="w-full flex items-center justify-center py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <i data-lucide="camera" class="w-4 h-4 mr-2"></i>
+                                    Capturar com webcam
+                                </button>
+                            </div>
+                            <div id="edit-bike-webcam-container" class="hidden space-y-2">
+                                <video id="edit-bike-webcam-video" class="webcam-video" autoplay playsinline></video>
+                                <div class="flex space-x-2">
+                                    <button type="button" id="edit-bike-take-photo" class="flex-1 flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        <i data-lucide="camera" class="w-4 h-4 mr-2"></i>
+                                        Tirar foto
+                                    </button>
+                                    <button type="button" id="edit-bike-cancel-webcam" class="flex-1 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="pt-4 flex justify-between">
                         <button type="button" id="delete-bike-from-modal" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md shadow-sm text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-600 dark:hover:bg-red-700">
