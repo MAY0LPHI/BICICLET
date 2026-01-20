@@ -350,8 +350,8 @@ export class BicicletasManager {
             });
             
             this.renderClientDetails();
-            this.app.toggleModal('add-bike-modal', false);
             this.removePhoto('add');
+            this.app.toggleModal('add-bike-modal', false);
         }
     }
 
@@ -369,7 +369,16 @@ export class BicicletasManager {
         this.app.toggleModal('add-bike-modal', true);
         
         // Refresh icons after modal is shown
-        setTimeout(() => lucide.createIcons(), 100);
+        this.refreshIconsAfterModalDisplay();
+    }
+    
+    refreshIconsAfterModalDisplay() {
+        // Use requestAnimationFrame for smoother timing
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                lucide.createIcons();
+            });
+        });
     }
 
     renderClientDetails() {
@@ -579,7 +588,7 @@ export class BicicletasManager {
         this.app.toggleModal('edit-bike-modal', true);
         
         // Refresh icons after modal is shown
-        setTimeout(() => lucide.createIcons(), 100);
+        this.refreshIconsAfterModalDisplay();
     }
 
     async handleEditBike(e) {
