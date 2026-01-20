@@ -925,6 +925,7 @@
                 <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100 mb-4">Adicionar Bicicleta</h3>
                 <form id="add-bike-form" class="space-y-4">
                     <input type="hidden" id="bike-client-id">
+                    <input type="hidden" id="bike-foto-data">
                     <div>
                         <label for="bike-marca" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Marca</label>
                         <input type="text" id="bike-marca" required="" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
@@ -936,6 +937,33 @@
                     <div>
                         <label for="bike-cor" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Cor</label>
                         <input type="text" id="bike-cor" required="" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" spellcheck="false" data-ms-editor="true">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            <i data-lucide="camera" class="w-4 h-4 inline mr-1"></i>
+                            Foto da Bicicleta (Opcional)
+                        </label>
+                        <div class="space-y-3">
+                            <div id="bike-photo-preview" class="hidden">
+                                <div class="relative">
+                                    <img id="bike-photo-preview-img" src="" alt="Preview" class="w-full h-48 object-cover rounded-md border border-slate-300 dark:border-slate-600">
+                                    <button type="button" id="bike-photo-remove" class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5 shadow-lg transition-colors">
+                                        <i data-lucide="x" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" id="bike-photo-upload-btn" class="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <i data-lucide="upload" class="w-4 h-4"></i>
+                                    Upload
+                                </button>
+                                <button type="button" id="bike-photo-camera-btn" class="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <i data-lucide="camera" class="w-4 h-4"></i>
+                                    Webcam
+                                </button>
+                            </div>
+                            <input type="file" id="bike-photo-file-input" accept="image/*" class="hidden">
+                        </div>
                     </div>
                     <div class="pt-4 flex justify-end space-x-3">
                          <button type="button" id="cancel-add-bike" class="bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancelar</button>
@@ -1239,6 +1267,49 @@
                 <p id="alert-message" class="text-sm text-slate-600 dark:text-slate-300 mb-6"></p>
                 <div class="flex justify-end">
                     <button id="alert-ok-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="webcam-capture-modal" class="fixed inset-0 z-[10000] flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg modal-content transform scale-95">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <i data-lucide="camera" class="w-5 h-5"></i>
+                        Capturar Foto da Bicicleta
+                    </h3>
+                    <button type="button" id="webcam-close-btn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                        <i data-lucide="x" class="h-6 w-6"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div class="relative bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden" style="aspect-ratio: 4/3;">
+                        <video id="webcam-video" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+                        <canvas id="webcam-canvas" class="w-full h-full object-cover hidden"></canvas>
+                        <div id="webcam-loading" class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                                <p class="text-sm text-slate-600 dark:text-slate-400">Iniciando câmera...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="webcam-cancel-btn" class="bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancelar</button>
+                        <button type="button" id="webcam-retake-btn" class="hidden bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4 inline mr-1"></i>
+                            Tirar Novamente
+                        </button>
+                        <button type="button" id="webcam-capture-btn" class="inline-flex items-center justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600">
+                            <i data-lucide="camera" class="w-4 h-4 mr-1"></i>
+                            Capturar
+                        </button>
+                        <button type="button" id="webcam-use-btn" class="hidden inline-flex items-center justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            <i data-lucide="check" class="w-4 h-4 mr-1"></i>
+                            Usar Foto
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

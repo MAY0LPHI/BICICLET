@@ -3,10 +3,12 @@ import { Storage } from '../shared/storage.js';
 import { Auth } from '../shared/auth.js';
 import { Modals } from '../shared/modals.js';
 import { logAction } from '../shared/audit-logger.js';
+import { PhotoHandler } from '../shared/photo-handler.js';
 
 export class BicicletasManager {
     constructor(app) {
         this.app = app;
+        this.photoHandler = new PhotoHandler();
         this.elements = {
             clientDetailsSection: document.getElementById('client-details-section'),
             clientDetailsPlaceholder: document.getElementById('client-details-placeholder'),
@@ -14,6 +16,22 @@ export class BicicletasManager {
             addBikeForm: document.getElementById('add-bike-form'),
             cancelAddBikeBtn: document.getElementById('cancel-add-bike'),
             bikeClientIdInput: document.getElementById('bike-client-id'),
+            bikeFotoData: document.getElementById('bike-foto-data'),
+            bikePhotoPreview: document.getElementById('bike-photo-preview'),
+            bikePhotoPreviewImg: document.getElementById('bike-photo-preview-img'),
+            bikePhotoRemove: document.getElementById('bike-photo-remove'),
+            bikePhotoUploadBtn: document.getElementById('bike-photo-upload-btn'),
+            bikePhotoCameraBtn: document.getElementById('bike-photo-camera-btn'),
+            bikePhotoFileInput: document.getElementById('bike-photo-file-input'),
+            webcamModal: document.getElementById('webcam-capture-modal'),
+            webcamVideo: document.getElementById('webcam-video'),
+            webcamCanvas: document.getElementById('webcam-canvas'),
+            webcamLoading: document.getElementById('webcam-loading'),
+            webcamCloseBtn: document.getElementById('webcam-close-btn'),
+            webcamCancelBtn: document.getElementById('webcam-cancel-btn'),
+            webcamCaptureBtn: document.getElementById('webcam-capture-btn'),
+            webcamRetakeBtn: document.getElementById('webcam-retake-btn'),
+            webcamUseBtn: document.getElementById('webcam-use-btn'),
             editBikeModal: document.getElementById('edit-bike-modal'),
             editBikeForm: document.getElementById('edit-bike-form'),
             editBikeClientId: document.getElementById('edit-bike-client-id'),
@@ -32,7 +50,48 @@ export class BicicletasManager {
         const bikeCor = document.getElementById('bike-cor');
         
         this.elements.addBikeForm.addEventListener('submit', this.handleAddBike.bind(this));
-        this.elements.cancelAddBikeBtn.addEventListener('click', () => this.app.toggleModal('add-bike-modal', false));
+        this.elements.cancelAddBikeBtn.addEventListener('click', () => this.closeAddBikeModal());
+        
+        // Photo upload and capture listeners
+        this.elements.bikePhotoUploadBtn.addEventListener('click', () => {
+            this.elements.bikePhotoFileInput.click();
+        });
+        
+        this.elements.bikePhotoFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                await this.handlePhotoUpload(file);
+            }
+        });
+        
+        this.elements.bikePhotoCameraBtn.addEventListener('click', () => {
+            this.openWebcamModal();
+        });
+        
+        this.elements.bikePhotoRemove.addEventListener('click', () => {
+            this.clearPhoto();
+        });
+        
+        // Webcam modal listeners
+        this.elements.webcamCloseBtn.addEventListener('click', () => {
+            this.closeWebcamModal();
+        });
+        
+        this.elements.webcamCancelBtn.addEventListener('click', () => {
+            this.closeWebcamModal();
+        });
+        
+        this.elements.webcamCaptureBtn.addEventListener('click', async () => {
+            await this.capturePhoto();
+        });
+        
+        this.elements.webcamRetakeBtn.addEventListener('click', () => {
+            this.retakePhoto();
+        });
+        
+        this.elements.webcamUseBtn.addEventListener('click', () => {
+            this.useWebcamPhoto();
+        });
         
         if (bikeModelo) {
             bikeModelo.addEventListener('input', (e) => {
@@ -68,6 +127,126 @@ export class BicicletasManager {
         });
     }
 
+    async handlePhotoUpload(file) {
+        try {
+            const photoData = await this.photoHandler.handleFileUpload(file);
+            this.setPhotoPreview(photoData);
+        } catch (error) {
+            await Modals.alert(error.message, 'Erro ao Carregar Foto');
+        }
+    }
+
+    setPhotoPreview(photoData) {
+        this.elements.bikeFotoData.value = photoData;
+        this.elements.bikePhotoPreviewImg.src = photoData;
+        this.elements.bikePhotoPreview.classList.remove('hidden');
+        lucide.createIcons();
+    }
+
+    clearPhoto() {
+        this.elements.bikeFotoData.value = '';
+        this.elements.bikePhotoPreviewImg.src = '';
+        this.elements.bikePhotoPreview.classList.add('hidden');
+        this.elements.bikePhotoFileInput.value = '';
+    }
+
+    async openWebcamModal() {
+        this.app.toggleModal('webcam-capture-modal', true);
+        this.elements.webcamLoading.classList.remove('hidden');
+        this.elements.webcamVideo.classList.add('hidden');
+        this.elements.webcamCanvas.classList.add('hidden');
+        
+        try {
+            const stream = await this.photoHandler.startWebcam();
+            this.elements.webcamVideo.srcObject = stream;
+            this.elements.webcamVideo.classList.remove('hidden');
+            this.elements.webcamLoading.classList.add('hidden');
+            lucide.createIcons();
+        } catch (error) {
+            this.closeWebcamModal();
+            await Modals.alert(error.message, 'Erro ao Acessar Câmera');
+        }
+    }
+
+    closeWebcamModal() {
+        this.photoHandler.stopWebcam();
+        this.elements.webcamVideo.srcObject = null;
+        this.elements.webcamVideo.classList.add('hidden');
+        this.elements.webcamCanvas.classList.add('hidden');
+        this.elements.webcamLoading.classList.remove('hidden');
+        this.elements.webcamCaptureBtn.classList.remove('hidden');
+        this.elements.webcamRetakeBtn.classList.add('hidden');
+        this.elements.webcamUseBtn.classList.add('hidden');
+        // Clean up temporary photo data to prevent memory leaks
+        this.tempCapturedPhoto = null;
+        this.app.toggleModal('webcam-capture-modal', false);
+    }
+
+    async capturePhoto() {
+        try {
+            const photoData = await this.photoHandler.captureFromVideo(this.elements.webcamVideo);
+            
+            // Display captured photo on canvas with aspect ratio preservation
+            const ctx = this.elements.webcamCanvas.getContext('2d');
+            const img = new Image();
+            img.onload = () => {
+                // Calculate canvas size to maintain aspect ratio
+                const containerWidth = this.elements.webcamCanvas.parentElement.clientWidth;
+                const containerHeight = this.elements.webcamCanvas.parentElement.clientHeight;
+                const imgAspect = img.width / img.height;
+                const containerAspect = containerWidth / containerHeight;
+                
+                let canvasWidth, canvasHeight;
+                if (imgAspect > containerAspect) {
+                    canvasWidth = containerWidth;
+                    canvasHeight = containerWidth / imgAspect;
+                } else {
+                    canvasHeight = containerHeight;
+                    canvasWidth = containerHeight * imgAspect;
+                }
+                
+                this.elements.webcamCanvas.width = canvasWidth;
+                this.elements.webcamCanvas.height = canvasHeight;
+                ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+                
+                // Show canvas, hide video
+                this.elements.webcamVideo.classList.add('hidden');
+                this.elements.webcamCanvas.classList.remove('hidden');
+                
+                // Update button visibility
+                this.elements.webcamCaptureBtn.classList.add('hidden');
+                this.elements.webcamRetakeBtn.classList.remove('hidden');
+                this.elements.webcamUseBtn.classList.remove('hidden');
+                
+                lucide.createIcons();
+            };
+            img.src = photoData;
+            
+            // Store captured photo temporarily
+            this.tempCapturedPhoto = photoData;
+        } catch (error) {
+            await Modals.alert(error.message, 'Erro ao Capturar Foto');
+        }
+    }
+
+    retakePhoto() {
+        // Clean up temporary photo data
+        this.tempCapturedPhoto = null;
+        this.elements.webcamCanvas.classList.add('hidden');
+        this.elements.webcamVideo.classList.remove('hidden');
+        this.elements.webcamCaptureBtn.classList.remove('hidden');
+        this.elements.webcamRetakeBtn.classList.add('hidden');
+        this.elements.webcamUseBtn.classList.add('hidden');
+    }
+
+    useWebcamPhoto() {
+        if (this.tempCapturedPhoto) {
+            this.setPhotoPreview(this.tempCapturedPhoto);
+            this.tempCapturedPhoto = null;
+        }
+        this.closeWebcamModal();
+    }
+
     async handleAddBike(e) {
         e.preventDefault();
         
@@ -82,10 +261,11 @@ export class BicicletasManager {
         const modelo = document.getElementById('bike-modelo').value;
         const marca = document.getElementById('bike-marca').value;
         const cor = document.getElementById('bike-cor').value;
+        const foto = this.elements.bikeFotoData.value || null;
 
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (client) {
-            const newBike = { id: Utils.generateUUID(), modelo, marca, cor };
+            const newBike = { id: Utils.generateUUID(), modelo, marca, cor, foto };
             client.bicicletas.push(newBike);
             await Storage.saveClient(client);
             
@@ -93,13 +273,19 @@ export class BicicletasManager {
                 modelo, 
                 marca, 
                 cor,
+                temFoto: !!foto,
                 cliente: client.nome,
                 clienteCpf: client.cpf
             });
             
             this.renderClientDetails();
-            this.app.toggleModal('add-bike-modal', false);
+            this.closeAddBikeModal();
         }
+    }
+
+    closeAddBikeModal() {
+        this.clearPhoto();
+        this.app.toggleModal('add-bike-modal', false);
     }
 
     openAddBikeModal(clientId) {
@@ -111,8 +297,10 @@ export class BicicletasManager {
         }
 
         this.elements.addBikeForm.reset();
+        this.clearPhoto();
         this.elements.bikeClientIdInput.value = clientId;
         this.app.toggleModal('add-bike-modal', true);
+        lucide.createIcons();
     }
 
     renderClientDetails() {
@@ -133,11 +321,17 @@ export class BicicletasManager {
 
         const bikesHTML = client.bicicletas.length > 0 ? client.bicicletas.map(bike => `
             <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 dark:bg-slate-700/40 dark:border-slate-700">
-               <div class="flex justify-between items-start">
+               <div class="flex justify-between items-start gap-3">
+                    ${bike.foto ? `
+                    <div class="flex-shrink-0">
+                        <img src="${bike.foto}" alt="${bike.modelo}" class="w-24 h-24 object-cover rounded-md border border-slate-300 dark:border-slate-600">
+                    </div>
+                    ` : ''}
                     <div class="flex items-start gap-2 flex-1">
-                        <div>
+                        <div class="flex-1">
                             <p class="font-semibold text-slate-800 dark:text-slate-100">${bike.modelo} <span class="font-normal text-slate-600 dark:text-slate-300">(${bike.marca})</span></p>
                             <p class="text-sm text-slate-500 dark:text-slate-400">Cor: ${bike.cor}</p>
+                            ${bike.foto ? `<p class="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1"><i data-lucide="camera" class="h-3 w-3"></i> Com foto</p>` : ''}
                         </div>
                         ${canEditClients ? `
                         <button class="edit-bike-btn text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" data-bike-id="${bike.id}" title="Editar bicicleta">
