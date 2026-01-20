@@ -177,6 +177,8 @@ export class BicicletasManager {
         this.elements.webcamCaptureBtn.classList.remove('hidden');
         this.elements.webcamRetakeBtn.classList.add('hidden');
         this.elements.webcamUseBtn.classList.add('hidden');
+        // Clean up temporary photo data to prevent memory leaks
+        this.tempCapturedPhoto = null;
         this.app.toggleModal('webcam-capture-modal', false);
     }
 
@@ -184,13 +186,28 @@ export class BicicletasManager {
         try {
             const photoData = await this.photoHandler.captureFromVideo(this.elements.webcamVideo);
             
-            // Display captured photo on canvas
+            // Display captured photo on canvas with aspect ratio preservation
             const ctx = this.elements.webcamCanvas.getContext('2d');
             const img = new Image();
             img.onload = () => {
-                this.elements.webcamCanvas.width = img.width;
-                this.elements.webcamCanvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
+                // Calculate canvas size to maintain aspect ratio
+                const containerWidth = this.elements.webcamCanvas.parentElement.clientWidth;
+                const containerHeight = this.elements.webcamCanvas.parentElement.clientHeight;
+                const imgAspect = img.width / img.height;
+                const containerAspect = containerWidth / containerHeight;
+                
+                let canvasWidth, canvasHeight;
+                if (imgAspect > containerAspect) {
+                    canvasWidth = containerWidth;
+                    canvasHeight = containerWidth / imgAspect;
+                } else {
+                    canvasHeight = containerHeight;
+                    canvasWidth = containerHeight * imgAspect;
+                }
+                
+                this.elements.webcamCanvas.width = canvasWidth;
+                this.elements.webcamCanvas.height = canvasHeight;
+                ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
                 
                 // Show canvas, hide video
                 this.elements.webcamVideo.classList.add('hidden');
@@ -213,6 +230,7 @@ export class BicicletasManager {
     }
 
     retakePhoto() {
+        // Clean up temporary photo data
         this.tempCapturedPhoto = null;
         this.elements.webcamCanvas.classList.add('hidden');
         this.elements.webcamVideo.classList.remove('hidden');

@@ -87,10 +87,19 @@ export class PhotoHandler {
                     let quality = this.quality;
                     let compressedDataURL = canvas.toDataURL('image/jpeg', quality);
                     
-                    // Reduce quality if file is still too large
-                    while (this.getDataURLSize(compressedDataURL) > this.maxSizeKB * 1024 && quality > 0.1) {
-                        quality -= 0.1;
+                    // Use binary search to find optimal quality level
+                    let maxIterations = 10; // Prevent infinite loops
+                    let iteration = 0;
+                    let minQuality = 0.1;
+                    let maxQuality = this.quality;
+                    
+                    while (this.getDataURLSize(compressedDataURL) > this.maxSizeKB * 1024 && 
+                           quality > minQuality && 
+                           iteration < maxIterations) {
+                        maxQuality = quality;
+                        quality = (minQuality + maxQuality) / 2;
                         compressedDataURL = canvas.toDataURL('image/jpeg', quality);
+                        iteration++;
                     }
 
                     resolve(compressedDataURL);
@@ -110,7 +119,10 @@ export class PhotoHandler {
      */
     getDataURLSize(dataURL) {
         const base64 = dataURL.split(',')[1];
-        return base64 ? (base64.length * 3) / 4 : 0;
+        if (!base64) return 0;
+        // Account for padding characters for accurate byte count
+        const padding = (base64.match(/=/g) || []).length;
+        return (base64.length * 3) / 4 - padding;
     }
 
     /**
