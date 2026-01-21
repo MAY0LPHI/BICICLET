@@ -4,6 +4,7 @@ import { RegistrosManager } from './registros/registros-diarios.js';
 import { ConfiguracaoManager } from './configuracao/configuracao.js';
 import { DadosManager } from './dados/dados.js';
 import { JogosManager } from './jogos/jogos.js';
+
 import { Storage } from './shared/storage.js';
 import { Debug } from './shared/debug.js';
 import { Auth } from './shared/auth.js';
@@ -11,6 +12,7 @@ import { Usuarios } from './usuarios/usuarios.js';
 import { Utils } from './shared/utils.js';
 import { SystemLoader } from './shared/system-loader.js';
 import { getJobMonitor } from './shared/job-monitor.js';
+import { Config } from './shared/config.js';
 
 class App {
     constructor() {
@@ -21,24 +23,27 @@ class App {
             activeTab: 'clientes',
             currentDailyRecords: [],
         };
-        
+
         this.elements = {
             clientesTab: document.getElementById('clientes-tab'),
             registrosDiariosTab: document.getElementById('registros-diarios-tab'),
             dadosTab: document.getElementById('dados-tab'),
             configuracaoTab: document.getElementById('configuracao-tab'),
+
             jogosTab: document.getElementById('jogos-tab'),
             clientesTabContent: document.getElementById('clientes-tab-content'),
             registrosDiariosTabContent: document.getElementById('registros-diarios-tab-content'),
             dadosTabContent: document.getElementById('dados-tab-content'),
             configuracaoTabContent: document.getElementById('configuracao-tab-content'),
+
             jogosTabContent: document.getElementById('jogos-tab-content'),
         };
     }
 
     async init() {
+        await Config.load();
         await Auth.init();
-        
+
         if (!Auth.isLoggedIn()) {
             this.showLoginScreen();
             this.setupLoginForm();
@@ -50,10 +55,10 @@ class App {
             this.showPasswordChangeModal();
             return;
         }
-        
+
         this.showMainApp();
         await this.loadData();
-        
+
         this.clientesManager = new ClientesManager(this);
         this.bicicletasManager = new BicicletasManager(this);
         this.registrosManager = new RegistrosManager(this);
@@ -61,42 +66,47 @@ class App {
         this.dadosManager = new DadosManager(this);
         this.jogosManager = new JogosManager(this);
         this.usuariosManager = Usuarios;
-        
+
+
         this.clientesManager.renderClientList();
         this.addEventListeners();
         this.updateUserInfo();
         this.applyPermissions();
-        
-        this.registrosManager.elements.dailyRecordsDateInput.value = new Date().toISOString().split('T')[0];
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        this.registrosManager.elements.dailyRecordsDateInput.value = `${year}-${month}-${day}`;
         this.registrosManager.renderDailyRecords();
-        
+
         this.initJobMonitor();
     }
-    
+
     initJobMonitor() {
         this.jobMonitor = getJobMonitor();
-        
+
         this.jobMonitor.onChanges((changes) => {
             console.log('📡 Mudanças detectadas:', changes);
-            
+
             if (changes.clients) {
                 this.refreshClients();
             }
-            
+
             if (changes.registros) {
                 this.refreshRegistros();
             }
-            
+
             if (changes.usuarios) {
                 this.refreshUsuarios();
             }
-            
+
             if (changes.categorias) {
                 this.refreshCategorias();
             }
         });
     }
-    
+
     async refreshClients() {
         try {
             this.data.clients = await Storage.loadClients();
@@ -108,7 +118,7 @@ class App {
             console.warn('Erro ao atualizar clientes:', e);
         }
     }
-    
+
     async refreshRegistros() {
         try {
             this.data.registros = await Storage.loadRegistros();
@@ -120,14 +130,14 @@ class App {
             console.warn('Erro ao atualizar registros:', e);
         }
     }
-    
+
     refreshUsuarios() {
         if (this.usuariosManager && typeof this.usuariosManager.render === 'function') {
             this.usuariosManager.render();
         }
         this.jobMonitor.showToast('Lista de usuários atualizada', 'success');
     }
-    
+
     refreshCategorias() {
         if (this.configuracaoManager) {
             this.configuracaoManager.loadCategorias();
@@ -204,6 +214,8 @@ class App {
             }
         }
 
+
+
         this.selectFirstVisibleTab();
 
         if (this.clientesManager) {
@@ -234,6 +246,7 @@ class App {
             'dados': () => Auth.hasPermission('dados', 'ver'),
             'configuracao': () => Auth.hasPermission('configuracao', 'ver'),
             'usuarios': () => Auth.hasPermission('configuracao', 'gerenciarUsuarios'),
+
             'jogos': () => Auth.hasPermission('jogos', 'ver')
         };
 
@@ -257,7 +270,7 @@ class App {
         this.elements.registrosDiariosTab.addEventListener('click', () => this.switchTab('registros-diarios'));
         this.elements.dadosTab.addEventListener('click', () => this.switchTab('dados'));
         this.elements.configuracaoTab.addEventListener('click', () => this.switchTab('configuracao'));
-        
+
         const usuariosTab = document.getElementById('usuarios-tab');
         if (usuariosTab) {
             usuariosTab.addEventListener('click', () => this.switchTab('usuarios'));
@@ -266,6 +279,8 @@ class App {
         if (this.elements.jogosTab) {
             this.elements.jogosTab.addEventListener('click', () => this.switchTab('jogos'));
         }
+
+
 
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
@@ -383,7 +398,7 @@ class App {
             this.data.clients = await Storage.loadClients();
             this.data.registros = await Storage.loadRegistros();
         }
-        
+
         let needsSave = false;
         this.data.clients.forEach(client => {
             if (!client.categoria) {
@@ -395,7 +410,7 @@ class App {
                 needsSave = true;
             }
         });
-        
+
         if (needsSave) {
             await Storage.saveClients(this.data.clients);
         }
@@ -403,13 +418,14 @@ class App {
 
     switchTab(tabName) {
         this.data.activeTab = tabName;
-        
+
         const tabs = {
             clientes: { btn: this.elements.clientesTab, content: this.elements.clientesTabContent },
             'registros-diarios': { btn: this.elements.registrosDiariosTab, content: this.elements.registrosDiariosTabContent },
             'dados': { btn: this.elements.dadosTab, content: this.elements.dadosTabContent },
             'configuracao': { btn: this.elements.configuracaoTab, content: this.elements.configuracaoTabContent },
             'usuarios': { btn: document.getElementById('usuarios-tab'), content: document.getElementById('usuarios-tab-content') },
+
             'jogos': { btn: this.elements.jogosTab, content: this.elements.jogosTabContent },
         };
 
@@ -437,6 +453,7 @@ class App {
         } else if (tabName === 'jogos') {
             this.jogosManager.init();
             lucide.createIcons();
+
         }
     }
 
@@ -504,7 +521,7 @@ class App {
                                 <div class="flex items-center justify-between mb-1">
                                     <p class="text-xs font-medium text-amber-700 dark:text-amber-200">${comment.usuario}</p>
                                     <div class="flex items-center gap-2">
-                                        <p class="text-xs text-amber-600 dark:text-amber-400">${commentDate.toLocaleDateString('pt-BR')} ${commentDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</p>
+                                        <p class="text-xs text-amber-600 dark:text-amber-400">${commentDate.toLocaleDateString('pt-BR')} ${commentDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                                         ${canDeleteComment ? `
                                         <button class="delete-modal-comment-btn text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" data-comment-id="${comment.id}" title="Excluir comentário">
                                             <i data-lucide="trash-2" class="w-3 h-3"></i>
@@ -544,7 +561,7 @@ class App {
         };
 
         addCommentBtn.onclick = addCommentHandler;
-        
+
         commentInput.onkeypress = (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -564,11 +581,11 @@ class App {
 document.addEventListener('DOMContentLoaded', async () => {
     Debug.init();
     lucide.createIcons();
-    
+
     // Executar verificação do sistema com tela de carregamento
     const systemLoader = new SystemLoader();
     const systemReady = await systemLoader.start();
-    
+
     if (systemReady) {
         window.app = new App();
         window.app.init();

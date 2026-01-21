@@ -7,8 +7,8 @@ class StorageBackend {
     this.backupsPath = path.join(__dirname, '..', 'dados', 'database', 'backups');
     this.clientesFile = path.join(this.basePath, 'clientes.json');
     this.registrosFile = path.join(this.basePath, 'registros.json');
-    this.categoriasFile = path.join(this.basePath, 'categorias.json');
-    
+    this.imagesDir = path.join(this.basePath, 'imagens');
+
     this.ensureDirectories();
     console.log('\x1b[36m%s\x1b[0m', '📁 [SISTEMA] Dados serão salvos em:', this.basePath);
   }
@@ -19,18 +19,23 @@ class StorageBackend {
       fs.mkdirSync(this.basePath, { recursive: true });
       console.log('\x1b[32m%s\x1b[0m', '✅ [SISTEMA] Pasta de dados criada:', this.basePath);
     }
-    
+
+    if (!fs.existsSync(this.imagesDir)) {
+      fs.mkdirSync(this.imagesDir, { recursive: true });
+      console.log('\x1b[32m%s\x1b[0m', '✅ [SISTEMA] Pasta de imagens criada:', this.imagesDir);
+    }
+
     // Ensure backups directory exists
     if (!fs.existsSync(this.backupsPath)) {
       fs.mkdirSync(this.backupsPath, { recursive: true });
       console.log('\x1b[32m%s\x1b[0m', '✅ [SISTEMA] Pasta de backups criada:', this.backupsPath);
     }
-    
+
     if (!fs.existsSync(this.clientesFile)) {
       fs.writeFileSync(this.clientesFile, '[]', 'utf8');
       console.log('\x1b[32m%s\x1b[0m', '✅ [SISTEMA] Arquivo clientes.json criado');
     }
-    
+
     if (!fs.existsSync(this.registrosFile)) {
       fs.writeFileSync(this.registrosFile, '[]', 'utf8');
       console.log('\x1b[32m%s\x1b[0m', '✅ [SISTEMA] Arquivo registros.json criado');
@@ -47,6 +52,36 @@ class StorageBackend {
       console.log('\x1b[32m%s\x1b[0m', '✅ [SISTEMA] Arquivo categorias.json criado');
     }
   }
+
+  // ... (existing helper methods) ...
+
+  saveImage(base64Data) {
+    try {
+      if (!base64Data) return { success: false, error: 'Sem dados' };
+
+      // Remove header if present
+      let cleanBase64 = base64Data;
+      if (base64Data.includes(',')) {
+        cleanBase64 = base64Data.split(',')[1];
+      }
+
+      const buffer = Buffer.from(cleanBase64, 'base64');
+      const timestamp = Date.now();
+      const filename = `img_${timestamp}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+      const filepath = path.join(this.imagesDir, filename);
+
+      fs.writeFileSync(filepath, buffer);
+      console.log('\x1b[32m%s\x1b[0m', `💾 [IMAGEM] Imagem salva: ${filename}`);
+
+      // Return proper URL for Electron
+      // Using file:// protocol for absolute path
+      return { success: true, url: filename, fullPath: filepath };
+    } catch (error) {
+      console.error('\x1b[31m%s\x1b[0m', '❌ [ERRO] Falha ao salvar imagem:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
 
   loadCategorias() {
     try {
@@ -156,11 +191,11 @@ class StorageBackend {
   formatBytes(bytes) {
     if (bytes === 0) return '0 Bytes';
     if (bytes < 0 || typeof bytes !== 'number') return 'N/A';
-    
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
-    
+
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   }
 
@@ -169,15 +204,15 @@ class StorageBackend {
     if (!backup || !backup.data) {
       return { valid: false, error: 'Formato de backup inválido - estrutura ausente' };
     }
-    
+
     if (!Array.isArray(backup.data.clients)) {
       return { valid: false, error: 'Formato de backup inválido - dados de clientes inválidos' };
     }
-    
+
     if (!Array.isArray(backup.data.registros)) {
       return { valid: false, error: 'Formato de backup inválido - dados de registros inválidos' };
     }
-    
+
     return { valid: true };
   }
 
@@ -202,12 +237,12 @@ class StorageBackend {
       const timestamp = now.toISOString().replace(/:/g, '-').replace(/\..+/, '').replace('T', '_');
       const filename = `backup_${timestamp}.json`;
       const backupPath = path.join(this.backupsPath, filename);
-      
+
       // Load all data
       const clients = this.loadAllClients();
       const registros = this.loadAllRegistros();
       const categorias = this.loadCategorias();
-      
+
       // Create backup object
       const backup = {
         version: '1.0',
@@ -218,11 +253,11 @@ class StorageBackend {
           categorias: categorias
         }
       };
-      
+
       // Save backup file
       fs.writeFileSync(backupPath, JSON.stringify(backup, null, 2), 'utf8');
       console.log('\x1b[32m%s\x1b[0m', `✅ [BACKUP] Backup criado: ${filename}`);
-      
+
       return { success: true, filename: filename };
     } catch (error) {
       console.error('\x1b[31m%s\x1b[0m', '❌ [ERRO] Falha ao criar backup:', error);
@@ -233,39 +268,39 @@ class StorageBackend {
   restoreBackup(filename) {
     try {
       const backupPath = path.join(this.backupsPath, filename);
-      
+
       if (!fs.existsSync(backupPath)) {
         throw new Error('Arquivo de backup não encontrado');
       }
-      
+
       // Read and parse backup file
       const data = fs.readFileSync(backupPath, 'utf8');
       const parseResult = this.parseJSON(data, 'Arquivo de backup corrompido ou inválido');
-      
+
       if (!parseResult.success) {
         throw new Error(parseResult.error);
       }
-      
+
       const backup = parseResult.data;
-      
+
       // Validate backup structure
       const validation = this.validateBackupStructure(backup);
       if (!validation.valid) {
         throw new Error(validation.error);
       }
-      
+
       // Restore data
       this.saveAllClients(backup.data.clients);
       this.saveAllRegistros(backup.data.registros);
-      
+
       if (this.isCategoriesValid(backup.data.categorias)) {
         this.saveCategorias(backup.data.categorias);
       }
-      
+
       console.log('\x1b[32m%s\x1b[0m', `✅ [BACKUP] Backup restaurado: ${filename}`);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         stats: {
           clients: backup.data.clients.length,
           registros: backup.data.registros.length,
@@ -281,18 +316,18 @@ class StorageBackend {
   downloadBackup(filename) {
     try {
       const backupPath = path.join(this.backupsPath, filename);
-      
+
       if (!fs.existsSync(backupPath)) {
         throw new Error('Arquivo de backup não encontrado');
       }
-      
+
       // Read backup file and return its contents
       const data = fs.readFileSync(backupPath, 'utf8');
-      
+
       console.log('\x1b[34m%s\x1b[0m', `📥 [BACKUP] Backup lido para download: ${filename}`);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         data: data,
         filename: filename
       };
@@ -305,15 +340,15 @@ class StorageBackend {
   deleteBackup(filename) {
     try {
       const backupPath = path.join(this.backupsPath, filename);
-      
+
       if (!fs.existsSync(backupPath)) {
         throw new Error('Arquivo de backup não encontrado');
       }
-      
+
       // Delete backup file
       fs.unlinkSync(backupPath);
       console.log('\x1b[32m%s\x1b[0m', `🗑️ [BACKUP] Backup excluído: ${filename}`);
-      
+
       return { success: true };
     } catch (error) {
       console.error('\x1b[31m%s\x1b[0m', '❌ [ERRO] Falha ao excluir backup:', error);
@@ -334,24 +369,24 @@ class StorageBackend {
       } else {
         backup = backupData;
       }
-      
+
       // Validate backup structure
       const validation = this.validateBackupStructure(backup);
       if (!validation.valid) {
         throw new Error(validation.error);
       }
-      
+
       // Generate filename with timestamp
       const now = new Date();
       const timestamp = now.toISOString().replace(/:/g, '-').replace(/\..+/, '').replace('T', '_');
       const filename = `backup_imported_${timestamp}.json`;
       const backupPath = path.join(this.backupsPath, filename);
-      
+
       // Save backup file
       fs.writeFileSync(backupPath, JSON.stringify(backup, null, 2), 'utf8');
-      
+
       console.log('\x1b[32m%s\x1b[0m', `✅ [BACKUP] Backup importado e salvo: ${filename}`);
-      
+
       return { success: true, filename: filename };
     } catch (error) {
       console.error('\x1b[31m%s\x1b[0m', '❌ [ERRO] Falha ao importar backup:', error);
@@ -362,11 +397,11 @@ class StorageBackend {
   loadBackupSettings() {
     try {
       const settingsFile = path.join(this.basePath, 'backup-settings.json');
-      
+
       if (fs.existsSync(settingsFile)) {
         const data = fs.readFileSync(settingsFile, 'utf8');
         const parseResult = this.parseJSON(data, 'Arquivo de configurações corrompido');
-        
+
         if (parseResult.success) {
           return parseResult.data;
         } else {
@@ -374,7 +409,7 @@ class StorageBackend {
           // Fall through to return defaults
         }
       }
-      
+
       // Return default settings
       return {
         enabled: false,

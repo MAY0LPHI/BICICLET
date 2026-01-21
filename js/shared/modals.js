@@ -7,11 +7,11 @@ export const Modals = {
 
     showWithIcon(title, content, iconName = null) {
         this.close();
-        
-        const iconHtml = iconName 
-            ? `<i data-lucide="${iconName}" class="w-6 h-6 text-blue-600 dark:text-blue-400 mr-2"></i>` 
+
+        const iconHtml = iconName
+            ? `<i data-lucide="${iconName}" class="w-6 h-6 text-blue-600 dark:text-blue-400 mr-2"></i>`
             : '';
-        
+
         const modalHtml = `
             <div id="dynamic-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 transition-opacity duration-300">
                 <div class="modal-content bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300">
@@ -27,12 +27,12 @@ export const Modals = {
                 </div>
             </div>
         `;
-        
+
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         this.currentModal = document.getElementById('dynamic-modal');
-        
+
         lucide.createIcons();
-        
+
         setTimeout(() => {
             this.currentModal.classList.remove('opacity-0');
             this.currentModal.querySelector('.modal-content').classList.remove('scale-95');
@@ -41,14 +41,26 @@ export const Modals = {
     },
 
     close() {
-        if (this.currentModal) {
-            this.currentModal.classList.add('opacity-0');
-            this.currentModal.querySelector('.modal-content').classList.remove('scale-100');
-            this.currentModal.querySelector('.modal-content').classList.add('scale-95');
-            
+        if (this.cleanup) {
+            this.cleanup();
+            this.cleanup = null;
+        }
+
+        const modal = this.currentModal;
+        if (modal) {
+            modal.classList.add('opacity-0');
+
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.classList.remove('scale-100');
+                modalContent.classList.add('scale-95');
+            }
+
             setTimeout(() => {
-                this.currentModal.remove();
-                this.currentModal = null;
+                modal.remove();
+                if (this.currentModal === modal) {
+                    this.currentModal = null;
+                }
             }, 300);
         }
     },
@@ -62,7 +74,7 @@ export const Modals = {
             const modal = document.getElementById('custom-confirm-modal');
             const MODAL_ANIMATION_DURATION = 300;
             const MODAL_CLOSE_BUFFER = 50; // Extra buffer for safety
-            
+
             // Aguardar se o modal ainda estiver visível (fechando)
             const waitForClose = () => {
                 return new Promise((res) => {
@@ -74,7 +86,7 @@ export const Modals = {
                     }
                 });
             };
-            
+
             waitForClose().then(() => {
                 const titleEl = document.getElementById('confirm-title');
                 const messageEl = document.getElementById('confirm-message');
@@ -123,7 +135,7 @@ export const Modals = {
                             modalContent.classList.add('scale-95');
                         }
                         modal.classList.remove('show');
-                        
+
                         setTimeout(() => {
                             modal.classList.add('hidden');
                             modal.removeEventListener('click', handleBackdropClick);
@@ -146,7 +158,7 @@ export const Modals = {
                 modal.addEventListener('click', handleBackdropClick);
 
                 modal.classList.remove('hidden');
-                
+
                 // Delay maior antes de mostrar e habilitar botões
                 setTimeout(() => {
                     modal.classList.add('show');
@@ -155,7 +167,7 @@ export const Modals = {
                         modalContent.classList.remove('scale-95');
                         modalContent.classList.add('scale-100');
                     }
-                    
+
                     // Habilitar botões após animação completa
                     setTimeout(() => {
                         okBtn.disabled = false;
@@ -216,7 +228,7 @@ export const Modals = {
                 modal.querySelector('.modal-content').classList.remove('scale-100');
                 modal.querySelector('.modal-content').classList.add('scale-95');
                 modal.classList.remove('show');
-                
+
                 setTimeout(() => {
                     modal.classList.add('hidden');
                 }, 300);
@@ -226,7 +238,7 @@ export const Modals = {
             okBtn.addEventListener('click', handleOk, { once: true });
 
             modal.classList.remove('hidden');
-            
+
             // Small delay before showing modal to avoid accidental clicks
             setTimeout(() => {
                 modal.classList.add('show');
@@ -238,7 +250,7 @@ export const Modals = {
 
     confirm(message, title = 'Confirmação', onConfirm) {
         const promise = this.showConfirm(message, title);
-        
+
         if (typeof onConfirm === 'function') {
             promise.then((confirmed) => {
                 if (confirmed) {
@@ -246,7 +258,7 @@ export const Modals = {
                 }
             });
         }
-        
+
         return promise;
     },
 
@@ -262,7 +274,7 @@ export const Modals = {
             oldOkBtn.parentNode.replaceChild(okBtn, oldOkBtn);
 
             titleEl.textContent = title;
-            
+
             const inputHtml = `
                 <p class="text-slate-600 dark:text-slate-400 mb-4">${message}</p>
                 <input type="text" id="modal-input-field" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Digite aqui..." />
@@ -270,7 +282,7 @@ export const Modals = {
             messageEl.innerHTML = inputHtml;
 
             const inputField = document.getElementById('modal-input-field');
-            
+
             let isProcessing = false;
 
             const handleOk = (e) => {
@@ -292,12 +304,12 @@ export const Modals = {
                 modal.querySelector('.modal-content').classList.remove('scale-100');
                 modal.querySelector('.modal-content').classList.add('scale-95');
                 modal.classList.remove('show');
-                
+
                 setTimeout(() => {
                     modal.classList.add('hidden');
                     okBtn.textContent = 'OK';
                 }, 300);
-                
+
                 inputField.removeEventListener('keypress', handleKeyPress);
             };
 
@@ -307,7 +319,7 @@ export const Modals = {
             okBtn.textContent = 'Confirmar';
 
             modal.classList.remove('hidden');
-            
+
             // Small delay before showing modal to avoid accidental clicks
             setTimeout(() => {
                 modal.classList.add('show');
@@ -316,6 +328,160 @@ export const Modals = {
                 inputField.focus();
             }, 50);
         });
+    },
+
+    showImage(imageUrl, title = 'Visualizar Imagem') {
+        // Do NOT close previous modals. We want to stack on top.
+        // this.close(); 
+
+        const modalHtml = `
+            <div id="image-modal" class="fixed inset-0 z-[10020] bg-black/90 backdrop-blur-md flex items-center justify-center opacity-0 transition-opacity duration-300">
+                <div class="relative w-full h-full flex flex-col">
+                    <!-- Header -->
+                    <div class="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-4 bg-gradient-to-b from-black/50 to-transparent">
+                        <h2 class="text-white font-medium text-lg drop-shadow-md">${title}</h2>
+                        <button id="close-image-modal-btn" class="text-white/80 hover:text-white bg-black/20 hover:bg-black/40 rounded-full p-2 transition-colors backdrop-blur-sm">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <!-- Image Container -->
+                    <div class="flex-1 overflow-hidden flex items-center justify-center p-4" id="image-zoom-container">
+                        <img src="${imageUrl}" id="modal-image" class="max-w-full max-h-full object-contain transition-transform duration-200 cursor-grab active:cursor-grabbing" draggable="false" alt="Visualização">
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/40 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 shadow-xl z-10 select-none">
+                        <button id="zoom-out-btn" class="text-white/80 hover:text-white hover:scale-110 transition-all p-1" title="Diminuir Zoom">
+                            <i data-lucide="minus" class="w-6 h-6"></i>
+                        </button>
+                        <span id="zoom-level" class="text-white font-mono text-sm min-w-[3rem] text-center">100%</span>
+                        <button id="zoom-in-btn" class="text-white/80 hover:text-white hover:scale-110 transition-all p-1" title="Aumentar Zoom">
+                            <i data-lucide="plus" class="w-6 h-6"></i>
+                        </button>
+                        <div class="w-px h-6 bg-white/20 mx-1"></div>
+                        <button id="reset-zoom-btn" class="text-white/80 hover:text-white hover:scale-110 transition-all p-1" title="Resetar">
+                            <i data-lucide="maximize" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const imageModal = document.getElementById('image-modal');
+
+        // If there was a previous dynamic modal, we don't want to lose reference to it, 
+        // but Modals system is simple. Let's just track this specific image modal locally 
+        // or temporarily override currentModal if we want standard behavior.
+        // For safety, let's treat this as a standalone overlay.
+
+        lucide.createIcons();
+
+        const img = document.getElementById('modal-image');
+        const container = document.getElementById('image-zoom-container');
+        const zoomInBtn = document.getElementById('zoom-in-btn');
+        const zoomOutBtn = document.getElementById('zoom-out-btn');
+        const resetBtn = document.getElementById('reset-zoom-btn');
+        const closeBtn = document.getElementById('close-image-modal-btn');
+        const zoomLevelDisplay = document.getElementById('zoom-level');
+
+        let scale = 1;
+        let isDragging = false;
+        let startX, startY;
+        let translateX = 0, translateY = 0;
+
+        const updateTransform = () => {
+            if (!img) return; // Safety check
+            img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            if (zoomLevelDisplay) zoomLevelDisplay.textContent = `${Math.round(scale * 100)}%`;
+        };
+
+        const setZoom = (newScale) => {
+            scale = Math.min(Math.max(0.1, newScale), 5); // Limit zoom between 0.1x and 5x
+            updateTransform();
+        };
+
+        const handleZoomIn = () => setZoom(scale + 0.25);
+        const handleZoomOut = () => setZoom(scale - 0.25);
+        const handleReset = () => {
+            scale = 1;
+            translateX = 0;
+            translateY = 0;
+            updateTransform();
+        };
+
+        const cleanupListeners = () => {
+            window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('mousemove', handleMouseMove);
+        };
+
+        const closeImageModal = () => {
+            cleanupListeners();
+            imageModal.classList.add('opacity-0');
+            setTimeout(() => {
+                imageModal.remove();
+            }, 300);
+        };
+
+        zoomInBtn?.addEventListener('click', handleZoomIn);
+        zoomOutBtn?.addEventListener('click', handleZoomOut);
+        resetBtn?.addEventListener('click', handleReset);
+        closeBtn?.addEventListener('click', closeImageModal);
+
+        // Wheel Zoom
+        const handleWheel = (e) => {
+            e.preventDefault();
+            const delta = e.deltaY * -0.001;
+            setZoom(scale + delta);
+        };
+        container?.addEventListener('wheel', handleWheel, { passive: false });
+
+        const handleMouseDown = (e) => {
+            isDragging = true;
+            startX = e.clientX - translateX;
+            startY = e.clientY - translateY;
+            img.classList.add('cursor-grabbing');
+            img.classList.remove('cursor-grab');
+        };
+        img?.addEventListener('mousedown', handleMouseDown);
+
+        const handleMouseUp = () => {
+            isDragging = false;
+            if (img) {
+                img.classList.remove('cursor-grabbing');
+                img.classList.add('cursor-grab');
+            }
+        };
+        window.addEventListener('mouseup', handleMouseUp);
+
+        const handleMouseMove = (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            translateX = e.clientX - startX;
+            translateY = e.clientY - startY;
+            updateTransform();
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+
+        // Double click to reset
+        const handleDblClick = () => {
+            if (scale === 1) {
+                setZoom(2);
+            } else {
+                scale = 1;
+                translateX = 0;
+                translateY = 0;
+                updateTransform();
+            }
+        };
+        img?.addEventListener('dblclick', handleDblClick);
+
+        setTimeout(() => {
+            if (imageModal) {
+                imageModal.classList.remove('opacity-0');
+            }
+        }, 10);
     }
 };
 
