@@ -63,9 +63,10 @@ export class JogosManager {
             'galaxy_defender': 'Defensor da Galáxia'
         };
         const name = achievementNames[achievementId] || achievementId;
-        
+
         const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 z-50 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-lg transform translate-x-full transition-transform duration-500';
+        notification.className = 'fixed top-4 right-4 z-50 text-white px-6 py-4 rounded-xl shadow-lg transform translate-x-full transition-transform duration-500';
+        notification.style.background = 'linear-gradient(to right, var(--color-primary, #3b82f6), var(--color-secondary, #9333ea))';
         notification.innerHTML = `
             <div class="flex items-center gap-3">
                 <i data-lucide="trophy" class="w-6 h-6 text-yellow-300"></i>
@@ -76,13 +77,13 @@ export class JogosManager {
             </div>
         `;
         document.body.appendChild(notification);
-        
+
         setTimeout(() => notification.classList.remove('translate-x-full'), 100);
         setTimeout(() => {
             notification.classList.add('translate-x-full');
             setTimeout(() => notification.remove(), 500);
         }, 3000);
-        
+
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
@@ -167,7 +168,7 @@ export class JogosManager {
         const gamesContainer = document.getElementById('games-menu');
         const statsContainer = document.getElementById('player-stats');
         const achievementsContainer = document.getElementById('player-achievements');
-        
+
         if (!gamesContainer) return;
 
         const games = [
@@ -183,7 +184,7 @@ export class JogosManager {
             { id: 'wordsearch', name: 'Caça Palavras', icon: 'search', description: 'Encontre as palavras escondidas!', category: 'diversos' },
             { id: 'crossword', name: 'Cruzadinha', icon: 'grid', description: 'Preencha as palavras cruzadas!', category: 'diversos' }
         ];
-        
+
         const categories = [
             { id: 'acao', name: 'Jogos de Ação', icon: 'gamepad-2' },
             { id: 'palavras', name: 'Jogos de Palavras', icon: 'text' },
@@ -194,11 +195,11 @@ export class JogosManager {
         if (statsContainer) {
             statsContainer.innerHTML = `
                 <div class="text-center">
-                    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">${this.stats.gamesPlayed}</p>
+                    <p class="text-2xl font-bold" style="color: var(--color-primary, #2563eb)">${this.stats.gamesPlayed}</p>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Jogos</p>
                 </div>
                 <div class="text-center">
-                    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">${this.stats.bestScore}</p>
+                    <p class="text-2xl font-bold" style="color: var(--color-secondary, #9333ea)">${this.stats.bestScore}</p>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Melhor Pontuação</p>
                 </div>
                 <div class="text-center">
@@ -217,19 +218,19 @@ export class JogosManager {
         const renderGameCard = (game) => `
             <div class="game-card bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg hover:border-blue-400 dark:hover:border-blue-500 transition-all transform hover:-translate-y-1" data-game="${game.id}">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-primary, #3b82f6), var(--color-secondary, #9333ea));">
                         <i data-lucide="${game.icon}" class="w-6 h-6 text-white"></i>
                     </div>
                     <div class="text-right">
                         <p class="text-xs text-slate-500 dark:text-slate-400">Seu Recorde</p>
-                        <p class="text-lg font-bold text-blue-600 dark:text-blue-400">${this.getUserBestScore(game.id) || '-'}</p>
+                        <p class="text-lg font-bold" style="color: var(--color-primary, #2563eb)">${this.getUserBestScore(game.id) || '-'}</p>
                     </div>
                 </div>
                 <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">${game.name}</h3>
                 <p class="text-sm text-slate-500 dark:text-slate-400">${game.description}</p>
             </div>
         `;
-        
+
         const gamesByCategory = categories.map(cat => {
             const catGames = games.filter(g => g.category === cat.id);
             return `
@@ -244,7 +245,7 @@ export class JogosManager {
                 </div>
             `;
         }).join('');
-        
+
         gamesContainer.innerHTML = gamesByCategory;
 
         lucide.createIcons();
@@ -295,7 +296,7 @@ export class JogosManager {
         container.innerHTML = scores.map((score, index) => {
             const isCurrentUser = session && score.username === session.username;
             const medalColor = index === 0 ? 'text-yellow-500' : index === 1 ? 'text-slate-400' : index === 2 ? 'text-amber-600' : 'text-slate-500';
-            
+
             return `
                 <div class="flex items-center justify-between p-3 rounded-lg ${isCurrentUser ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'bg-slate-50 dark:bg-slate-700/50'}">
                     <div class="flex items-center space-x-3">
@@ -308,7 +309,7 @@ export class JogosManager {
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="font-bold text-lg ${isCurrentUser ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}">${score.score.toLocaleString('pt-BR')}</p>
+                        <p class="font-bold text-lg ${!isCurrentUser ? 'text-slate-700 dark:text-slate-300' : ''}" ${isCurrentUser ? 'style="color: var(--color-primary, #2563eb)"' : ''}>${score.score.toLocaleString('pt-BR')}</p>
                         <p class="text-xs text-slate-400">${new Date(score.date).toLocaleDateString('pt-BR')}</p>
                     </div>
                 </div>
@@ -321,11 +322,11 @@ export class JogosManager {
     openGame(gameId) {
         const gameContainer = document.getElementById('game-container');
         const menuContainer = document.getElementById('games-menu-section');
-        
+
         if (gameContainer && menuContainer) {
             menuContainer.classList.add('hidden');
             gameContainer.classList.remove('hidden');
-            
+
             this.renderRanking(gameId);
             this.startGame(gameId);
         }
@@ -335,29 +336,29 @@ export class JogosManager {
         const gameContainer = document.getElementById('game-container');
         const menuContainer = document.getElementById('games-menu-section');
         const canvas = document.getElementById('game-canvas');
-        
+
         if (this.currentGame && this.currentGame.stop) {
             this.currentGame.stop();
         }
         this.currentGame = null;
-        
+
         if (canvas) {
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
-        
+
         if (gameContainer && menuContainer) {
             gameContainer.classList.add('hidden');
             menuContainer.classList.remove('hidden');
         }
-        
+
         this.renderGameMenu();
     }
 
     startGame(gameId) {
         const canvas = document.getElementById('game-canvas');
         const gameTitle = document.getElementById('current-game-title');
-        
+
         if (!canvas) return;
 
         const games = {
@@ -379,6 +380,12 @@ export class JogosManager {
 
         if (gameTitle) {
             gameTitle.textContent = game.name;
+        }
+
+        // Ensure any previous game is stopped (prevents orphaned loops on double-click)
+        if (this.currentGame && this.currentGame.stop) {
+            this.currentGame.stop();
+            this.currentGame = null;
         }
 
         this.currentGame = new game.class(canvas, (score) => {
@@ -409,25 +416,25 @@ class SnakeGame {
         this.tileCount = 20;
         this.canvas.width = this.gridSize * this.tileCount;
         this.canvas.height = this.gridSize * this.tileCount;
-        
+
         this.difficulties = {
             easy: { speed: 150, name: 'Fácil' },
             medium: { speed: 100, name: 'Médio' },
             hard: { speed: 60, name: 'Difícil' }
         };
-        
+
         this.currentDifficulty = 'medium';
         this.phase = 1;
         this.maxPhase = 5;
         this.running = false;
-        
+
         // Power-up types
         this.powerUpTypes = {
             slowmo: { icon: '⏱', color: '#06b6d4', duration: 100, name: 'Velocidade Reduzida' },
             double: { icon: '⭐', color: '#eab308', duration: 80, name: 'Pontos em Dobro' },
             ghost: { icon: '🌀', color: '#a855f7', duration: 60, name: 'Atravessar Paredes' }
         };
-        
+
         this.reset();
         this.setupControls();
         this.showDifficultySelector();
@@ -436,7 +443,7 @@ class SnakeGame {
     showDifficultySelector() {
         const container = this.canvas.parentElement;
         let selector = document.getElementById('snake-difficulty');
-        
+
         if (!selector) {
             selector = document.createElement('div');
             selector.id = 'snake-difficulty';
@@ -447,7 +454,7 @@ class SnakeGame {
                 <button data-diff="hard" class="diff-btn px-4 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">Difícil</button>
             `;
             container.insertBefore(selector, this.canvas);
-            
+
             selector.querySelectorAll('.diff-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     this.currentDifficulty = btn.dataset.diff;
@@ -631,19 +638,19 @@ class SnakeGame {
         if (!this.running) return;
 
         let speed = this.difficulties[this.currentDifficulty].speed;
-        
+
         // Slow-mo power-up effect
         if (this.activePowerUp === 'slowmo') {
             speed *= 1.5;
         }
-        
+
         if (timestamp - this.lastUpdate >= speed) {
             if (!this.gameOver && !this.won) {
                 this.update();
             }
             this.lastUpdate = timestamp;
         }
-        
+
         this.draw();
         this.animationId = requestAnimationFrame((ts) => this.gameLoop(ts));
     }
@@ -696,7 +703,7 @@ class SnakeGame {
             this.food = this.generateFood();
             this.generateSpecialFood();
             this.generatePowerUp();
-            
+
             // Check phase progression
             if (this.phaseProgress >= this.phaseTarget && this.phase < this.maxPhase) {
                 this.phase++;
@@ -752,141 +759,55 @@ class SnakeGame {
     }
 
     draw() {
-        const isDark = document.documentElement.classList.contains('dark');
-        
-        // Background with gradient
-        const bgGradient = this.ctx.createLinearGradient(0, 0, this.canvas.width, this.canvas.height);
-        if (isDark) {
-            bgGradient.addColorStop(0, '#1e293b');
-            bgGradient.addColorStop(1, '#0f172a');
-        } else {
-            bgGradient.addColorStop(0, '#f1f5f9');
-            bgGradient.addColorStop(1, '#e2e8f0');
-        }
-        this.ctx.fillStyle = bgGradient;
+        // Simple Background
+        this.ctx.fillStyle = '#1e293b';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Grid pattern
+        // Grid
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.05)';
         for (let i = 0; i < this.tileCount; i++) {
             for (let j = 0; j < this.tileCount; j++) {
-                if ((i + j) % 2 === 0) {
-                    this.ctx.fillStyle = isDark ? '#334155' : '#e2e8f0';
-                    this.ctx.fillRect(i * this.gridSize, j * this.gridSize, this.gridSize, this.gridSize);
-                }
+                this.ctx.strokeRect(i * this.gridSize, j * this.gridSize, this.gridSize, this.gridSize);
             }
         }
 
-        // Draw obstacles
+        // Obstacles
+        this.ctx.fillStyle = '#64748b';
         this.obstacles.forEach(obs => {
-            const obsGradient = this.ctx.createRadialGradient(
-                obs.x * this.gridSize + this.gridSize / 2,
-                obs.y * this.gridSize + this.gridSize / 2,
-                0,
-                obs.x * this.gridSize + this.gridSize / 2,
-                obs.y * this.gridSize + this.gridSize / 2,
-                this.gridSize / 2
-            );
-            obsGradient.addColorStop(0, '#64748b');
-            obsGradient.addColorStop(1, '#475569');
-            this.ctx.fillStyle = obsGradient;
-            this.ctx.fillRect(obs.x * this.gridSize + 2, obs.y * this.gridSize + 2, this.gridSize - 4, this.gridSize - 4);
+            this.ctx.fillRect(obs.x * this.gridSize + 1, obs.y * this.gridSize + 1, this.gridSize - 2, this.gridSize - 2);
         });
 
-        // Draw snake with gradient (blue/purple theme)
+        // Snake
+        this.ctx.fillStyle = '#22c55e';
         this.snake.forEach((seg, i) => {
-            const gradient = this.ctx.createRadialGradient(
-                seg.x * this.gridSize + this.gridSize / 2,
-                seg.y * this.gridSize + this.gridSize / 2,
-                0,
-                seg.x * this.gridSize + this.gridSize / 2,
-                seg.y * this.gridSize + this.gridSize / 2,
-                this.gridSize / 2
-            );
-            
-            if (i === 0) {
-                gradient.addColorStop(0, '#3b82f6');
-                gradient.addColorStop(1, '#a855f7');
-            } else {
-                const ratio = i / this.snake.length;
-                gradient.addColorStop(0, `rgba(59, 130, 246, ${1 - ratio * 0.5})`);
-                gradient.addColorStop(1, `rgba(168, 85, 247, ${1 - ratio * 0.5})`);
-            }
-            
-            // Ghost mode effect
-            if (this.activePowerUp === 'ghost') {
-                this.ctx.globalAlpha = 0.6 + Math.sin(Date.now() / 100) * 0.2;
-            }
-            
-            this.ctx.fillStyle = gradient;
-            this.ctx.beginPath();
-            this.ctx.roundRect(
-                seg.x * this.gridSize + 1,
-                seg.y * this.gridSize + 1,
-                this.gridSize - 2,
-                this.gridSize - 2,
-                4
-            );
-            this.ctx.fill();
+            if (i === 0) this.ctx.fillStyle = '#4ade80';
+            else this.ctx.fillStyle = '#22c55e';
+
+            if (this.activePowerUp === 'ghost') this.ctx.globalAlpha = 0.6;
+            this.ctx.fillRect(seg.x * this.gridSize + 1, seg.y * this.gridSize + 1, this.gridSize - 2, this.gridSize - 2);
             this.ctx.globalAlpha = 1;
         });
 
-        // Draw food
+        // Food
         this.ctx.fillStyle = '#ef4444';
         this.ctx.beginPath();
-        this.ctx.arc(
-            this.food.x * this.gridSize + this.gridSize / 2,
-            this.food.y * this.gridSize + this.gridSize / 2,
-            this.gridSize / 2 - 2,
-            0,
-            Math.PI * 2
-        );
+        this.ctx.arc(this.food.x * this.gridSize + this.gridSize / 2, this.food.y * this.gridSize + this.gridSize / 2, this.gridSize / 2 - 2, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Food stem
-        this.ctx.fillStyle = '#22c55e';
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.food.x * this.gridSize + this.gridSize / 2, this.food.y * this.gridSize + 2);
-        this.ctx.lineTo(this.food.x * this.gridSize + this.gridSize / 2 + 3, this.food.y * this.gridSize + 6);
-        this.ctx.lineTo(this.food.x * this.gridSize + this.gridSize / 2 - 3, this.food.y * this.gridSize + 6);
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        // Draw special food
+        // Special Food
         if (this.specialFood) {
-            this.ctx.fillStyle = `rgba(250, 204, 21, ${0.5 + Math.sin(Date.now() / 100) * 0.5})`;
-            this.ctx.beginPath();
-            this.ctx.arc(
-                this.specialFood.x * this.gridSize + this.gridSize / 2,
-                this.specialFood.y * this.gridSize + this.gridSize / 2,
-                this.gridSize / 2 - 2,
-                0,
-                Math.PI * 2
-            );
-            this.ctx.fill();
-            
             this.ctx.fillStyle = '#fbbf24';
-            this.ctx.font = 'bold 10px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText('★', this.specialFood.x * this.gridSize + this.gridSize / 2, this.specialFood.y * this.gridSize + this.gridSize / 2 + 4);
+            this.ctx.beginPath();
+            this.ctx.arc(this.specialFood.x * this.gridSize + this.gridSize / 2, this.specialFood.y * this.gridSize + this.gridSize / 2, this.gridSize / 2 - 2, 0, Math.PI * 2);
+            this.ctx.fill();
         }
 
-        // Draw power-up
+        // PowerUp
         if (this.powerUp) {
-            const puType = this.powerUpTypes[this.powerUp.type];
-            this.ctx.fillStyle = `rgba(${this.hexToRgb(puType.color)}, ${0.5 + Math.sin(Date.now() / 80) * 0.5})`;
+            this.ctx.fillStyle = this.powerUpTypes[this.powerUp.type].color;
             this.ctx.beginPath();
-            this.ctx.arc(
-                this.powerUp.x * this.gridSize + this.gridSize / 2,
-                this.powerUp.y * this.gridSize + this.gridSize / 2,
-                this.gridSize / 2 - 1,
-                0,
-                Math.PI * 2
-            );
+            this.ctx.arc(this.powerUp.x * this.gridSize + this.gridSize / 2, this.powerUp.y * this.gridSize + this.gridSize / 2, this.gridSize / 2 - 2, 0, Math.PI * 2);
             this.ctx.fill();
-            
-            this.ctx.font = '12px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(puType.icon, this.powerUp.x * this.gridSize + this.gridSize / 2, this.powerUp.y * this.gridSize + this.gridSize / 2 + 4);
         }
 
         // Draw active power-up indicator
@@ -899,79 +820,57 @@ class SnakeGame {
         }
 
         // Draw phase progress bar
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
         this.ctx.fillRect(5, this.canvas.height - 15, this.canvas.width - 10, 10);
-        
+
         const progressWidth = ((this.canvas.width - 10) * this.phaseProgress) / this.phaseTarget;
-        const progressGradient = this.ctx.createLinearGradient(5, 0, 5 + progressWidth, 0);
-        progressGradient.addColorStop(0, '#3b82f6');
-        progressGradient.addColorStop(1, '#a855f7');
-        this.ctx.fillStyle = progressGradient;
+        this.ctx.fillStyle = '#3b82f6';
         this.ctx.fillRect(5, this.canvas.height - 15, progressWidth, 10);
 
         // Game over / Won screen
         if (this.gameOver || this.won) {
-            // Animated background overlay
-            const overlayGradient = this.ctx.createRadialGradient(
-                this.canvas.width / 2, this.canvas.height / 2, 0,
-                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
-            );
-            overlayGradient.addColorStop(0, this.won ? 'rgba(34, 197, 94, 0.85)' : 'rgba(239, 68, 68, 0.85)');
-            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
-            this.ctx.fillStyle = overlayGradient;
+            this.ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
-            // Draw decorative elements
-            const time = Date.now() / 1000;
-            for (let i = 0; i < 5; i++) {
-                const angle = (time + i * 0.5) % (Math.PI * 2);
-                const radius = 60 + Math.sin(time * 2 + i) * 10;
-                this.ctx.strokeStyle = this.won ? 'rgba(134, 239, 172, 0.3)' : 'rgba(252, 165, 165, 0.3)';
-                this.ctx.lineWidth = 2;
-                this.ctx.beginPath();
-                this.ctx.arc(this.canvas.width / 2, this.canvas.height / 2 - 20, radius, angle, angle + 1);
-                this.ctx.stroke();
-            }
-            
-            // Title with shadow
-            this.ctx.shadowColor = this.won ? '#22c55e' : '#ef4444';
-            this.ctx.shadowBlur = 20;
-            this.ctx.fillStyle = '#fff';
+
+            this.ctx.fillStyle = this.won ? '#22c55e' : '#ef4444';
             this.ctx.font = 'bold 28px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? '🏆 VOCÊ VENCEU!' : '💀 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
-            this.ctx.shadowBlur = 0;
-            
-            // Score box
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            this.ctx.beginPath();
-            this.ctx.roundRect(this.canvas.width / 2 - 80, this.canvas.height / 2 - 5, 160, 60, 12);
-            this.ctx.fill();
-            
+            this.ctx.fillText(this.won ? 'VOCÊ VENCEU!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 20);
+
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 20px Arial';
-            this.ctx.fillText(`${this.score} pts`, this.canvas.width / 2, this.canvas.height / 2 + 20);
+            this.ctx.font = '20px Arial';
+            this.ctx.fillText(`${this.score} pts`, this.canvas.width / 2, this.canvas.height / 2 + 10);
+
             this.ctx.font = '14px Arial';
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            this.ctx.fillText(`Fase ${this.phase}/${this.maxPhase}`, this.canvas.width / 2, this.canvas.height / 2 + 42);
-            
-            // Restart button style
-            const btnY = this.canvas.height / 2 + 75;
-            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
-            this.ctx.fillStyle = `rgba(59, 130, 246, ${0.3 + pulse * 0.3})`;
-            this.ctx.beginPath();
-            this.ctx.roundRect(this.canvas.width / 2 - 110, btnY - 15, 220, 30, 8);
-            this.ctx.fill();
-            
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = '13px Arial';
-            this.ctx.fillText('⏎ Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, btnY + 4);
+            this.ctx.fillStyle = '#94a3b8';
+            this.ctx.fillText('Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 40);
         }
     }
 
     hexToRgb(hex) {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0, 0, 0';
+    }
+
+    getThemeColors() {
+        const style = getComputedStyle(document.documentElement);
+        const isDark = document.documentElement.classList.contains('dark');
+
+        // Helper to get hex from var or fallback
+        const getVar = (name, fallback) => {
+            const val = style.getPropertyValue(name).trim();
+            return val || fallback;
+        };
+
+        return {
+            isDark,
+            primary: getVar('--color-primary', '#3b82f6'), // Blue-500 fallback
+            secondary: getVar('--color-secondary', '#a855f7'), // Purple-500 fallback
+            accent: getVar('--color-accent', '#ef4444'), // Red-500 fallback for food
+            bg: isDark ? '#0f172a' : '#f8fafc', // Slate-900 / Slate-50
+            grid: isDark ? '#334155' : '#e2e8f0', // Slate-700 / Slate-200
+            text: isDark ? '#f1f5f9' : '#1e293b'  // Slate-100 / Slate-800
+        };
     }
 
     updateScoreDisplay() {
@@ -995,13 +894,19 @@ class DoomGame {
         this.manager = manager;
         this.canvas.width = 600;
         this.canvas.height = 450;
-        
+
         this.player = { x: 1.5, y: 1.5, angle: 0, health: 100, ammo: 50 };
         this.moveSpeed = 0.08;
-        this.rotSpeed = 0.05;
-        this.mouseSensitivity = 0.003;
+        this.rotSpeed = 0.04;
+        this.mouseSensitivity = 0.0025;
         this.isPointerLocked = false;
-        
+
+        // Visual effects
+        this.bobbing = 0;
+        this.bobbingAmount = 0;
+        this.weaponKick = 0;
+        this.weaponSway = 0;
+
         this.level = 1;
         this.maxLevel = 3;
         this.score = 0;
@@ -1009,24 +914,24 @@ class DoomGame {
         this.gameOver = false;
         this.won = false;
         this.running = false;
-        
+
         // Animação de tiro
         this.shotAnimations = [];
         this.lastShotAnimTime = 0;
-        
+
         this.maps = [
-            [[1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,0,1],[1,0,1,1,0,1,1,0,0,1],[1,0,1,0,0,0,1,0,0,1],[1,0,0,0,1,0,0,0,0,1],[1,0,1,0,1,0,1,1,0,1],[1,0,1,0,0,0,0,0,0,1],[1,0,0,0,1,1,0,1,0,1],[1,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1]],
-            [[1,1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,0,1],[1,0,1,0,1,0,1,1,0,1],[1,0,1,0,0,0,0,1,0,1],[1,0,1,1,1,1,0,0,0,1],[1,0,0,0,0,1,0,1,0,1],[1,1,1,0,0,0,0,1,0,1],[1,0,0,0,1,1,0,1,0,1],[1,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1]],
-            [[1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,0,1],[1,0,1,1,1,1,1,0,0,1],[1,0,1,0,0,0,0,0,0,1],[1,0,1,0,1,1,1,1,0,1],[1,0,0,0,1,0,0,0,0,1],[1,0,1,0,1,0,1,1,0,1],[1,0,1,0,0,0,0,1,0,1],[1,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1]]
+            [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1], [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1], [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1], [1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1], [1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]],
+            [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1], [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1], [1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1], [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1], [1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1], [1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1], [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1], [1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]],
+            [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1], [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1], [1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1], [1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1], [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
         ];
-        
+
         this.keys = { w: false, s: false, a: false, d: false, left: false, right: false, shoot: false };
         this.bullets = [];
         this.enemies = [];
         this.pickups = [];
         this.lastShot = 0;
-        this.shootCooldown = 300;
-        
+        this.shootCooldown = 250; // Faster shooting
+
         this.reset();
         this.setupControls();
     }
@@ -1041,7 +946,7 @@ class DoomGame {
         this.bullets = [];
         this.enemies = [];
         this.pickups = [];
-        
+
         const enemyCount = 3 + (this.level - 1) * 2;
         for (let i = 0; i < enemyCount; i++) this.spawnEnemy();
         this.spawnPickups();
@@ -1115,13 +1020,13 @@ class DoomGame {
             if (e.key === 'ArrowRight') this.keys.right = false;
             if (e.key === ' ') this.keys.shoot = false;
         };
-        
+
         this.mouseMoveHandler = (e) => {
             if (this.isPointerLocked) {
                 this.player.angle += e.movementX * this.mouseSensitivity;
             }
         };
-        
+
         this.mouseClickHandler = (e) => {
             if (!this.isPointerLocked && !this.gameOver && !this.won) {
                 this.canvas.requestPointerLock();
@@ -1130,11 +1035,11 @@ class DoomGame {
                 setTimeout(() => { this.keys.shoot = false; }, 100);
             }
         };
-        
+
         this.pointerLockChangeHandler = () => {
             this.isPointerLocked = document.pointerLockElement === this.canvas;
         };
-        
+
         document.addEventListener('keydown', this.keyDownHandler);
         document.addEventListener('keyup', this.keyUpHandler);
         document.addEventListener('mousemove', this.mouseMoveHandler);
@@ -1183,36 +1088,63 @@ class DoomGame {
         if (now - this.lastShot < this.shootCooldown || this.player.ammo <= 0) return;
         this.lastShot = now;
         this.player.ammo--;
-        this.bullets.push({ x: this.player.x, y: this.player.y, dx: Math.cos(this.player.angle) * 0.3, dy: Math.sin(this.player.angle) * 0.3, isEnemy: false });
-        
+        this.weaponKick = 12; // Weapon kickback effect
+
+        // Spread logic for shotgun feel
+        for (let i = 0; i < 3; i++) {
+            const spread = (Math.random() - 0.5) * 0.1;
+            this.bullets.push({
+                x: this.player.x,
+                y: this.player.y,
+                dx: Math.cos(this.player.angle + spread) * 0.4,
+                dy: Math.sin(this.player.angle + spread) * 0.4,
+                isEnemy: false
+            });
+        }
+
         // Adicionar efeito de tiro
         this.shotAnimations.push({
-            x: this.canvas.width / 2,
-            y: this.canvas.height / 2,
-            radius: 8,
-            maxRadius: 30,
+            x: this.canvas.width / 2 + (Math.random() * 20 - 10),
+            y: this.canvas.height / 2 + (Math.random() * 20 - 10),
+            radius: 5,
+            maxRadius: 25,
             opacity: 1,
             startTime: now
         });
-        
+
         this.updateScoreDisplay();
     }
 
     update() {
         if (this.keys.left) this.player.angle -= this.rotSpeed;
         if (this.keys.right) this.player.angle += this.rotSpeed;
-        
+
         let dx = 0, dy = 0;
-        if (this.keys.w) { dx += Math.cos(this.player.angle) * this.moveSpeed; dy += Math.sin(this.player.angle) * this.moveSpeed; }
-        if (this.keys.s) { dx -= Math.cos(this.player.angle) * this.moveSpeed; dy -= Math.sin(this.player.angle) * this.moveSpeed; }
-        if (this.keys.a) { dx += Math.cos(this.player.angle - Math.PI/2) * this.moveSpeed; dy += Math.sin(this.player.angle - Math.PI/2) * this.moveSpeed; }
-        if (this.keys.d) { dx += Math.cos(this.player.angle + Math.PI/2) * this.moveSpeed; dy += Math.sin(this.player.angle + Math.PI/2) * this.moveSpeed; }
-        
+        let isMoving = false;
+
+        if (this.keys.w) { dx += Math.cos(this.player.angle) * this.moveSpeed; dy += Math.sin(this.player.angle) * this.moveSpeed; isMoving = true; }
+        if (this.keys.s) { dx -= Math.cos(this.player.angle) * this.moveSpeed; dy -= Math.sin(this.player.angle) * this.moveSpeed; isMoving = true; }
+        if (this.keys.a) { dx += Math.cos(this.player.angle - Math.PI / 2) * this.moveSpeed; dy += Math.sin(this.player.angle - Math.PI / 2) * this.moveSpeed; isMoving = true; }
+        if (this.keys.d) { dx += Math.cos(this.player.angle + Math.PI / 2) * this.moveSpeed; dy += Math.sin(this.player.angle + Math.PI / 2) * this.moveSpeed; isMoving = true; }
+
+        if (isMoving) {
+            this.bobbing += 0.15;
+            this.bobbingAmount = Math.sin(this.bobbing) * 4; // Head bob amplitude
+            this.weaponSway = Math.sin(this.bobbing * 0.5) * 2;
+        } else {
+            this.bobbingAmount = this.bobbingAmount * 0.8; // Dampen bob when stopping
+            this.weaponSway = this.weaponSway * 0.8;
+            this.bobbing = 0;
+        }
+
+        // Recover weapon kick
+        if (this.weaponKick > 0) this.weaponKick *= 0.8;
+
         if (this.canMove(this.player.x + dx, this.player.y)) this.player.x += dx;
         if (this.canMove(this.player.x, this.player.y + dy)) this.player.y += dy;
-        
+
         if (this.keys.shoot) this.shoot();
-        
+
         this.bullets = this.bullets.filter(bullet => {
             bullet.x += bullet.dx; bullet.y += bullet.dy;
             if (this.map[Math.floor(bullet.y)] && this.map[Math.floor(bullet.y)][Math.floor(bullet.x)] === 1) return false;
@@ -1240,7 +1172,7 @@ class DoomGame {
             }
             return bullet.x > 0 && bullet.x < this.map[0].length && bullet.y > 0 && bullet.y < this.map.length;
         });
-        
+
         const now = Date.now();
         this.enemies.forEach(enemy => {
             const angle = Math.atan2(this.player.y - enemy.y, this.player.x - enemy.x);
@@ -1255,7 +1187,7 @@ class DoomGame {
             }
             if (dist < 0.4) { this.player.health -= 1; this.updateScoreDisplay(); if (this.player.health <= 0) this.endGame(); }
         });
-        
+
         this.pickups = this.pickups.filter(pickup => {
             if (Math.sqrt((pickup.x - this.player.x) ** 2 + (pickup.y - this.player.y) ** 2) < 0.5) {
                 if (pickup.type === 'health') this.player.health = Math.min(100, this.player.health + 25);
@@ -1268,89 +1200,108 @@ class DoomGame {
     }
 
     draw() {
-        this.ctx.fillStyle = '#1a1a2e';
+        // Floor and Ceiling with gradient for depth
+        const gradientCeiling = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height / 2);
+        gradientCeiling.addColorStop(0, '#0f172a');
+        gradientCeiling.addColorStop(1, '#334155');
+        this.ctx.fillStyle = gradientCeiling;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height / 2);
-        this.ctx.fillStyle = '#3d3d5c';
+
+        const gradientFloor = this.ctx.createLinearGradient(0, this.canvas.height / 2, 0, this.canvas.height);
+        gradientFloor.addColorStop(0, '#1e293b');
+        gradientFloor.addColorStop(1, '#0f172a');
+        this.ctx.fillStyle = gradientFloor;
         this.ctx.fillRect(0, this.canvas.height / 2, this.canvas.width, this.canvas.height / 2);
-        
+
+        // Raycasting
         const fov = Math.PI / 3;
-        const numRays = 80;
+        const numRays = 120; // Increased resolution
+        const stripWidth = Math.ceil(this.canvas.width / numRays);
+
+        // Z-Buffer for sprite culling (simple 1D buffer)
+        this.zBuffer = new Array(numRays).fill(0);
+
         for (let i = 0; i < numRays; i++) {
             const rayAngle = this.player.angle - fov / 2 + i * (fov / numRays);
             const result = this.castRay(rayAngle);
-            if (result.distance > 0) {
+            this.zBuffer[i] = result.distance; // Store for sprite culling
+
+            if (result.distance > 0 && result.distance < 20) {
                 const wallHeight = Math.min(this.canvas.height, (this.canvas.height / result.distance) * 0.8);
-                const wallTop = (this.canvas.height - wallHeight) / 2;
-                const brightness = Math.max(0.2, 1 - result.distance / 8);
-                const r = Math.floor(result.side ? 100 * brightness : 80 * brightness);
-                const g = Math.floor(result.side ? 50 * brightness : 40 * brightness);
-                const b = Math.floor(result.side ? 150 * brightness : 120 * brightness);
+                const wallTop = (this.canvas.height - wallHeight) / 2 + this.bobbingAmount; // Apply head bob
+
+                // Color based on side and distance (fog)
+                const baseColor = result.side ? { r: 100, g: 50, b: 160 } : { r: 120, g: 60, b: 190 };
+                const brightness = Math.max(0.1, 1 - result.distance / 15);
+
+                // Fake texture shading: darken edges of the block
+                // result.xPos is 0..1 across the face of the block
+                const edgeShade = (result.xPos < 0.05 || result.xPos > 0.95) ? 0.7 : 1;
+
+                const r = Math.floor(baseColor.r * brightness * edgeShade);
+                const g = Math.floor(baseColor.g * brightness * edgeShade);
+                const b = Math.floor(baseColor.b * brightness * edgeShade);
+
                 this.ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-                this.ctx.fillRect(i * (this.canvas.width / numRays), wallTop, (this.canvas.width / numRays) + 1, wallHeight);
+                this.ctx.fillRect(i * stripWidth, wallTop, stripWidth, wallHeight);
             }
         }
-        
+
         this.drawShotAnimations();
-        
-        this.enemies.forEach(enemy => {
-            const dx = enemy.x - this.player.x, dy = enemy.y - this.player.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            let angle = Math.atan2(dy, dx) - this.player.angle;
-            while (angle < -Math.PI) angle += Math.PI * 2;
-            while (angle > Math.PI) angle -= Math.PI * 2;
-            if (Math.abs(angle) < fov / 2 + 0.2 && this.isEnemyVisible(enemy)) {
-                const screenX = this.canvas.width / 2 + (angle / (fov / 2)) * (this.canvas.width / 2);
-                const size = Math.min(200, (this.canvas.height / dist) * 0.6);
-                const screenY = (this.canvas.height - size) / 2;
-                this.ctx.fillStyle = enemy.type === 'boss' ? '#dc2626' : '#ef4444';
-                this.ctx.beginPath();
-                this.ctx.arc(screenX, screenY + size * 0.4, size * 0.3, 0, Math.PI * 2);
-                this.ctx.fill();
-                this.ctx.fillStyle = enemy.type === 'boss' ? '#b91c1c' : '#dc2626';
-                this.ctx.beginPath();
-                this.ctx.arc(screenX, screenY + size * 0.15, size * 0.2, 0, Math.PI * 2);
-                this.ctx.fill();
-                this.ctx.fillStyle = '#fff';
-                this.ctx.beginPath();
-                this.ctx.arc(screenX - size * 0.08, screenY + size * 0.12, size * 0.05, 0, Math.PI * 2);
-                this.ctx.arc(screenX + size * 0.08, screenY + size * 0.12, size * 0.05, 0, Math.PI * 2);
-                this.ctx.fill();
+
+        // Sort enemies by distance to draw far ones first
+        const renderList = [
+            ...this.enemies.map(e => ({ ...e, type: 'enemy', dist: Math.sqrt((e.x - this.player.x) ** 2 + (e.y - this.player.y) ** 2) })),
+            ...this.pickups.map(p => ({ ...p, type: 'pickup', dist: Math.sqrt((p.x - this.player.x) ** 2 + (p.y - this.player.y) ** 2) }))
+        ].sort((a, b) => b.dist - a.dist);
+
+        renderList.forEach(obj => {
+            // Simple sprite projection
+            const dx = obj.x - this.player.x;
+            const dy = obj.y - this.player.y;
+
+            // Rotate around player to find position on screen
+            // Transform sprite with the inverse camera matrix
+            // [ planeX   dirX ] -1                                       [ dirY      -dirX ]
+            // [               ]       =  1/(planeX*dirY-dirX*planeY) *   [                 ]
+            // [ planeY   dirY ]                                          [ -planeY  planeX ]
+
+            // Simplified projection for this engine:
+            let objAngle = Math.atan2(dy, dx) - this.player.angle;
+
+            // Normalize angle to -PI to +PI
+            while (objAngle < -Math.PI) objAngle += Math.PI * 2;
+            while (objAngle > Math.PI) objAngle -= Math.PI * 2;
+
+            // Only draw if in front of player
+            if (Math.abs(objAngle) < fov / 1.5) {
+                const dist = obj.dist;
+                // Fish-eye correction for sprite size (optional, but good for consistent feel)
+                const correctDist = dist * Math.cos(objAngle);
+
+                const screenX = (0.5 * (objAngle / (fov / 2)) + 0.5) * this.canvas.width;
+                const size = Math.min(600, (this.canvas.height / correctDist) * 0.7);
+                const screenY = (this.canvas.height - size) / 2 + this.bobbingAmount;
+
+                // Simple z-check: if the center of the sprite is occluded by a wall, don't draw
+                // This is an approximation. A real engine checks all stripes.
+                const centerStripIdx = Math.floor(screenX / (this.canvas.width / numRays));
+                if (centerStripIdx >= 0 && centerStripIdx < numRays) {
+                    if (this.zBuffer[centerStripIdx] < dist - 0.5) return; // Occluded
+                }
+
+                if (obj.type === 'enemy') {
+                    this.drawEnemy(screenX, screenY, size, obj);
+                } else {
+                    this.drawPickup(screenX, screenY, size, obj);
+                }
             }
         });
-        
-        this.pickups.forEach(pickup => {
-            const dx = pickup.x - this.player.x, dy = pickup.y - this.player.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            let angle = Math.atan2(dy, dx) - this.player.angle;
-            while (angle < -Math.PI) angle += Math.PI * 2;
-            while (angle > Math.PI) angle -= Math.PI * 2;
-            if (Math.abs(angle) < fov / 2 && this.isEnemyVisible(pickup)) {
-                const screenX = this.canvas.width / 2 + (angle / (fov / 2)) * (this.canvas.width / 2);
-                const size = Math.min(50, (30 / dist));
-                this.ctx.fillStyle = pickup.type === 'health' ? '#22c55e' : '#3b82f6';
-                this.ctx.beginPath();
-                this.ctx.arc(screenX, this.canvas.height / 2 + 20, size, 0, Math.PI * 2);
-                this.ctx.fill();
-            }
-        });
-        
-        this.ctx.fillStyle = '#4a4a4a';
-        this.ctx.fillRect(this.canvas.width / 2 - 20, this.canvas.height - 80, 40, 80);
-        this.ctx.fillStyle = '#2a2a2a';
-        this.ctx.fillRect(this.canvas.width / 2 - 5, this.canvas.height - 100, 10, 30);
-        
-        this.ctx.strokeStyle = '#fff';
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.canvas.width / 2 - 10, this.canvas.height / 2);
-        this.ctx.lineTo(this.canvas.width / 2 + 10, this.canvas.height / 2);
-        this.ctx.moveTo(this.canvas.width / 2, this.canvas.height / 2 - 10);
-        this.ctx.lineTo(this.canvas.width / 2, this.canvas.height / 2 + 10);
-        this.ctx.stroke();
-        
+
+        this.drawWeapon();
         this.drawHUD();
         this.drawMinimap();
-        
+
         if (this.gameOver || this.won) {
             // Dramatic overlay for Doom
             const overlayGradient = this.ctx.createRadialGradient(
@@ -1361,7 +1312,7 @@ class DoomGame {
             overlayGradient.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
             this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
+
             // Animated rings
             const time = Date.now() / 1000;
             for (let i = 0; i < 3; i++) {
@@ -1372,7 +1323,7 @@ class DoomGame {
                 this.ctx.arc(this.canvas.width / 2, this.canvas.height / 2 - 20, radius, 0, Math.PI * 2);
                 this.ctx.stroke();
             }
-            
+
             this.ctx.shadowColor = this.won ? '#22c55e' : '#dc2626';
             this.ctx.shadowBlur = 25;
             this.ctx.fillStyle = '#fff';
@@ -1380,44 +1331,218 @@ class DoomGame {
             this.ctx.textAlign = 'center';
             this.ctx.fillText(this.won ? '🎖️ VITÓRIA!' : '☠️ GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
             this.ctx.shadowBlur = 0;
-            
+
             // Stats box
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 100, this.canvas.height / 2, 200, 70, 12);
             this.ctx.fill();
-            
+
             this.ctx.fillStyle = '#fff';
             this.ctx.font = 'bold 22px Arial';
             this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 30);
             this.ctx.font = '14px Arial';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             this.ctx.fillText(`Nível ${this.level}/${this.maxLevel} • ${this.kills} abates`, this.canvas.width / 2, this.canvas.height / 2 + 55);
-            
+
             const pulse = 0.5 + Math.sin(time * 4) * 0.2;
             this.ctx.fillStyle = `rgba(239, 68, 68, ${0.3 + pulse * 0.3})`;
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 85, 260, 32, 8);
             this.ctx.fill();
-            
+
             this.ctx.fillStyle = '#fff';
             this.ctx.font = '13px Arial';
             this.ctx.fillText('⏎ Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 105);
         }
     }
 
+    drawEnemy(x, y, size, enemy) {
+        // Procedural "Cacodemon" or "Imp" style drawing
+        // Body (Red sphere)
+        const isBoss = enemy.type === 'boss';
+
+        this.ctx.save();
+        this.ctx.translate(x, y);
+
+        // Shadow
+        this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(0, size * 0.4, size * 0.4, size * 0.1, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Main Body
+        const gradient = this.ctx.createRadialGradient(-size * 0.1, -size * 0.1, size * 0.1, 0, 0, size * 0.4);
+        gradient.addColorStop(0, isBoss ? '#fca5a5' : '#ef4444');
+        gradient.addColorStop(1, isBoss ? '#991b1b' : '#7f1d1d');
+
+        this.ctx.fillStyle = gradient;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, size * 0.4, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Single Big Eye (Cyclops)
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.beginPath();
+        this.ctx.arc(0, -size * 0.05, size * 0.12, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Pupil
+        this.ctx.fillStyle = '#000';
+        this.ctx.beginPath();
+        this.ctx.arc(0, -size * 0.05, size * 0.05, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Horns
+        this.ctx.fillStyle = '#e2e8f0';
+        // Left horn
+        this.ctx.beginPath();
+        this.ctx.moveTo(-size * 0.25, -size * 0.25);
+        this.ctx.lineTo(-size * 0.4, -size * 0.5);
+        this.ctx.lineTo(-size * 0.15, -size * 0.35);
+        this.ctx.fill();
+        // Right horn
+        this.ctx.beginPath();
+        this.ctx.moveTo(size * 0.25, -size * 0.25);
+        this.ctx.lineTo(size * 0.4, -size * 0.5);
+        this.ctx.lineTo(size * 0.15, -size * 0.35);
+        this.ctx.fill();
+
+        // Maw / Mouth
+        this.ctx.fillStyle = '#450a0a';
+        this.ctx.beginPath();
+        this.ctx.arc(0, size * 0.2, size * 0.15, 0, Math.PI, false);
+        this.ctx.fill();
+
+        // Teeth
+        this.ctx.fillStyle = '#fff';
+        for (let i = -2; i <= 2; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(i * size * 0.05, size * 0.2);
+            this.ctx.lineTo(i * size * 0.05 + size * 0.02, size * 0.28);
+            this.ctx.lineTo(i * size * 0.05 - size * 0.02, size * 0.28);
+            this.ctx.fill();
+        }
+
+        this.ctx.restore();
+    }
+
+    drawPickup(x, y, size, pickup) {
+        this.ctx.save();
+        this.ctx.translate(x, y + size * 0.2); // Sits on floor a bit
+
+        // Bobbing animation for pickup
+        const floatY = Math.sin(Date.now() / 300) * (size * 0.05);
+        this.ctx.translate(0, floatY);
+
+        if (pickup.type === 'health') {
+            // Medkit (Blue box with cross)
+            this.ctx.fillStyle = '#3b82f6'; // Blue
+            this.ctx.fillRect(-size * 0.15, -size * 0.15, size * 0.3, size * 0.3);
+
+            // Cross
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillRect(-size * 0.05, -size * 0.1, size * 0.1, size * 0.2);
+            this.ctx.fillRect(-size * 0.1, -size * 0.05, size * 0.2, size * 0.1);
+
+        } else {
+            // Ammo box (Green)
+            this.ctx.fillStyle = '#166534';
+            this.ctx.fillRect(-size * 0.15, -size * 0.15, size * 0.3, size * 0.2);
+            this.ctx.fillStyle = '#22c55e';
+            this.ctx.fillRect(-size * 0.15, -size * 0.15, size * 0.3, size * 0.05); // Lid
+        }
+
+        this.ctx.restore();
+    }
+
+    drawWeapon() {
+        const weaponX = this.canvas.width / 2 + this.weaponSway;
+        const weaponY = this.canvas.height + this.weaponKick;
+        const scale = 3;
+
+        this.ctx.save();
+        this.ctx.translate(weaponX, weaponY);
+
+        // Procedural "Shotgun"
+        // Barrel
+        this.ctx.fillStyle = '#334155'; // Dark slate
+        this.ctx.fillRect(-40, -180, 20, 180); // Left barrel
+        this.ctx.fillRect(20, -180, 20, 180); // Right barrel
+
+        // Barrel holes
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.beginPath(); this.ctx.arc(-30, -180, 8, 0, Math.PI * 2); this.ctx.fill();
+        this.ctx.beginPath(); this.ctx.arc(30, -180, 8, 0, Math.PI * 2); this.ctx.fill();
+
+        // Stock/Body
+        this.ctx.fillStyle = '#475569';
+        this.ctx.fillRect(-50, 0, 100, 120);
+
+        // Pump handle
+        this.ctx.fillStyle = '#78350f'; // Wood
+        this.ctx.fillRect(-45, -80, 90, 40);
+
+        // Muzzle flash if firing (weaponKick high)
+        if (this.weaponKick > 5) {
+            this.ctx.globalCompositeOperation = 'lighter';
+            const flashSize = this.weaponKick * 5;
+            const gradient = this.ctx.createRadialGradient(0, -180, 10, 0, -190, flashSize);
+            gradient.addColorStop(0, '#fef08a');
+            gradient.addColorStop(0.5, '#f97316');
+            gradient.addColorStop(1, 'rgba(239, 68, 68, 0)');
+
+            this.ctx.fillStyle = gradient;
+            this.ctx.beginPath();
+            this.ctx.arc(0, -190, flashSize, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.globalCompositeOperation = 'source-over';
+        }
+
+        this.ctx.restore();
+
+        // Crosshair
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.canvas.width / 2 - 8, this.canvas.height / 2);
+        this.ctx.lineTo(this.canvas.width / 2 + 8, this.canvas.height / 2);
+        this.ctx.moveTo(this.canvas.width / 2, this.canvas.height / 2 - 8);
+        this.ctx.lineTo(this.canvas.width / 2, this.canvas.height / 2 + 8);
+        this.ctx.stroke();
+    }
+
     castRay(angle) {
         const cos = Math.cos(angle), sin = Math.sin(angle);
         let x = this.player.x, y = this.player.y;
-        for (let i = 0; i < 100; i++) {
-            x += cos * 0.05; y += sin * 0.05;
+
+        // DDA Algorithm mostly for accurate wall detection (simplified here to steps but optimized)
+        // Using smaller steps for somewhat better precision
+        const stepSize = 0.02;
+        const maxDist = 20;
+
+        for (let d = 0; d < maxDist; d += stepSize) {
+            x += cos * stepSize; y += sin * stepSize;
             const mapX = Math.floor(x), mapY = Math.floor(y);
-            if (mapY >= 0 && mapY < this.map.length && mapX >= 0 && mapX < this.map[0].length && this.map[mapY][mapX] === 1) {
-                const distance = Math.sqrt((x - this.player.x) ** 2 + (y - this.player.y) ** 2) * Math.cos(angle - this.player.angle);
-                return { distance, side: Math.abs(x - mapX - 0.5) > Math.abs(y - mapY - 0.5) };
+
+            if (mapY < 0 || mapY >= this.map.length || mapX < 0 || mapX >= this.map[0].length) {
+                return { distance: d, side: false, texture: 0 }; // Out of bounds
+            }
+
+            if (this.map[mapY][mapX] === 1) {
+                // Correct fisheye
+                const distance = d * Math.cos(angle - this.player.angle);
+                // Determine side for simple shading
+                // Very rough approx: check if we are closer to x boundary or y boundary
+                const dx = x - mapX;
+                const dy = y - mapY;
+                // If closer to 0 or 1 on X than Y... 
+                // Actually previous was just checking steps. Let's stick to the previous simple logic but improved
+                const side = (Math.abs(x - Math.round(x)) < Math.abs(y - Math.round(y)));
+                return { distance, side, xPos: side ? y % 1 : x % 1 };
             }
         }
-        return { distance: 0, side: false };
+        return { distance: maxDist, side: false };
     }
 
     isEnemyVisible(enemy) {
@@ -1428,22 +1553,22 @@ class DoomGame {
         const OBJECT_PROXIMITY_THRESHOLD = 0.3; // Distance threshold to consider reaching the object
         const stepX = dx / (dist * RAY_STEPS_PER_UNIT);
         const stepY = dy / (dist * RAY_STEPS_PER_UNIT);
-        
+
         let x = this.player.x;
         let y = this.player.y;
-        
+
         for (let i = 0; i < dist * RAY_STEPS_PER_UNIT; i++) {
             x += stepX;
             y += stepY;
             const mapX = Math.floor(x);
             const mapY = Math.floor(y);
-            
+
             if (mapY >= 0 && mapY < this.map.length && mapX >= 0 && mapX < this.map[0].length) {
                 if (this.map[mapY][mapX] === 1) {
                     return false;
                 }
             }
-            
+
             if (Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2) < OBJECT_PROXIMITY_THRESHOLD) {
                 return true;
             }
@@ -1509,26 +1634,26 @@ class DoomGame {
         this.shotAnimations = this.shotAnimations.filter(shot => {
             const elapsed = now - shot.startTime;
             const duration = 200; // Duração da animação em ms
-            
+
             if (elapsed > duration) return false;
-            
+
             const progress = elapsed / duration;
             const currentRadius = shot.radius + (shot.maxRadius - shot.radius) * progress;
             const opacity = 1 - progress;
-            
+
             // Desenhar círculo expandido
             this.ctx.strokeStyle = `rgba(255, 200, 0, ${opacity * 0.7})`;
             this.ctx.lineWidth = 3;
             this.ctx.beginPath();
             this.ctx.arc(shot.x, shot.y, currentRadius, 0, Math.PI * 2);
             this.ctx.stroke();
-            
+
             // Desenhar ponto central amarelo
             this.ctx.fillStyle = `rgba(255, 255, 0, ${opacity})`;
             this.ctx.beginPath();
             this.ctx.arc(shot.x, shot.y, 3, 0, Math.PI * 2);
             this.ctx.fill();
-            
+
             return true;
         });
     }
@@ -1544,7 +1669,7 @@ class TypingGame {
         this.canvas = canvas;
         this.onScore = onScore;
         this.container = canvas.parentElement;
-        
+
         // Expanded Portuguese word list
         this.portugueseWords = [
             // Common words
@@ -1578,7 +1703,7 @@ class TypingGame {
             'banco', 'hospital', 'mercado', 'restaurante', 'hotel', 'aeroporto', 'estacao', 'parque', 'praca', 'igreja',
             'dinheiro', 'preco', 'conta', 'cartao', 'documento', 'passaporte', 'endereco', 'numero', 'email', 'senha'
         ];
-        
+
         this.englishWords = [
             'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i',
             'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
@@ -1591,10 +1716,10 @@ class TypingGame {
             'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way',
             'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us'
         ];
-        
+
         this.punctuationMarks = ['.', ',', '!', '?', ';', ':'];
         this.numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-        
+
         // Game settings
         this.language = 'pt'; // 'pt' or 'en'
         this.includePunctuation = false;
@@ -1602,7 +1727,7 @@ class TypingGame {
         this.gameMode = 'time'; // 'time' or 'words'
         this.timeLimit = 30;
         this.wordLimit = 25;
-        
+
         // Game state
         this.running = false;
         this.gameEnded = false;
@@ -1617,16 +1742,16 @@ class TypingGame {
         this.wordInputs = [];
         this.timerInterval = null;
         this.tabPressed = false;
-        
+
         this.createUI();
     }
 
     createUI() {
         this.canvas.style.display = 'none';
-        
+
         let typingUI = document.getElementById('typing-game-ui');
         if (typingUI) typingUI.remove();
-        
+
         typingUI = document.createElement('div');
         typingUI.id = 'typing-game-ui';
         typingUI.className = 'w-full max-w-4xl mx-auto select-none';
@@ -1637,12 +1762,12 @@ class TypingGame {
                 #typing-game-ui .letter.correct { color: #22c55e; }
                 #typing-game-ui .letter.incorrect { color: #ef4444; }
                 #typing-game-ui .letter.extra { color: #ef4444; opacity: 0.7; }
-                #typing-game-ui .word.current { border-bottom: 2px solid #3b82f6; }
+                #typing-game-ui .word.current { border-bottom: 2px solid var(--color-primary, #3b82f6); }
                 #typing-game-ui .caret {
                     position: absolute;
                     width: 2px;
                     height: 1.5em;
-                    background: #3b82f6;
+                    background: var(--color-primary, #3b82f6);
                     animation: caret-blink 1s infinite;
                     transition: left 0.08s ease-out, top 0.08s ease-out;
                 }
@@ -1657,7 +1782,7 @@ class TypingGame {
                 }
                 #typing-game-ui .stats-row { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1rem; }
                 #typing-game-ui .stat-item { text-align: center; }
-                #typing-game-ui .stat-value { font-size: 2rem; font-weight: bold; color: #3b82f6; }
+                #typing-game-ui .stat-value { font-size: 2rem; font-weight: bold; color: var(--color-primary, #3b82f6); }
                 #typing-game-ui .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
                 #typing-game-ui .options-bar { 
                     display: flex; 
@@ -1667,9 +1792,9 @@ class TypingGame {
                     align-items: center;
                     margin-bottom: 1rem; 
                     padding: 0.75rem;
-                    background: rgba(30, 41, 59, 0.5);
+                    background: var(--bg-secondary, rgba(30, 41, 59, 0.5));
                     border-radius: 0.5rem;
-                    border: 1px solid rgba(71, 85, 105, 0.3);
+                    border: 1px solid var(--border-color, rgba(71, 85, 105, 0.3));
                 }
                 #typing-game-ui .option-group {
                     display: flex;
@@ -1697,7 +1822,7 @@ class TypingGame {
                     font-weight: 500;
                 }
                 #typing-game-ui .toggle-btn:hover { color: #94a3b8; }
-                #typing-game-ui .toggle-btn.active { color: #3b82f6; background: rgba(59, 130, 246, 0.15); }
+                #typing-game-ui .toggle-btn.active { color: var(--color-primary, #3b82f6); background: color-mix(in srgb, var(--color-primary, #3b82f6), transparent 85%); }
                 #typing-game-ui .mode-btn {
                     padding: 0.35rem 0.65rem;
                     border-radius: 0.375rem;
@@ -1710,7 +1835,7 @@ class TypingGame {
                     font-weight: 500;
                 }
                 #typing-game-ui .mode-btn:hover { color: #94a3b8; }
-                #typing-game-ui .mode-btn.active { color: #3b82f6; }
+                #typing-game-ui .mode-btn.active { color: var(--color-primary, #3b82f6); }
                 #typing-game-ui .value-btn {
                     padding: 0.25rem 0.5rem;
                     border-radius: 0.25rem;
@@ -1723,7 +1848,7 @@ class TypingGame {
                     font-weight: 500;
                 }
                 #typing-game-ui .value-btn:hover { color: #94a3b8; }
-                #typing-game-ui .value-btn.active { color: #3b82f6; }
+                #typing-game-ui .value-btn.active { color: var(--color-primary, #3b82f6); }
                 #typing-game-ui .lang-btn {
                     display: flex;
                     align-items: center;
@@ -1739,7 +1864,7 @@ class TypingGame {
                     font-weight: 500;
                 }
                 #typing-game-ui .lang-btn:hover { color: #94a3b8; }
-                #typing-game-ui .lang-btn.active { color: #3b82f6; }
+                #typing-game-ui .lang-btn.active { color: var(--color-primary, #3b82f6); }
                 #typing-game-ui .words-container {
                     position: relative;
                     font-size: 1.4rem;
@@ -1750,9 +1875,9 @@ class TypingGame {
                     max-height: 180px;
                     overflow: hidden;
                     padding: 1rem;
-                    background: rgba(15, 23, 42, 0.6);
+                    background: var(--bg-secondary, rgba(15, 23, 42, 0.6));
                     border-radius: 0.5rem;
-                    border: 1px solid rgba(71, 85, 105, 0.3);
+                    border: 1px solid var(--border-color, rgba(71, 85, 105, 0.3));
                     cursor: text;
                 }
                 #typing-game-ui .focus-warning {
@@ -1760,22 +1885,24 @@ class TypingGame {
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
-                    background: rgba(15, 23, 42, 0.95);
+                    background: var(--bg-primary, rgba(15, 23, 42, 0.95));
                     padding: 1rem 2rem;
                     border-radius: 0.5rem;
                     color: #94a3b8;
                     font-size: 0.95rem;
                     display: none;
                     z-index: 10;
-                    border: 1px solid rgba(71, 85, 105, 0.5);
+                    border: 1px solid var(--border-color, rgba(71, 85, 105, 0.5));
                 }
                 #typing-game-ui .words-container.blur .words-wrap { filter: blur(5px); pointer-events: none; }
                 #typing-game-ui .words-container.blur .focus-warning { display: flex; align-items: center; }
                 #typing-game-ui .result-screen {
                     text-align: center;
                     padding: 2rem;
+                    background: var(--bg-primary, #1e293b);
+                    border-radius: 1rem;
                 }
-                #typing-game-ui .result-wpm { font-size: 4rem; color: #3b82f6; font-weight: bold; }
+                #typing-game-ui .result-wpm { font-size: 4rem; color: var(--color-primary, #3b82f6); font-weight: bold; }
                 #typing-game-ui .result-label { color: #64748b; font-size: 1rem; margin-bottom: 0.5rem; text-transform: uppercase; }
                 #typing-game-ui .result-stats { 
                     display: flex; 
@@ -1784,7 +1911,7 @@ class TypingGame {
                     margin-top: 1.5rem;
                     flex-wrap: wrap;
                 }
-                #typing-game-ui .result-stat-value { font-size: 1.5rem; color: #e2e8f0; font-weight: 600; }
+                #typing-game-ui .result-stat-value { font-size: 1.5rem; color: var(--text-primary, #e2e8f0); font-weight: 600; }
                 #typing-game-ui .result-stat-detail { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
                 #typing-game-ui .restart-hint { color: #64748b; margin-top: 2rem; font-size: 0.85rem; }
                 #typing-game-ui .restart-hint kbd {
@@ -1801,18 +1928,18 @@ class TypingGame {
                     gap: 0.5rem;
                     margin: 1.5rem auto 0;
                     padding: 0.6rem 1.5rem;
-                    background: rgba(59, 130, 246, 0.15);
-                    border: 1px solid rgba(59, 130, 246, 0.3);
+                    background: color-mix(in srgb, var(--color-primary, #3b82f6), transparent 85%);
+                    border: 1px solid color-mix(in srgb, var(--color-primary, #3b82f6), transparent 70%);
                     border-radius: 0.5rem;
-                    color: #3b82f6;
+                    color: var(--color-primary, #3b82f6);
                     cursor: pointer;
                     transition: all 0.2s;
                     font-size: 0.9rem;
                     font-weight: 500;
                 }
                 #typing-game-ui .restart-btn:hover {
-                    background: rgba(59, 130, 246, 0.25);
-                    border-color: rgba(59, 130, 246, 0.5);
+                    background: color-mix(in srgb, var(--color-primary, #3b82f6), transparent 75%);
+                    border-color: color-mix(in srgb, var(--color-primary, #3b82f6), transparent 50%);
                 }
                 #typing-game-ui .bottom-bar {
                     display: flex;
@@ -1832,12 +1959,12 @@ class TypingGame {
                     border-radius: 0.375rem;
                 }
                 #typing-game-ui .bottom-restart-btn:hover {
-                    color: #3b82f6;
-                    background: rgba(59, 130, 246, 0.1);
+                    color: var(--color-primary, #3b82f6);
+                    background: color-mix(in srgb, var(--color-primary, #3b82f6), transparent 90%);
                 }
             </style>
             
-            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <div class="bg-slate-50 dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 transition-colors">
                 <!-- Options Bar -->
                 <div class="options-bar" id="options-bar">
                     <!-- Toggles -->
@@ -1915,8 +2042,8 @@ class TypingGame {
                 </div>
                 
                 <!-- Words Container -->
-                <div class="words-container blur" id="words-container">
-                    <div class="focus-warning">
+                <div class="words-container blur bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" id="words-container">
+                    <div class="focus-warning bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                         <i data-lucide="mouse-pointer-click" class="w-5 h-5 mr-2"></i>
                         <span>Clique aqui ou pressione qualquer tecla para focar</span>
                     </div>
@@ -1934,31 +2061,31 @@ class TypingGame {
                 </div>
                 
                 <!-- Results Screen -->
-                <div id="typing-results" class="result-screen hidden">
+                <div id="typing-results" class="result-screen hidden bg-slate-50 dark:bg-slate-800 shadow-xl">
                     <div class="result-label">wpm</div>
                     <div class="result-wpm" id="result-wpm">0</div>
                     <div class="result-stats">
                         <div class="stat-item">
-                            <div class="result-stat-value" id="result-accuracy">100%</div>
+                            <div class="result-stat-value text-slate-800 dark:text-slate-200" id="result-accuracy">100%</div>
                             <div class="stat-label">precisão</div>
                         </div>
                         <div class="stat-item">
-                            <div class="result-stat-value" id="result-correct">0</div>
+                            <div class="result-stat-value text-slate-800 dark:text-slate-200" id="result-correct">0</div>
                             <div class="result-stat-detail">corretos</div>
                             <div class="stat-label">caracteres</div>
                         </div>
                         <div class="stat-item">
-                            <div class="result-stat-value" id="result-incorrect">0</div>
+                            <div class="result-stat-value text-slate-800 dark:text-slate-200" id="result-incorrect">0</div>
                             <div class="result-stat-detail">incorretos</div>
                             <div class="stat-label">caracteres</div>
                         </div>
                         <div class="stat-item">
-                            <div class="result-stat-value" id="result-extra">0</div>
+                            <div class="result-stat-value text-slate-800 dark:text-slate-200" id="result-extra">0</div>
                             <div class="result-stat-detail">extras</div>
                             <div class="stat-label">caracteres</div>
                         </div>
                         <div class="stat-item">
-                            <div class="result-stat-value" id="result-time">0s</div>
+                            <div class="result-stat-value text-slate-800 dark:text-slate-200" id="result-time">0s</div>
                             <div class="stat-label">tempo</div>
                         </div>
                     </div>
@@ -1972,10 +2099,10 @@ class TypingGame {
                 </div>
             </div>
         `;
-        
+
         this.container.appendChild(typingUI);
         lucide.createIcons();
-        
+
         // Cache DOM elements
         this.wordsContainer = document.getElementById('words-container');
         this.wordsDisplay = document.getElementById('words-display');
@@ -1985,12 +2112,12 @@ class TypingGame {
         this.statsDiv = document.getElementById('typing-stats');
         this.optionsBar = document.getElementById('options-bar');
         this.bottomBar = document.getElementById('bottom-bar');
-        
+
         this.setupEventListeners(typingUI);
         this.generateWords();
         this.renderWords();
     }
-    
+
     setupEventListeners(typingUI) {
         // Punctuation toggle
         const punctToggle = document.getElementById('punctuation-toggle');
@@ -2000,7 +2127,7 @@ class TypingGame {
             punctToggle.classList.toggle('active', this.includePunctuation);
             this.reset();
         });
-        
+
         // Numbers toggle
         const numToggle = document.getElementById('numbers-toggle');
         numToggle.addEventListener('click', () => {
@@ -2009,13 +2136,13 @@ class TypingGame {
             numToggle.classList.toggle('active', this.includeNumbers);
             this.reset();
         });
-        
+
         // Game mode buttons
         const modeTime = document.getElementById('mode-time');
         const modeWords = document.getElementById('mode-words');
         const timeValues = document.getElementById('time-values');
         const wordValues = document.getElementById('word-values');
-        
+
         modeTime.addEventListener('click', () => {
             if (this.running) return;
             this.gameMode = 'time';
@@ -2026,7 +2153,7 @@ class TypingGame {
             this.updateStatsDisplay();
             this.reset();
         });
-        
+
         modeWords.addEventListener('click', () => {
             if (this.running) return;
             this.gameMode = 'words';
@@ -2037,7 +2164,7 @@ class TypingGame {
             this.updateStatsDisplay();
             this.reset();
         });
-        
+
         // Time value buttons
         typingUI.querySelectorAll('#time-values .value-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -2048,7 +2175,7 @@ class TypingGame {
                 this.reset();
             });
         });
-        
+
         // Word value buttons
         typingUI.querySelectorAll('#word-values .value-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -2059,11 +2186,11 @@ class TypingGame {
                 this.reset();
             });
         });
-        
+
         // Language buttons
         const langPt = document.getElementById('lang-pt');
         const langEn = document.getElementById('lang-en');
-        
+
         langPt.addEventListener('click', () => {
             if (this.running) return;
             this.language = 'pt';
@@ -2071,7 +2198,7 @@ class TypingGame {
             langEn.classList.remove('active');
             this.reset();
         });
-        
+
         langEn.addEventListener('click', () => {
             if (this.running) return;
             this.language = 'en';
@@ -2079,27 +2206,27 @@ class TypingGame {
             langPt.classList.remove('active');
             this.reset();
         });
-        
+
         // Restart buttons
         document.getElementById('restart-btn').addEventListener('click', () => {
             this.reset();
             this.focusInput();
         });
-        
+
         document.getElementById('result-restart-btn').addEventListener('click', () => {
             this.reset();
             this.focusInput();
         });
-        
+
         // Words container click
         this.wordsContainer.addEventListener('click', () => this.focusInput());
-        
+
         // Input events
         this.input.addEventListener('input', () => this.handleInput());
         this.input.addEventListener('keydown', (e) => this.handleKeyDown(e));
         this.input.addEventListener('blur', () => this.handleBlur());
         this.input.addEventListener('focus', () => this.handleFocus());
-        
+
         // Tab + Enter restart
         this.keydownHandler = (e) => {
             if (e.key === 'Tab' && this.gameEnded) {
@@ -2113,21 +2240,21 @@ class TypingGame {
                 this.tabPressed = false;
             }
         };
-        
+
         this.keyupHandler = (e) => {
             if (e.key === 'Tab') this.tabPressed = false;
         };
-        
+
         document.addEventListener('keydown', this.keydownHandler);
         document.addEventListener('keyup', this.keyupHandler);
     }
-    
+
     updateStatsDisplay() {
         const timeEl = document.getElementById('typing-time');
         const timeLabel = document.getElementById('time-label');
         const wordsProgressItem = document.getElementById('words-progress-item');
         const wordsProgress = document.getElementById('typing-words-progress');
-        
+
         if (this.gameMode === 'time') {
             timeEl.textContent = this.timeLimit;
             timeLabel.textContent = 'segundos';
@@ -2169,20 +2296,20 @@ class TypingGame {
         this.running = false;
         this.gameEnded = false;
         this.wordInputs = [];
-        
+
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
             this.timerInterval = null;
         }
-        
+
         this.generateWords();
         this.renderWords();
-        
+
         if (this.input) {
             this.input.value = '';
             this.input.disabled = false;
         }
-        
+
         if (this.resultsDiv) this.resultsDiv.classList.add('hidden');
         if (this.statsDiv) this.statsDiv.classList.remove('hidden');
         if (this.optionsBar) this.optionsBar.classList.remove('hidden');
@@ -2191,23 +2318,23 @@ class TypingGame {
             this.wordsContainer.style.display = 'block';
             this.wordsContainer.classList.add('blur');
         }
-        
+
         // Reset live stats
         const wpmEl = document.getElementById('typing-wpm');
         const accEl = document.getElementById('typing-accuracy');
         const timeEl = document.getElementById('typing-time');
         const wordsProgress = document.getElementById('typing-words-progress');
-        
+
         if (wpmEl) wpmEl.textContent = '0';
         if (accEl) accEl.textContent = '100%';
-        
+
         if (this.gameMode === 'time') {
             if (timeEl) timeEl.textContent = this.timeLimit;
         } else {
             if (timeEl) timeEl.textContent = '0';
             if (wordsProgress) wordsProgress.textContent = `0/${this.wordLimit}`;
         }
-        
+
         this.updateStatsDisplay();
     }
 
@@ -2218,25 +2345,25 @@ class TypingGame {
     generateSingleWord() {
         const wordList = this.getWordList();
         let word = wordList[Math.floor(Math.random() * wordList.length)];
-        
+
         // Add punctuation randomly
         if (this.includePunctuation && Math.random() < 0.15) {
             const punct = this.punctuationMarks[Math.floor(Math.random() * this.punctuationMarks.length)];
             word = word + punct;
         }
-        
+
         // Add numbers randomly
         if (this.includeNumbers && Math.random() < 0.1) {
             const num = Math.floor(Math.random() * 100).toString();
             word = Math.random() < 0.5 ? num + word : word + num;
         }
-        
+
         return word;
     }
 
     generateWords() {
         const wordCount = this.gameMode === 'words' ? this.wordLimit : 150;
-        
+
         this.testWords = [];
         for (let i = 0; i < wordCount; i++) {
             this.testWords.push(this.generateSingleWord());
@@ -2246,15 +2373,15 @@ class TypingGame {
 
     renderWords() {
         if (!this.wordsDisplay) return;
-        
+
         let html = '';
         this.testWords.forEach((word, wordIndex) => {
             const wordInput = this.wordInputs[wordIndex] || '';
             let wordClass = 'word';
             if (wordIndex === this.currentWordIndex) wordClass += ' current';
-            
+
             let wordHtml = `<span class="${wordClass}" data-word="${wordIndex}">`;
-            
+
             for (let i = 0; i < word.length; i++) {
                 let letterClass = 'letter';
                 if (wordIndex < this.currentWordIndex) {
@@ -2264,17 +2391,17 @@ class TypingGame {
                 }
                 wordHtml += `<span class="${letterClass}" data-char="${i}">${word[i]}</span>`;
             }
-            
+
             if (wordInput.length > word.length) {
                 for (let i = word.length; i < wordInput.length; i++) {
                     wordHtml += `<span class="letter extra">${wordInput[i]}</span>`;
                 }
             }
-            
+
             wordHtml += '</span>';
             html += wordHtml;
         });
-        
+
         this.wordsDisplay.innerHTML = html;
         this.scrollToCurrentWord();
     }
@@ -2284,7 +2411,7 @@ class TypingGame {
         if (currentWordEl && this.wordsContainer) {
             const containerRect = this.wordsContainer.getBoundingClientRect();
             const wordRect = currentWordEl.getBoundingClientRect();
-            
+
             if (wordRect.top > containerRect.top + 80) {
                 this.wordsContainer.scrollTop += 48;
             }
@@ -2293,14 +2420,14 @@ class TypingGame {
 
     updateCaretPosition() {
         if (!this.caret || !this.wordsDisplay) return;
-        
+
         const currentWordEl = this.wordsDisplay.querySelector('.word.current');
         if (!currentWordEl) return;
-        
+
         const chars = currentWordEl.querySelectorAll('.letter');
         const currentInput = this.wordInputs[this.currentWordIndex] || '';
         let targetEl;
-        
+
         if (currentInput.length === 0) {
             targetEl = chars[0];
             if (targetEl) {
@@ -2333,23 +2460,23 @@ class TypingGame {
             this.input.focus();
         }
     }
-    
+
     startTimer() {
         if (this.running) return;
-        
+
         this.running = true;
         this.startTime = Date.now();
-        
+
         this.timerInterval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
             this.elapsedTime = elapsed;
-            
+
             const timeEl = document.getElementById('typing-time');
-            
+
             if (this.gameMode === 'time') {
                 this.timeLeft = Math.max(0, this.timeLimit - elapsed);
                 if (timeEl) timeEl.textContent = this.timeLeft;
-                
+
                 if (this.timeLeft <= 0) {
                     this.endGame();
                 }
@@ -2357,27 +2484,27 @@ class TypingGame {
                 // Words mode - count up
                 if (timeEl) timeEl.textContent = elapsed;
             }
-            
+
             // Update live WPM and accuracy
             this.updateLiveStats();
         }, 100);
     }
-    
+
     updateLiveStats() {
         const wpmEl = document.getElementById('typing-wpm');
         const accEl = document.getElementById('typing-accuracy');
         const wordsProgress = document.getElementById('typing-words-progress');
-        
+
         // Calculate live WPM
         const elapsedMinutes = this.elapsedTime / 60;
         const liveWpm = elapsedMinutes > 0 ? Math.round((this.correctChars / 5) / elapsedMinutes) : 0;
-        
+
         // Calculate live accuracy
         const liveAccuracy = this.totalTyped > 0 ? Math.round((this.correctChars / this.totalTyped) * 100) : 100;
-        
+
         if (wpmEl) wpmEl.textContent = liveWpm;
         if (accEl) accEl.textContent = liveAccuracy + '%';
-        
+
         if (this.gameMode === 'words' && wordsProgress) {
             wordsProgress.textContent = `${this.wordsCompleted}/${this.wordLimit}`;
         }
@@ -2389,7 +2516,7 @@ class TypingGame {
             clearInterval(this.timerInterval);
             this.timerInterval = null;
         }
-        
+
         // Remove event listeners
         if (this.keydownHandler) {
             document.removeEventListener('keydown', this.keydownHandler);
@@ -2397,7 +2524,7 @@ class TypingGame {
         if (this.keyupHandler) {
             document.removeEventListener('keyup', this.keyupHandler);
         }
-        
+
         const typingUI = document.getElementById('typing-game-ui');
         if (typingUI) typingUI.remove();
         this.canvas.style.display = 'block';
@@ -2415,19 +2542,19 @@ class TypingGame {
 
     handleInput() {
         if (this.gameEnded) return;
-        
+
         if (!this.running) {
             this.startTimer();
         }
-        
+
         const typed = this.input.value;
-        
+
         if (typed.endsWith(' ')) {
             const wordTyped = typed.slice(0, -1);
             this.wordInputs[this.currentWordIndex] = wordTyped;
-            
+
             const currentWord = this.testWords[this.currentWordIndex];
-            
+
             // Count correct, incorrect, and extra characters
             for (let i = 0; i < Math.max(wordTyped.length, currentWord.length); i++) {
                 this.totalTyped++;
@@ -2445,17 +2572,17 @@ class TypingGame {
                     this.incorrectChars++;
                 }
             }
-            
+
             this.wordsCompleted++;
             this.currentWordIndex++;
             this.input.value = '';
-            
+
             // Check if words mode is complete
             if (this.gameMode === 'words' && this.wordsCompleted >= this.wordLimit) {
                 this.endGame();
                 return;
             }
-            
+
             // Generate more words if needed
             if (this.currentWordIndex >= this.testWords.length) {
                 if (this.gameMode === 'time') {
@@ -2468,13 +2595,13 @@ class TypingGame {
                     this.wordInputs = this.wordInputs.concat(additionalWords.map(() => ''));
                 }
             }
-            
+
             this.renderWords();
         } else {
             this.wordInputs[this.currentWordIndex] = typed;
             this.renderWords();
         }
-        
+
         this.updateCaretPosition();
         this.updateLiveStats();
     }
@@ -2482,12 +2609,12 @@ class TypingGame {
     endGame() {
         this.running = false;
         this.gameEnded = true;
-        
+
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
             this.timerInterval = null;
         }
-        
+
         // Calculate final stats
         let elapsedMinutes;
         if (this.gameMode === 'time') {
@@ -2495,10 +2622,10 @@ class TypingGame {
         } else {
             elapsedMinutes = this.elapsedTime / 60;
         }
-        
+
         const wpm = elapsedMinutes > 0 ? Math.round((this.correctChars / 5) / elapsedMinutes) : 0;
         const accuracy = this.totalTyped > 0 ? Math.round((this.correctChars / this.totalTyped) * 100) : 100;
-        
+
         this.input.disabled = true;
         this.wordsContainer.style.display = 'none';
         this.statsDiv.classList.add('hidden');
@@ -2506,20 +2633,20 @@ class TypingGame {
         this.bottomBar.classList.add('hidden');
         this.resultsDiv.classList.remove('hidden');
         this.caret.style.display = 'none';
-        
+
         // Update result display
         document.getElementById('result-wpm').textContent = wpm;
         document.getElementById('result-accuracy').textContent = accuracy + '%';
         document.getElementById('result-correct').textContent = this.correctChars;
         document.getElementById('result-incorrect').textContent = this.incorrectChars;
         document.getElementById('result-extra').textContent = this.extraChars;
-        
+
         if (this.gameMode === 'time') {
             document.getElementById('result-time').textContent = this.timeLimit + 's';
         } else {
             document.getElementById('result-time').textContent = this.elapsedTime + 's';
         }
-        
+
         this.onScore(wpm);
     }
 }
@@ -2530,99 +2657,143 @@ class MemoryGame {
         this.onScore = onScore;
         this.manager = manager;
         this.container = canvas.parentElement;
-        
+
         // Bicycle-themed icons
         this.allIcons = ['bike', 'circle', 'hard-hat', 'map', 'route', 'compass', 'mountain', 'flag', 'trophy', 'medal', 'timer', 'gauge'];
-        
+
         // Difficulty settings
         this.difficulties = {
             easy: { cols: 3, rows: 4, pairs: 6, name: 'Fácil' },
             medium: { cols: 4, rows: 4, pairs: 8, name: 'Médio' },
             hard: { cols: 4, rows: 6, pairs: 12, name: 'Difícil' }
         };
-        
+
         this.difficulty = 'medium';
         this.running = false;
         this.comboCount = 0;
         this.lastMatchTime = 0;
-        
+
         this.createUI();
     }
 
     createUI() {
         this.canvas.style.display = 'none';
-        
+
         let memoryUI = document.getElementById('memory-game-ui');
         if (memoryUI) memoryUI.remove();
-        
+
         memoryUI = document.createElement('div');
         memoryUI.id = 'memory-game-ui';
-        memoryUI.className = 'w-full max-w-lg mx-auto';
+        memoryUI.className = 'w-full max-w-lg mx-auto select-none';
         memoryUI.innerHTML = `
-            <div id="memory-difficulty-selector" class="flex gap-2 mb-4 justify-center">
-                <button data-diff="easy" class="diff-btn px-4 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">Fácil (3x4)</button>
-                <button data-diff="medium" class="diff-btn px-4 py-2 rounded-lg bg-blue-500 text-white">Médio (4x4)</button>
-                <button data-diff="hard" class="diff-btn px-4 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">Difícil (4x6)</button>
+            <style>
+                #memory-game-ui .diff-btn {
+                    transition: all 0.2s;
+                    border: 1px solid transparent;
+                }
+                #memory-game-ui .diff-btn.active {
+                    background: var(--color-primary, #3b82f6);
+                    color: white;
+                    border-color: var(--color-primary, #3b82f6);
+                }
+                #memory-game-ui .diff-btn:not(.active) {
+                    background: var(--bg-secondary, rgba(30, 41, 59, 0.5));
+                    color: #64748b;
+                    border-color: var(--border-color, rgba(71, 85, 105, 0.3));
+                }
+                #memory-game-ui .diff-btn:not(.active):hover {
+                    color: var(--color-primary, #3b82f6);
+                    border-color: var(--color-primary, #3b82f6);
+                }
+                #memory-game-ui .memory-card-inner {
+                    transform-style: preserve-3d;
+                    transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+                }
+                #memory-game-ui .memory-card.flipped .memory-card-inner {
+                    transform: rotateY(180deg);
+                }
+                #memory-game-ui .memory-face {
+                    backface-visibility: hidden;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 0.75rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                }
+                #memory-game-ui .memory-front {
+                    background: linear-gradient(135deg, var(--color-primary, #3b82f6), var(--color-secondary, #a855f7));
+                    transform: rotateY(180deg);
+                }
+                #memory-game-ui .memory-back {
+                    background: var(--bg-secondary, #1e293b);
+                    border: 2px solid var(--border-color, #334155);
+                }
+                #memory-game-ui .stat-value {
+                    color: var(--color-primary, #3b82f6);
+                }
+            </style>
+
+            <div class="bg-slate-50 dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-xl transition-colors">
+                <div id="memory-difficulty-selector" class="flex gap-2 mb-6 justify-center">
+                    <button data-diff="easy" class="diff-btn px-4 py-2 rounded-lg font-medium">Fácil</button>
+                    <button data-diff="medium" class="diff-btn px-4 py-2 rounded-lg font-medium active">Médio</button>
+                    <button data-diff="hard" class="diff-btn px-4 py-2 rounded-lg font-medium">Difícil</button>
+                </div>
+                
+                <div class="flex justify-between items-center mb-6 px-2">
+                    <div class="text-center">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Movimentos</p>
+                        <p id="memory-moves" class="text-xl font-bold text-slate-700 dark:text-slate-200">0</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Pares</p>
+                        <p id="memory-pairs" class="text-xl font-bold text-slate-700 dark:text-slate-200">0/8</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Combo</p>
+                        <p id="memory-combo" class="text-xl font-bold stat-value">x1</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Tempo</p>
+                        <p id="memory-time" class="text-xl font-bold text-slate-700 dark:text-slate-200">0:00</p>
+                    </div>
+                </div>
+                
+                <div id="memory-grid" class="grid gap-3 mb-6 perspective-1000"></div>
+                
+                <button id="memory-reset" class="w-full px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0" style="background: linear-gradient(to right, var(--color-primary, #3b82f6), var(--color-secondary, #a855f7)); color: white;">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                    Novo Jogo
+                </button>
             </div>
-            
-            <div class="flex justify-between items-center mb-4">
-                <div class="text-center">
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Movimentos</p>
-                    <p id="memory-moves" class="text-2xl font-bold text-slate-800 dark:text-slate-200">0</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Pares</p>
-                    <p id="memory-pairs" class="text-2xl font-bold text-blue-600 dark:text-blue-400">0/8</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Combo</p>
-                    <p id="memory-combo" class="text-2xl font-bold text-purple-600 dark:text-purple-400">x1</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Tempo</p>
-                    <p id="memory-time" class="text-2xl font-bold text-green-600 dark:text-green-400">0:00</p>
-                </div>
-            </div>
-            
-            <div id="memory-grid" class="grid gap-3 mb-4"></div>
-            
-            <button id="memory-reset" class="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-lg">
-                <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
-                Novo Jogo
-            </button>
         `;
-        
+
         this.container.appendChild(memoryUI);
-        
+
         // Setup difficulty buttons
         memoryUI.querySelectorAll('.diff-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                if (btn.classList.contains('active')) return;
+                memoryUI.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
                 this.difficulty = btn.dataset.diff;
-                this.updateDifficultyButtons();
                 this.reset();
             });
         });
-        
+
         document.getElementById('memory-reset').addEventListener('click', () => this.reset());
-        
+
         lucide.createIcons();
         this.reset();
     }
 
     updateDifficultyButtons() {
-        const btns = document.querySelectorAll('#memory-difficulty-selector .diff-btn');
-        btns.forEach(btn => {
-            if (btn.dataset.diff === this.difficulty) {
-                btn.className = 'diff-btn px-4 py-2 rounded-lg bg-blue-500 text-white';
-            } else {
-                const colors = {
-                    easy: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200',
-                    medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200',
-                    hard: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200'
-                };
-                btn.className = `diff-btn px-4 py-2 rounded-lg ${colors[btn.dataset.diff]} transition-colors`;
-            }
-        });
+        // Handled by class toggling in event listener
     }
 
     reset() {
@@ -2630,7 +2801,7 @@ class MemoryGame {
         this.icons = this.allIcons.slice(0, settings.pairs);
         this.cols = settings.cols;
         this.rows = settings.rows;
-        
+
         this.cards = [];
         this.flippedCards = [];
         this.matchedPairs = 0;
@@ -2639,13 +2810,13 @@ class MemoryGame {
         this.comboCount = 0;
         this.startTime = null;
         this.running = false;
-        
+
         // Update grid layout
         const grid = document.getElementById('memory-grid');
         if (grid) {
             grid.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
         }
-        
+
         const shuffled = [...this.icons, ...this.icons].sort(() => Math.random() - 0.5);
         this.cards = shuffled.map((icon, index) => ({
             id: index,
@@ -2654,27 +2825,35 @@ class MemoryGame {
             matched: false,
             animating: false
         }));
-        
+
         this.renderGrid();
         this.updateStats();
-        
+
         if (this.timerInterval) clearInterval(this.timerInterval);
     }
 
     renderGrid() {
         const grid = document.getElementById('memory-grid');
+        if (!grid) return;
+
         grid.innerHTML = this.cards.map(card => `
-            <div class="memory-card aspect-square rounded-xl cursor-pointer transition-all duration-300 transform ${card.animating ? 'scale-110' : 'hover:scale-105'} ${card.matched ? 'opacity-80' : ''}" data-id="${card.id}">
-                <div class="w-full h-full ${card.flipped || card.matched ? 'bg-gradient-to-br from-blue-500 to-purple-600' : 'bg-gradient-to-br from-slate-600 to-slate-700'} rounded-xl flex items-center justify-center shadow-lg border-2 ${card.matched ? 'border-green-400' : 'border-transparent'}">
-                    ${card.flipped || card.matched ? `<i data-lucide="${card.icon}" class="w-8 h-8 text-white"></i>` : '<i data-lucide="help-circle" class="w-8 h-8 text-slate-400"></i>'}
+            <div class="memory-card aspect-square relative cursor-pointer ${card.flipped || card.matched ? 'flipped' : ''}" data-id="${card.id}">
+                <div class="memory-card-inner w-full h-full relative">
+                    <div class="memory-face memory-back">
+                        <i data-lucide="help-circle" class="w-8 h-8 text-slate-400 opacity-50"></i>
+                    </div>
+                    <div class="memory-face memory-front">
+                        <i data-lucide="${card.icon}" class="w-8 h-8 text-white drop-shadow-md"></i>
+                    </div>
                 </div>
             </div>
         `).join('');
-        
+
         lucide.createIcons();
-        
+
         grid.querySelectorAll('.memory-card').forEach(cardEl => {
             cardEl.addEventListener('click', () => {
+                if (cardEl.classList.contains('flipped')) return;
                 const id = parseInt(cardEl.dataset.id);
                 this.flipCard(id);
             });
@@ -2683,31 +2862,31 @@ class MemoryGame {
 
     flipCard(id) {
         const card = this.cards[id];
-        
+
         if (card.flipped || card.matched || this.flippedCards.length >= 2) return;
-        
+
         if (!this.running) {
             this.running = true;
             this.startTime = Date.now();
             this.timerInterval = setInterval(() => this.updateTimer(), 1000);
         }
-        
+
         card.flipped = true;
         this.flippedCards.push(card);
         this.renderGrid();
-        
+
         if (this.flippedCards.length === 2) {
             this.moves++;
-            
+
             const [first, second] = this.flippedCards;
-            
+
             if (first.icon === second.icon) {
                 first.matched = true;
                 second.matched = true;
                 first.animating = true;
                 second.animating = true;
                 this.matchedPairs++;
-                
+
                 // Combo system
                 const now = Date.now();
                 if (now - this.lastMatchTime < 3000) {
@@ -2716,22 +2895,22 @@ class MemoryGame {
                     this.comboCount = 1;
                 }
                 this.lastMatchTime = now;
-                
+
                 // Score with combo bonus
                 const baseScore = this.difficulty === 'hard' ? 150 : this.difficulty === 'medium' ? 100 : 50;
                 this.score += baseScore * this.comboCount;
-                
+
                 this.flippedCards = [];
                 this.updateStats();
                 this.renderGrid();
-                
+
                 // Reset animation
                 setTimeout(() => {
                     first.animating = false;
                     second.animating = false;
                     this.renderGrid();
                 }, 300);
-                
+
                 if (this.matchedPairs === this.icons.length) {
                     this.endGame();
                 }
@@ -2739,7 +2918,7 @@ class MemoryGame {
                 // Reset combo on miss
                 this.comboCount = 0;
                 this.updateStats();
-                
+
                 setTimeout(() => {
                     first.flipped = false;
                     second.flipped = false;
@@ -2754,7 +2933,7 @@ class MemoryGame {
         const movesEl = document.getElementById('memory-moves');
         const pairsEl = document.getElementById('memory-pairs');
         const comboEl = document.getElementById('memory-combo');
-        
+
         if (movesEl) movesEl.textContent = this.moves;
         if (pairsEl) pairsEl.textContent = `${this.matchedPairs}/${this.icons.length}`;
         if (comboEl) {
@@ -2790,21 +2969,21 @@ class MemoryGame {
     endGame() {
         clearInterval(this.timerInterval);
         const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-        
+
         // Time bonus
         const timeBonus = Math.max(0, 300 - elapsed) * 2;
-        
+
         // Efficiency bonus (fewer moves = better)
         const minMoves = this.icons.length;
         const efficiencyBonus = Math.max(0, (minMoves * 3 - this.moves)) * 20;
-        
+
         const finalScore = this.score + timeBonus + efficiencyBonus;
-        
+
         // Check for hard mode achievement
         if (this.difficulty === 'hard' && this.manager) {
             this.manager.unlockAchievement('elephant_memory');
         }
-        
+
         setTimeout(() => {
             Modals.showAlert(`Parabéns! Você completou em ${this.moves} movimentos!\nTempo: ${Math.floor(elapsed / 60)}:${(elapsed % 60).toString().padStart(2, '0')}\nPontuação: ${finalScore}`, 'Jogo Concluído').then(() => {
                 this.onScore(finalScore);
@@ -2819,66 +2998,442 @@ class SpaceInvadersGame {
         this.ctx = canvas.getContext('2d');
         this.onScore = onScore;
         this.manager = manager;
-        
+
         this.canvas.width = 400;
-        this.canvas.height = 500;
-        
-        this.running = false;
-        this.reset();
+        this.canvas.height = 500; // Increased height
+
+        this.stars = [];
+        this.particles = [];
+        for (let i = 0; i < 100; i++) {
+            this.stars.push({
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * this.canvas.height,
+                size: Math.random() * 2,
+                speed: Math.random() * 0.5 + 0.1,
+                alpha: Math.random()
+            });
+        }
+
         this.setupControls();
+        this.reset();
     }
 
     reset() {
-        // Player ship
         this.player = {
-            x: this.canvas.width / 2 - 20,
-            y: this.canvas.height - 50,
-            width: 40,
-            height: 30,
-            speed: 6,
+            x: this.canvas.width / 2,
+            y: this.canvas.height - 40,
+            width: 30,
+            height: 20,
+            speed: 5,
+            bullets: [],
+            color: '#22c55e', // Neon Green (resembling the image ship)
+            lives: 3,
             hasShield: false,
-            shieldTimer: 0,
             hasTripleShot: false,
-            tripleShotTimer: 0,
-            speedBoost: false,
-            speedBoostTimer: 0
+            speedBoost: false
         };
-        
-        // Bullets
-        this.bullets = [];
-        this.enemyBullets = [];
-        this.lastShot = 0;
-        this.shootCooldown = 200;
-        
-        // Enemies
+
         this.enemies = [];
+        this.enemyBullets = [];
         this.wave = 1;
-        this.maxWave = 5;
-        this.enemyDirection = 1;
-        this.enemyDropAmount = 20;
-        this.enemyMoveTimer = 0;
-        this.enemyMoveInterval = 800;
-        
-        // Power-ups
-        this.powerUps = [];
-        
-        // Special enemy
-        this.specialEnemy = null;
-        this.specialEnemyTimer = 0;
-        
-        // Boss
-        this.boss = null;
-        this.bossActive = false;
-        
         this.score = 0;
-        this.lives = 3;
         this.gameOver = false;
         this.won = false;
-        
-        this.keys = { left: false, right: false, shoot: false };
-        
+        this.paused = false;
+
         this.spawnWave();
         this.updateScoreDisplay();
+    }
+
+    spawnWave() {
+        this.enemies = [];
+        const rows = 3;
+        const cols = 6;
+        const startX = 60;
+        const startY = 60;
+        const padding = 15;
+        const width = 30;
+        const height = 30;
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                this.enemies.push({
+                    x: startX + col * (width + padding),
+                    y: startY + row * (height + padding),
+                    width: width,
+                    height: height,
+                    row: row,
+                    alive: true,
+                    hp: 1,
+                    points: (3 - row) * 10,
+                    type: 'regular'
+                });
+            }
+        }
+
+        // Add special "UFO" enemy occasionally
+        if (Math.random() < 0.3) {
+            this.specialEnemy = {
+                x: -40,
+                y: 30,
+                width: 40,
+                height: 20,
+                speed: 3,
+                points: 100,
+                alive: true
+            };
+        } else {
+            this.specialEnemy = null;
+        }
+
+        this.enemyDirection = 1;
+        this.enemySpeed = 1.0 + (this.wave * 0.2);
+        this.bossActive = false;
+
+        if (this.wave % 5 === 0) {
+            this.spawnBoss();
+        }
+    }
+
+    spawnBoss() {
+        this.bossActive = true;
+        this.enemies = []; // Clear regular enemies
+        this.boss = {
+            x: this.canvas.width / 2 - 50,
+            y: 50,
+            width: 100,
+            height: 80,
+            hp: 20 * this.wave,
+            maxHp: 20 * this.wave,
+            speed: 2,
+            direction: 1,
+            lastShot: 0,
+            shootCooldown: 1000,
+            points: 1000
+        };
+    }
+
+    spawnParticles(x, y, color) {
+        for (let i = 0; i < 10; i++) {
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                life: 1.0,
+                color: color
+            });
+        }
+    }
+
+    setupControls() {
+        this.keys = { left: false, right: false, shoot: false };
+        this.lastShotTime = 0;
+
+        this.keyDownHandler = (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') this.keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') this.keys.right = true;
+            if (e.key === ' ' || e.key === 'ArrowUp') this.keys.shoot = true;
+        };
+
+        this.keyUpHandler = (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') this.keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') this.keys.right = false;
+            if (e.key === ' ' || e.key === 'ArrowUp') this.keys.shoot = false;
+        };
+
+        document.addEventListener('keydown', this.keyDownHandler);
+        document.addEventListener('keyup', this.keyUpHandler);
+    }
+
+    start() {
+        if (this.running) return;
+        this.running = true;
+        this.gameLoop();
+    }
+
+    stop() {
+        this.running = false;
+        cancelAnimationFrame(this.animationId);
+        document.removeEventListener('keydown', this.keyDownHandler);
+        document.removeEventListener('keyup', this.keyUpHandler);
+    }
+
+    gameLoop() {
+        if (!this.running) return;
+        this.update();
+        this.draw();
+        this.animationId = requestAnimationFrame(() => this.gameLoop());
+    }
+
+    update() {
+        if (this.gameOver || this.won) {
+            if (this.keys.shoot) this.reset();
+            return;
+        }
+
+        // Player Movement
+        if (this.keys.left) this.player.x -= this.player.speed;
+        if (this.keys.right) this.player.x += this.player.speed;
+        this.player.x = Math.max(0, Math.min(this.canvas.width - this.player.width, this.player.x));
+
+        // Shooting
+        if (this.keys.shoot && Date.now() - this.lastShotTime > 300) {
+            this.player.bullets.push({ x: this.player.x + this.player.width / 2, y: this.player.y, speed: 7, width: 4, height: 10 });
+            this.lastShotTime = Date.now();
+        }
+
+        this.player.bullets = this.player.bullets.filter(b => b.y > -20);
+        this.player.bullets.forEach(b => b.y -= b.speed);
+
+        // Enemy Logic
+        let moveDown = false;
+        let activeEnemies = this.enemies.filter(e => e.alive);
+
+        if (activeEnemies.length === 0 && !this.bossActive) {
+            this.wave++;
+            if (this.wave > 5) {
+                this.won = true;
+                this.onScore(this.score);
+            } else {
+                this.spawnWave();
+            }
+            return;
+        }
+
+        if (!this.bossActive) {
+            const leftEdge = Math.min(...activeEnemies.map(e => e.x));
+            const rightEdge = Math.max(...activeEnemies.map(e => e.x + e.width));
+
+            if ((leftEdge <= 10 && this.enemyDirection < 0) || (rightEdge >= this.canvas.width - 10 && this.enemyDirection > 0)) {
+                this.enemyDirection *= -1;
+                moveDown = true;
+            }
+
+            this.enemies.forEach(e => {
+                if (!e.alive) return;
+                e.x += this.enemySpeed * this.enemyDirection;
+                if (moveDown) e.y += 10;
+
+                if (Math.random() < 0.001 * this.wave) {
+                    this.enemyBullets.push({ x: e.x + e.width / 2, y: e.y + e.height, speed: 3, width: 4, height: 8 });
+                }
+
+                if (e.y + e.height >= this.player.y) this.gameOver = true;
+            });
+        }
+
+        // Special Enemy
+        if (this.specialEnemy) {
+            this.specialEnemy.x += this.specialEnemy.speed;
+            if (this.specialEnemy.x > this.canvas.width) this.specialEnemy = null;
+        }
+
+        // Boss Logic
+        if (this.bossActive && this.boss) {
+            this.boss.x += this.boss.speed * this.boss.direction;
+            if (this.boss.x <= 0 || this.boss.x + this.boss.width >= this.canvas.width) this.boss.direction *= -1;
+
+            if (Math.random() < 0.05) {
+                this.enemyBullets.push({ x: this.boss.x + this.boss.width / 2, y: this.boss.y + this.boss.height, speed: 4, width: 6, height: 12 });
+            }
+        }
+
+        // Hit Detection
+        this.player.bullets.forEach((b, bIdx) => {
+            // Vs Enemies
+            this.enemies.forEach(e => {
+                if (e.alive && this.checkCollision(b, e)) {
+                    e.hp--;
+                    this.player.bullets.splice(bIdx, 1);
+                    if (e.hp <= 0) {
+                        e.alive = false;
+                        this.score += e.points;
+                        this.spawnParticles(e.x + e.width / 2, e.y + e.height / 2, this.getRowColor(e.row));
+                    }
+                }
+            });
+
+            // Vs Boss
+            if (this.bossActive && this.boss && this.checkCollision(b, this.boss)) {
+                this.boss.hp--;
+                this.player.bullets.splice(bIdx, 1);
+                this.spawnParticles(b.x, b.y, '#ef4444');
+                if (this.boss.hp <= 0) {
+                    this.boss = null;
+                    this.bossActive = false;
+                    this.score += this.boss.points;
+                    this.wave++; // Skip to next or win
+                    if (this.wave > 5) {
+                        this.won = true;
+                        this.onScore(this.score);
+                    } else {
+                        this.spawnWave();
+                    }
+                }
+            }
+
+            // Vs Special
+            if (this.specialEnemy && this.checkCollision(b, this.specialEnemy)) {
+                this.score += this.specialEnemy.points;
+                this.spawnParticles(this.specialEnemy.x + this.specialEnemy.width / 2, this.specialEnemy.y + this.specialEnemy.height / 2, '#eab308');
+                this.specialEnemy = null;
+                this.player.bullets.splice(bIdx, 1);
+            }
+        });
+
+        // Player Hit
+        this.enemyBullets = this.enemyBullets.filter(b => b.y < this.canvas.height);
+        this.enemyBullets.forEach((b, idx) => {
+            b.y += b.speed;
+            if (this.checkCollision(b, this.player)) {
+                this.player.lives--;
+                this.enemyBullets.splice(idx, 1);
+                this.spawnParticles(this.player.x + 15, this.player.y + 10, '#22c55e');
+                if (this.player.lives <= 0) {
+                    this.gameOver = true;
+                    this.onScore(this.score);
+                }
+            }
+        });
+
+        // Particles
+        this.particles.forEach((p, idx) => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.05;
+            if (p.life <= 0) this.particles.splice(idx, 1);
+        });
+
+        this.updateScoreDisplay();
+    }
+
+    checkCollision(a, b) {
+        return a.x < b.x + b.width && a.x + (a.width || 0) > b.x &&
+            a.y < b.y + b.height && a.y + (a.height || 0) > b.y;
+    }
+
+    draw() {
+        // Background
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Stars
+        this.ctx.fillStyle = '#ffffff';
+        this.stars.forEach(s => {
+            this.ctx.globalAlpha = Math.abs(Math.sin(Date.now() * 0.001 * s.speed + s.alpha));
+            this.ctx.beginPath();
+            this.ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+            this.ctx.fill();
+        });
+        this.ctx.globalAlpha = 1.0;
+
+        if (this.gameOver || this.won) {
+            this.ctx.fillStyle = this.won ? '#22c55e' : '#ef4444';
+            this.ctx.font = 'bold 30px sans-serif';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(this.won ? 'VITÓRIA' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.font = '16px sans-serif';
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillText('Pressione ESPAÇO', this.canvas.width / 2, this.canvas.height / 2 + 30);
+            return;
+        }
+
+        // Draw Player (Green Arrowhead/Triangle as in image)
+        this.ctx.shadowBlur = 15;
+        this.ctx.shadowColor = this.player.color;
+        this.ctx.fillStyle = this.player.color; // #22c55e
+        this.ctx.beginPath();
+        // Triangle shape
+        this.ctx.moveTo(this.player.x + this.player.width / 2, this.player.y); // Tip
+        this.ctx.lineTo(this.player.x, this.player.y + this.player.height); // Bottom Left
+        this.ctx.lineTo(this.player.x + this.player.width / 2, this.player.y + this.player.height - 5); // Indent
+        this.ctx.lineTo(this.player.x + this.player.width, this.player.y + this.player.height); // Bottom Right
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Enemies (Pentagons with row colors)
+        this.enemies.forEach(e => {
+            if (!e.alive) return;
+            const color = this.getRowColor(e.row);
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowColor = color;
+            this.ctx.fillStyle = color;
+            this.ctx.beginPath();
+            const cx = e.x + e.width / 2;
+            const cy = e.y + e.height / 2;
+            const r = e.width / 2;
+            for (let i = 0; i < 5; i++) {
+                const angle = (Math.PI * 2 * i / 5) - Math.PI / 2;
+                this.ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
+            }
+            this.ctx.closePath();
+            this.ctx.fill();
+        });
+
+        // Special Enemy (Yellow Ellipse)
+        if (this.specialEnemy) {
+            this.ctx.fillStyle = '#eab308';
+            this.ctx.shadowColor = '#eab308';
+            this.ctx.beginPath();
+            this.ctx.ellipse(this.specialEnemy.x + this.specialEnemy.width / 2, this.specialEnemy.y + this.specialEnemy.height / 2, this.specialEnemy.width / 2, this.specialEnemy.height / 2, 0, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+
+        // Boss
+        if (this.boss && this.bossActive) {
+            this.ctx.fillStyle = '#ef4444';
+            this.ctx.shadowColor = '#ef4444';
+            this.ctx.fillRect(this.boss.x, this.boss.y, this.boss.width, this.boss.height);
+        }
+
+        // Bullets
+        this.ctx.fillStyle = '#60a5fa';
+        this.ctx.shadowBlur = 5;
+        this.ctx.shadowColor = '#60a5fa';
+        this.player.bullets.forEach(b => this.ctx.fillRect(b.x - 2, b.y, b.width, b.height));
+
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.shadowColor = '#ef4444';
+        this.enemyBullets.forEach(b => this.ctx.fillRect(b.x - 2, b.y, b.width, b.height));
+
+        // Particles
+        this.particles.forEach(p => {
+            this.ctx.fillStyle = p.color;
+            this.ctx.globalAlpha = p.life;
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+            this.ctx.fill();
+        });
+        this.ctx.globalAlpha = 1.0;
+        this.ctx.shadowBlur = 0;
+
+        // UI - Lives (Green Triangles bottom left)
+        this.ctx.fillStyle = '#22c55e';
+        for (let i = 0; i < this.player.lives; i++) {
+            const x = 20 + i * 25;
+            const y = this.canvas.height - 15;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + 6, y - 6);
+            this.ctx.lineTo(x, y + 6);
+            this.ctx.lineTo(x + 12, y + 6);
+            this.ctx.fill();
+        }
+
+        // UI - Wave info
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 14px sans-serif';
+        this.ctx.textAlign = 'right';
+        this.ctx.fillText(`Onda ${this.wave}/5`, this.canvas.width - 20, this.canvas.height - 15);
+    }
+
+    getRowColor(row) {
+        const colors = ['#3b82f6', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e']; // Blue -> Purple -> Pink gradient
+        return colors[row % colors.length];
+    }
+
+    updateScoreDisplay() {
+        // Keep existing hook if needed
     }
 
     spawnWave() {
@@ -2889,7 +3444,7 @@ class SpaceInvadersGame {
         const enemyHeight = 24;
         const padding = 8;
         const offsetLeft = (this.canvas.width - (cols * (enemyWidth + padding))) / 2;
-        
+
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const health = row === 0 ? 1 : (row === 1 ? 1 : 2);
@@ -2901,11 +3456,12 @@ class SpaceInvadersGame {
                     health: health,
                     maxHealth: health,
                     points: (rows - row) * 10 * this.wave,
-                    type: row % 3 // Different enemy types
+                    type: row % 3, // Different enemy types
+                    hp: health // Added for consistency with new bullet logic
                 });
             }
         }
-        
+
         // Speed up enemy movement on higher waves
         this.enemyMoveInterval = Math.max(300, 800 - (this.wave - 1) * 100);
     }
@@ -2923,7 +3479,8 @@ class SpaceInvadersGame {
             speed: 2,
             lastShot: 0,
             shootCooldown: 1500 - (this.wave - 1) * 200,
-            points: 500 * this.wave
+            points: 500 * this.wave,
+            hp: 20 + (this.wave - 1) * 10 // Added for consistency with new bullet logic
         };
     }
 
@@ -2969,13 +3526,13 @@ class SpaceInvadersGame {
                 }
             }
         };
-        
+
         this.keyUpHandler = (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = false;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.d = false; // Fixed 'd' keyup
             if (e.key === ' ') this.keys.shoot = false;
         };
-        
+
         document.addEventListener('keydown', this.keyDownHandler);
         document.addEventListener('keyup', this.keyUpHandler);
     }
@@ -3002,11 +3559,11 @@ class SpaceInvadersGame {
 
         const now = Date.now();
         const delta = now - this.lastUpdate;
-        
+
         if (!this.gameOver && !this.won) {
             this.update(delta);
         }
-        
+
         this.draw();
         this.lastUpdate = now;
         this.animationId = requestAnimationFrame(() => this.gameLoop());
@@ -3015,16 +3572,16 @@ class SpaceInvadersGame {
     shoot() {
         const now = Date.now();
         if (now - this.lastShot < this.shootCooldown) return;
-        
+
         this.lastShot = now;
-        
+
         if (this.player.hasTripleShot) {
             // Triple shot
-            this.bullets.push({ x: this.player.x + this.player.width / 2 - 2, y: this.player.y, dx: 0, dy: -8 });
-            this.bullets.push({ x: this.player.x + this.player.width / 2 - 2, y: this.player.y, dx: -2, dy: -8 });
-            this.bullets.push({ x: this.player.x + this.player.width / 2 - 2, y: this.player.y, dx: 2, dy: -8 });
+            this.player.bullets.push({ x: this.player.x + this.player.width / 2 - 2, y: this.player.y, dx: 0, dy: -8, width: 4, height: 10 });
+            this.player.bullets.push({ x: this.player.x + this.player.width / 2 - 2, y: this.player.y, dx: -2, dy: -8, width: 4, height: 10 });
+            this.player.bullets.push({ x: this.player.x + this.player.width / 2 - 2, y: this.player.y, dx: 2, dy: -8, width: 4, height: 10 });
         } else {
-            this.bullets.push({ x: this.player.x + this.player.width / 2 - 2, y: this.player.y, dx: 0, dy: -8 });
+            this.player.bullets.push({ x: this.player.x + this.player.width / 2 - 2, y: this.player.y, dx: 0, dy: -8, width: 4, height: 10 });
         }
     }
 
@@ -3042,7 +3599,7 @@ class SpaceInvadersGame {
             this.player.speedBoostTimer -= delta;
             if (this.player.speedBoostTimer <= 0) this.player.speedBoost = false;
         }
-        
+
         // Player movement
         const speed = this.player.speedBoost ? this.player.speed * 1.5 : this.player.speed;
         if (this.keys.left && this.player.x > 0) {
@@ -3051,29 +3608,103 @@ class SpaceInvadersGame {
         if (this.keys.right && this.player.x < this.canvas.width - this.player.width) {
             this.player.x += speed;
         }
-        
+
         // Shooting
         if (this.keys.shoot) {
             this.shoot();
         }
-        
-        // Update bullets
-        this.bullets = this.bullets.filter(bullet => {
-            bullet.x += bullet.dx;
+
+        // Check bullet collisions
+        this.player.bullets = this.player.bullets.filter(bullet => {
             bullet.y += bullet.dy;
-            return bullet.y > -10;
+            bullet.x += bullet.dx;
+
+            // Enemy collision
+            for (let i = 0; i < this.enemies.length; i++) {
+                if (this.checkCollision(bullet, this.enemies[i])) {
+                    this.enemies[i].hp--;
+
+                    if (this.enemies[i].hp <= 0) {
+                        this.score += this.enemies[i].type === 'boss' ? 50 : 10;
+                        if (Math.random() < 0.05) this.spawnPowerUp(this.enemies[i].x, this.enemies[i].y);
+                        this.enemies.splice(i, 1);
+                    }
+                    this.updateScoreDisplay();
+                    return false;
+                }
+            }
+
+            // Check special enemy
+            if (this.specialEnemy && this.checkCollision(bullet, this.specialEnemy)) {
+                this.score += this.specialEnemy.points;
+                this.spawnPowerUp(this.specialEnemy.x, this.specialEnemy.y);
+                this.specialEnemy = null;
+                this.updateScoreDisplay();
+                return false;
+            }
+
+            // Check boss collision
+            if (this.bossActive && this.boss && this.checkCollision(bullet, this.boss)) {
+                this.boss.hp--;
+                if (this.boss.hp <= 0) {
+                    this.score += this.boss.points;
+                    this.bossActive = false;
+                    this.boss = null;
+                    if (this.wave >= this.maxWave) {
+                        this.won = true;
+                        this.onScore(this.score);
+                        if (this.manager) {
+                            this.manager.unlockAchievement('galaxy_defender');
+                        }
+                    } else {
+                        this.wave++;
+                        this.spawnWave();
+                    }
+                    this.updateScoreDisplay();
+                }
+                return false;
+            }
+
+            return bullet.y > 0;
         });
-        
+
         // Update enemy bullets
         this.enemyBullets = this.enemyBullets.filter(bullet => {
             bullet.y += bullet.dy;
+            const bulletRect = { x: bullet.x - 3, y: bullet.y, width: 6, height: 10 };
+            if (this.checkCollision(bulletRect, this.player)) {
+                if (!this.player.hasShield) {
+                    this.lives--;
+                    this.spawnParticles(this.player.x + this.player.width / 2, this.player.y + this.player.height / 2, this.theme.accent);
+                    this.updateScoreDisplay();
+                    if (this.lives <= 0) {
+                        this.endGame();
+                    }
+                }
+                return false;
+            }
             return bullet.y < this.canvas.height + 10;
         });
-        
+
+        // Update particles
+        this.particles = this.particles.filter(p => p.life > 0);
+        this.particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.05;
+            p.size *= 0.95;
+        });
+
+        // Update stars
+        this.stars.forEach(s => {
+            s.y += s.speed;
+            if (s.y > this.canvas.height) s.y = 0;
+        });
+
         // Update power-ups
         this.powerUps = this.powerUps.filter(powerUp => {
             powerUp.y += powerUp.speed;
-            
+
             // Check collision with player
             if (this.checkCollision(powerUp, this.player)) {
                 switch (powerUp.type) {
@@ -3096,10 +3727,10 @@ class SpaceInvadersGame {
                 }
                 return false;
             }
-            
+
             return powerUp.y < this.canvas.height;
         });
-        
+
         // Update special enemy
         if (this.specialEnemy) {
             this.specialEnemy.x += this.specialEnemy.speed;
@@ -3108,7 +3739,7 @@ class SpaceInvadersGame {
             }
         }
         this.spawnSpecialEnemy();
-        
+
         // Boss logic
         if (this.bossActive && this.boss) {
             // Boss movement
@@ -3116,51 +3747,23 @@ class SpaceInvadersGame {
             if (this.boss.x <= 0 || this.boss.x + this.boss.width >= this.canvas.width) {
                 this.boss.direction *= -1;
             }
-            
+
             // Boss shooting
             const now = Date.now();
             if (now - this.boss.lastShot > this.boss.shootCooldown) {
                 this.boss.lastShot = now;
                 // Boss shoots multiple bullets
-                this.enemyBullets.push({ x: this.boss.x + 20, y: this.boss.y + this.boss.height, dy: 4 });
-                this.enemyBullets.push({ x: this.boss.x + this.boss.width / 2, y: this.boss.y + this.boss.height, dy: 4 });
-                this.enemyBullets.push({ x: this.boss.x + this.boss.width - 20, y: this.boss.y + this.boss.height, dy: 4 });
+                this.enemyBullets.push({ x: this.boss.x + 20, y: this.boss.y + this.boss.height, dy: 4, width: 8, height: 8 });
+                this.enemyBullets.push({ x: this.boss.x + this.boss.width / 2, y: this.boss.y + this.boss.height, dy: 4, width: 8, height: 8 });
+                this.enemyBullets.push({ x: this.boss.x + this.boss.width - 20, y: this.boss.y + this.boss.height, dy: 4, width: 8, height: 8 });
             }
-            
-            // Check bullet collision with boss
-            this.bullets = this.bullets.filter(bullet => {
-                const bulletRect = { x: bullet.x, y: bullet.y, width: 4, height: 10 };
-                if (this.checkCollision(bulletRect, this.boss)) {
-                    this.boss.health--;
-                    if (this.boss.health <= 0) {
-                        this.score += this.boss.points;
-                        this.bossActive = false;
-                        this.boss = null;
-                        
-                        // Win condition - defeated boss on wave 5
-                        if (this.wave >= this.maxWave) {
-                            this.won = true;
-                            this.onScore(this.score);
-                            if (this.manager) {
-                                this.manager.unlockAchievement('galaxy_defender');
-                            }
-                        } else {
-                            this.wave++;
-                            this.spawnWave();
-                        }
-                        this.updateScoreDisplay();
-                    }
-                    return false;
-                }
-                return true;
-            });
         } else {
             // Regular enemy logic
             this.enemyMoveTimer += delta;
-            
+
             if (this.enemyMoveTimer >= this.enemyMoveInterval) {
                 this.enemyMoveTimer = 0;
-                
+
                 // Check if enemies need to move down
                 let needsToMoveDown = false;
                 this.enemies.forEach(enemy => {
@@ -3169,7 +3772,7 @@ class SpaceInvadersGame {
                         needsToMoveDown = true;
                     }
                 });
-                
+
                 if (needsToMoveDown) {
                     this.enemies.forEach(enemy => {
                         enemy.y += this.enemyDropAmount;
@@ -3180,77 +3783,20 @@ class SpaceInvadersGame {
                         enemy.x += 15 * this.enemyDirection;
                     });
                 }
-                
+
                 // Enemy shooting
                 if (this.enemies.length > 0 && Math.random() < 0.3 + (this.wave * 0.1)) {
                     const shooter = this.enemies[Math.floor(Math.random() * this.enemies.length)];
                     this.enemyBullets.push({
                         x: shooter.x + shooter.width / 2,
                         y: shooter.y + shooter.height,
-                        dy: 3 + this.wave * 0.5
+                        dy: 3 + this.wave * 0.5,
+                        width: 8, height: 8
                     });
                 }
             }
         }
-        
-        // Check bullet collision with enemies
-        this.bullets = this.bullets.filter(bullet => {
-            const bulletRect = { x: bullet.x, y: bullet.y, width: 4, height: 10 };
-            
-            // Check special enemy
-            if (this.specialEnemy && this.checkCollision(bulletRect, this.specialEnemy)) {
-                this.score += this.specialEnemy.points;
-                this.spawnPowerUp(this.specialEnemy.x, this.specialEnemy.y);
-                this.specialEnemy = null;
-                this.updateScoreDisplay();
-                return false;
-            }
-            
-            // Check regular enemies
-            for (let i = this.enemies.length - 1; i >= 0; i--) {
-                if (this.checkCollision(bulletRect, this.enemies[i])) {
-                    this.enemies[i].health--;
-                    if (this.enemies[i].health <= 0) {
-                        this.score += this.enemies[i].points;
-                        this.spawnPowerUp(this.enemies[i].x, this.enemies[i].y);
-                        this.enemies.splice(i, 1);
-                        this.updateScoreDisplay();
-                        
-                        // Check if wave complete
-                        if (this.enemies.length === 0 && !this.bossActive) {
-                            if (this.wave % 5 === 0) {
-                                this.spawnBoss();
-                            } else if (this.wave < this.maxWave) {
-                                this.wave++;
-                                this.spawnWave();
-                            } else {
-                                this.spawnBoss();
-                            }
-                            this.updateScoreDisplay();
-                        }
-                    }
-                    return false;
-                }
-            }
-            return true;
-        });
-        
-        // Check enemy bullet collision with player
-        this.enemyBullets = this.enemyBullets.filter(bullet => {
-            const bulletRect = { x: bullet.x - 3, y: bullet.y, width: 6, height: 10 };
-            if (this.checkCollision(bulletRect, this.player)) {
-                if (!this.player.hasShield) {
-                    this.lives--;
-                    this.updateScoreDisplay();
-                    if (this.lives <= 0) {
-                        this.endGame();
-                    }
-                }
-                return false;
-            }
-            return true;
-        });
-        
+
         // Check if enemies reached player
         this.enemies.forEach(enemy => {
             if (enemy.y + enemy.height >= this.player.y) {
@@ -3261,244 +3807,77 @@ class SpaceInvadersGame {
 
     checkCollision(a, b) {
         return a.x < b.x + b.width &&
-               a.x + a.width > b.x &&
-               a.y < b.y + b.height &&
-               a.y + a.height > b.y;
+            a.x + a.width > b.x &&
+            a.y < b.y + b.height &&
+            a.y + a.height > b.y;
     }
 
     draw() {
-        const isDark = document.documentElement.classList.contains('dark');
-        
-        // Background with stars
-        const bgGradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        bgGradient.addColorStop(0, '#0f172a');
-        bgGradient.addColorStop(1, '#1e293b');
-        this.ctx.fillStyle = bgGradient;
+        // Clear & Background
+        this.ctx.fillStyle = '#0f172a';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Draw stars
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        for (let i = 0; i < 50; i++) {
-            const x = (i * 37) % this.canvas.width;
-            const y = (i * 53 + Date.now() / 50) % this.canvas.height;
-            this.ctx.fillRect(x, y, 1, 1);
-        }
-        
-        // Draw power-ups
-        this.powerUps.forEach(powerUp => {
-            const colors = {
-                triple: '#eab308',
-                shield: '#06b6d4',
-                speed: '#22c55e',
-                life: '#ef4444'
-            };
-            const icons = {
-                triple: '⚡',
-                shield: '🛡',
-                speed: '💨',
-                life: '❤'
-            };
-            
-            this.ctx.fillStyle = colors[powerUp.type];
+
+        // Draw Stars
+        this.ctx.fillStyle = '#ffffff';
+        this.stars.forEach(s => {
+            this.ctx.globalAlpha = Math.random() * 0.5 + 0.3;
             this.ctx.beginPath();
-            this.ctx.arc(powerUp.x + 10, powerUp.y + 10, 12, 0, Math.PI * 2);
+            this.ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
             this.ctx.fill();
-            
-            this.ctx.font = '12px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(icons[powerUp.type], powerUp.x + 10, powerUp.y + 14);
         });
-        
-        // Draw enemies with blue/purple gradient
-        this.enemies.forEach(enemy => {
-            const gradient = this.ctx.createLinearGradient(enemy.x, enemy.y, enemy.x + enemy.width, enemy.y + enemy.height);
-            const healthRatio = enemy.health / enemy.maxHealth;
-            
-            if (enemy.type === 0) {
-                gradient.addColorStop(0, '#3b82f6');
-                gradient.addColorStop(1, '#8b5cf6');
-            } else if (enemy.type === 1) {
-                gradient.addColorStop(0, '#6366f1');
-                gradient.addColorStop(1, '#a855f7');
-            } else {
-                gradient.addColorStop(0, '#8b5cf6');
-                gradient.addColorStop(1, '#ec4899');
-            }
-            
-            this.ctx.fillStyle = gradient;
-            
-            // Enemy body
-            this.ctx.beginPath();
-            this.ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
-            this.ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height * 0.6);
-            this.ctx.lineTo(enemy.x + enemy.width * 0.8, enemy.y + enemy.height);
-            this.ctx.lineTo(enemy.x + enemy.width * 0.2, enemy.y + enemy.height);
-            this.ctx.lineTo(enemy.x, enemy.y + enemy.height * 0.6);
-            this.ctx.closePath();
-            this.ctx.fill();
-            
-            // Health indicator for multi-hit enemies
-            if (enemy.maxHealth > 1 && enemy.health < enemy.maxHealth) {
-                this.ctx.fillStyle = 'rgba(255,0,0,0.5)';
-                this.ctx.fillRect(enemy.x, enemy.y - 5, enemy.width * (1 - healthRatio), 3);
-            }
-        });
-        
-        // Draw special enemy
-        if (this.specialEnemy) {
-            this.ctx.fillStyle = '#facc15';
-            this.ctx.beginPath();
-            this.ctx.ellipse(
-                this.specialEnemy.x + this.specialEnemy.width / 2,
-                this.specialEnemy.y + this.specialEnemy.height / 2,
-                this.specialEnemy.width / 2,
-                this.specialEnemy.height / 2,
-                0, 0, Math.PI * 2
-            );
-            this.ctx.fill();
-        }
-        
-        // Draw boss
-        if (this.bossActive && this.boss) {
-            // Boss body
-            const bossGradient = this.ctx.createLinearGradient(this.boss.x, this.boss.y, this.boss.x + this.boss.width, this.boss.y + this.boss.height);
-            bossGradient.addColorStop(0, '#dc2626');
-            bossGradient.addColorStop(0.5, '#7c3aed');
-            bossGradient.addColorStop(1, '#dc2626');
-            this.ctx.fillStyle = bossGradient;
-            
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.boss.x + this.boss.width / 2, this.boss.y);
-            this.ctx.lineTo(this.boss.x + this.boss.width, this.boss.y + this.boss.height * 0.4);
-            this.ctx.lineTo(this.boss.x + this.boss.width * 0.9, this.boss.y + this.boss.height);
-            this.ctx.lineTo(this.boss.x + this.boss.width * 0.1, this.boss.y + this.boss.height);
-            this.ctx.lineTo(this.boss.x, this.boss.y + this.boss.height * 0.4);
-            this.ctx.closePath();
-            this.ctx.fill();
-            
-            // Boss health bar
-            this.ctx.fillStyle = '#333';
-            this.ctx.fillRect(this.boss.x, this.boss.y - 12, this.boss.width, 8);
-            this.ctx.fillStyle = '#ef4444';
-            this.ctx.fillRect(this.boss.x, this.boss.y - 12, this.boss.width * (this.boss.health / this.boss.maxHealth), 8);
-        }
-        
-        // Draw player ship
-        const playerGradient = this.ctx.createLinearGradient(this.player.x, this.player.y, this.player.x + this.player.width, this.player.y + this.player.height);
-        playerGradient.addColorStop(0, '#22c55e');
-        playerGradient.addColorStop(1, '#10b981');
-        this.ctx.fillStyle = playerGradient;
-        
+        this.ctx.globalAlpha = 1;
+
+        // Draw Player
+        this.ctx.fillStyle = '#3b82f6';
         this.ctx.beginPath();
         this.ctx.moveTo(this.player.x + this.player.width / 2, this.player.y);
         this.ctx.lineTo(this.player.x + this.player.width, this.player.y + this.player.height);
-        this.ctx.lineTo(this.player.x + this.player.width / 2, this.player.y + this.player.height * 0.7);
         this.ctx.lineTo(this.player.x, this.player.y + this.player.height);
         this.ctx.closePath();
         this.ctx.fill();
-        
-        // Draw shield if active
-        if (this.player.hasShield) {
-            this.ctx.strokeStyle = `rgba(6, 182, 212, ${0.5 + Math.sin(Date.now() / 100) * 0.3})`;
-            this.ctx.lineWidth = 3;
-            this.ctx.beginPath();
-            this.ctx.arc(
-                this.player.x + this.player.width / 2,
-                this.player.y + this.player.height / 2,
-                25,
-                0, Math.PI * 2
-            );
-            this.ctx.stroke();
-        }
-        
-        // Draw bullets
-        this.ctx.fillStyle = '#facc15';
-        this.bullets.forEach(bullet => {
-            this.ctx.fillRect(bullet.x, bullet.y, 4, 10);
+
+        // Draw Enemies
+        this.enemies.forEach(enemy => {
+            this.ctx.fillStyle = enemy.type === 'boss' ? '#ef4444' : '#a855f7';
+            this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+            // Eyes
+            this.ctx.fillStyle = '#0f172a';
+            this.ctx.fillRect(enemy.x + enemy.width * 0.2, enemy.y + enemy.height * 0.3, enemy.width * 0.2, enemy.height * 0.2);
+            this.ctx.fillRect(enemy.x + enemy.width * 0.6, enemy.y + enemy.height * 0.3, enemy.width * 0.2, enemy.height * 0.2);
         });
-        
-        // Draw enemy bullets
-        this.ctx.fillStyle = '#ef4444';
+
+        // Draw Player Bullets
+        this.ctx.fillStyle = '#60a5fa';
+        this.player.bullets.forEach(bullet => {
+            this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+        });
+
+        // Draw Enemy Bullets
+        this.ctx.fillStyle = '#f87171';
         this.enemyBullets.forEach(bullet => {
-            this.ctx.beginPath();
-            this.ctx.arc(bullet.x, bullet.y, 4, 0, Math.PI * 2);
-            this.ctx.fill();
+            this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
         });
-        
-        // Draw lives
-        for (let i = 0; i < this.lives; i++) {
-            this.ctx.fillStyle = '#22c55e';
-            this.ctx.beginPath();
-            this.ctx.moveTo(20 + i * 25, this.canvas.height - 8);
-            this.ctx.lineTo(28 + i * 25, this.canvas.height - 20);
-            this.ctx.lineTo(36 + i * 25, this.canvas.height - 8);
-            this.ctx.closePath();
-            this.ctx.fill();
-        }
-        
-        // Draw wave indicator
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 14px Arial';
-        this.ctx.textAlign = 'right';
-        this.ctx.fillText(`Onda ${this.wave}/${this.maxWave}`, this.canvas.width - 10, this.canvas.height - 10);
-        
-        // Game over / Won screen
+
+        // Game Over / Won Screen
         if (this.gameOver || this.won) {
-            // Space-themed overlay
-            const overlayGradient = this.ctx.createRadialGradient(
-                this.canvas.width / 2, this.canvas.height / 2, 0,
-                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
-            );
-            overlayGradient.addColorStop(0, this.won ? 'rgba(16, 185, 129, 0.85)' : 'rgba(127, 29, 29, 0.85)');
-            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
-            this.ctx.fillStyle = overlayGradient;
+            this.ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
-            const time = Date.now() / 1000;
-            
-            // Animated stars in background
-            for (let i = 0; i < 20; i++) {
-                const x = (i * 23 + time * 20) % this.canvas.width;
-                const y = (i * 31) % this.canvas.height;
-                const alpha = 0.3 + Math.sin(time * 3 + i) * 0.3;
-                this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-                this.ctx.fillRect(x, y, 2, 2);
-            }
-            
-            this.ctx.shadowColor = this.won ? '#10b981' : '#ef4444';
-            this.ctx.shadowBlur = 20;
-            this.ctx.fillStyle = '#fff';
+
+            this.ctx.fillStyle = this.won ? '#10b981' : '#ef4444';
             this.ctx.font = 'bold 32px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? '🚀 VITÓRIA!' : '💥 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 40);
-            this.ctx.shadowBlur = 0;
-            
-            // Stats box
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            this.ctx.beginPath();
-            this.ctx.roundRect(this.canvas.width / 2 - 90, this.canvas.height / 2 - 10, 180, 70, 12);
-            this.ctx.fill();
-            
+            this.ctx.fillText(this.won ? 'VITÓRIA!' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 40);
+
             this.ctx.fillStyle = '#fff';
             this.ctx.font = 'bold 24px Arial';
-            this.ctx.fillText(`${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 22);
-            this.ctx.font = '12px Arial';
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            this.ctx.fillText('PONTOS', this.canvas.width / 2, this.canvas.height / 2 + 42);
-            
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.fillText(`${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 10);
             this.ctx.font = '16px Arial';
-            this.ctx.fillText(`Onda ${this.wave}/${this.maxWave}`, this.canvas.width / 2, this.canvas.height / 2 + 80);
-            
-            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
-            this.ctx.fillStyle = `rgba(59, 130, 246, ${0.3 + pulse * 0.3})`;
-            this.ctx.beginPath();
-            this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 100, 260, 32, 8);
-            this.ctx.fill();
-            
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = '13px Arial';
-            this.ctx.fillText('⏎ Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 120);
+            this.ctx.fillText('PONTOS', this.canvas.width / 2, this.canvas.height / 2 + 35);
+
+            this.ctx.fillStyle = '#94a3b8';
+            this.ctx.font = '14px Arial';
+            this.ctx.fillText('Pressione ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 80);
         }
     }
 
@@ -3521,16 +3900,46 @@ class BreakoutGame {
         this.ctx = canvas.getContext('2d');
         this.onScore = onScore;
         this.manager = manager;
-        
+
         this.canvas.width = 400;
         this.canvas.height = 500;
-        
+
         this.phase = 1;
         this.maxPhase = 5;
-        
+
         this.running = false;
+        this.theme = this.getThemeColors();
+        this.particles = [];
+
         this.reset();
         this.setupControls();
+    }
+
+    getThemeColors() {
+        const style = getComputedStyle(document.documentElement);
+        const isDark = document.documentElement.classList.contains('dark');
+        const getVar = (name, fallback) => { const val = style.getPropertyValue(name).trim(); return val || fallback; };
+        return {
+            isDark,
+            primary: getVar('--color-primary', '#3b82f6'),
+            secondary: getVar('--color-secondary', '#a855f7'),
+            accent: getVar('--color-accent', '#ef4444'),
+            bg: isDark ? '#0f172a' : '#f8fafc',
+            text: isDark ? '#f1f5f9' : '#1e293b'
+        };
+    }
+
+    spawnParticles(x, y, color) {
+        for (let i = 0; i < 8; i++) {
+            this.particles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                life: 1.0,
+                color: color,
+                size: Math.random() * 3 + 2
+            });
+        }
     }
 
     reset() {
@@ -3541,57 +3950,61 @@ class BreakoutGame {
             speed: 8,
             originalWidth: 80
         };
-        
+
         this.balls = [{
             x: this.canvas.width / 2,
             y: this.canvas.height - 50,
             radius: 8,
             dx: 4,
             dy: -4,
+            speed: 5, // Normalized speed
             originalRadius: 8
         }];
-        
+
         this.powerUps = [];
         this.activePowerUps = {
             bigPaddle: 0,
             bigBall: 0,
             multiball: false
         };
-        
+
         this.score = this.score || 0;
         this.lives = 3;
         this.gameOver = false;
         this.won = false;
-        
+        this.particles = [];
+
         this.keys = { left: false, right: false };
-        
+
         this.generateBricks();
         this.updateScoreDisplay();
+
+        // Refresh theme
+        this.theme = this.getThemeColors();
     }
 
     generateBricks() {
         this.bricks = [];
-        
-        // Different layouts for each phase
         const layouts = this.getPhaseLayout(this.phase);
         const brickWidth = 45;
         const brickHeight = 18;
         const brickPadding = 4;
-        const offsetTop = 50;
+        const offsetTop = 60;
         const offsetLeft = (this.canvas.width - (8 * (brickWidth + brickPadding))) / 2;
-        
+
         layouts.forEach((row, rowIndex) => {
             row.forEach((cell, colIndex) => {
                 if (cell > 0) {
-                    const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6'];
+                    // Modern gradients for bricks
+                    const hue = (rowIndex * 40) % 360;
                     this.bricks.push({
                         x: offsetLeft + colIndex * (brickWidth + brickPadding),
                         y: offsetTop + rowIndex * (brickHeight + brickPadding),
                         width: brickWidth,
                         height: brickHeight,
-                        color: colors[rowIndex % colors.length],
+                        color: `hsl(${hue}, 70%, 55%)`,
                         points: cell * 10 * this.phase,
-                        hits: cell, // Number of hits needed
+                        hits: cell,
                         maxHits: cell,
                         visible: true
                     });
@@ -3601,45 +4014,13 @@ class BreakoutGame {
     }
 
     getPhaseLayout(phase) {
-        // 0 = no brick, 1 = 1 hit, 2 = 2 hits, 3 = 3 hits
+        // Reuse existing layouts but can enhance later
         const layouts = {
-            1: [
-                [1,1,1,1,1,1,1,1],
-                [1,1,1,1,1,1,1,1],
-                [1,1,1,1,1,1,1,1],
-                [1,1,1,1,1,1,1,1],
-                [1,1,1,1,1,1,1,1]
-            ],
-            2: [
-                [1,1,1,2,2,1,1,1],
-                [1,1,2,1,1,2,1,1],
-                [1,2,1,1,1,1,2,1],
-                [1,1,2,1,1,2,1,1],
-                [1,1,1,2,2,1,1,1]
-            ],
-            3: [
-                [2,1,2,1,1,2,1,2],
-                [1,2,1,2,2,1,2,1],
-                [0,1,2,3,3,2,1,0],
-                [1,2,1,2,2,1,2,1],
-                [2,1,2,1,1,2,1,2]
-            ],
-            4: [
-                [1,0,2,0,0,2,0,1],
-                [0,2,0,3,3,0,2,0],
-                [2,0,3,0,0,3,0,2],
-                [0,2,0,3,3,0,2,0],
-                [1,0,2,0,0,2,0,1],
-                [2,2,2,2,2,2,2,2]
-            ],
-            5: [
-                [3,2,1,2,2,1,2,3],
-                [2,3,2,1,1,2,3,2],
-                [1,2,3,2,2,3,2,1],
-                [2,1,2,3,3,2,1,2],
-                [3,2,1,2,2,1,2,3],
-                [1,1,1,1,1,1,1,1]
-            ]
+            1: [[1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]],
+            2: [[2, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2, 2, 2]],
+            3: [[3, 1, 3, 1, 1, 3, 1, 3], [2, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1, 1], [3, 1, 3, 1, 1, 3, 1, 3]],
+            4: [[0, 3, 3, 0, 0, 3, 3, 0], [3, 2, 2, 3, 3, 2, 2, 3], [2, 1, 1, 2, 2, 1, 1, 2], [1, 0, 0, 1, 1, 0, 0, 1]],
+            5: [[3, 3, 3, 3, 3, 3, 3, 3], [2, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1, 1], [3, 2, 1, 1, 1, 2, 3]]
         };
         return layouts[phase] || layouts[1];
     }
@@ -3648,27 +4029,15 @@ class BreakoutGame {
         if (Math.random() < 0.2) {
             const types = ['paddle', 'ball', 'multi', 'life'];
             const type = types[Math.floor(Math.random() * types.length)];
-            const colors = {
-                paddle: '#3b82f6',
-                ball: '#22c55e',
-                multi: '#a855f7',
-                life: '#ef4444'
-            };
-            const icons = {
-                paddle: '↔',
-                ball: '●',
-                multi: '⁂',
-                life: '❤'
-            };
+            const colors = { paddle: '#3b82f6', ball: '#22c55e', multi: '#a855f7', life: '#ef4444' };
+            const icons = { paddle: '↔', ball: '●', multi: '⁂', life: '❤' };
             this.powerUps.push({
-                x: x,
-                y: y,
-                type,
+                x, y, type,
                 color: colors[type],
                 icon: icons[type],
-                width: 24,
-                height: 24,
-                speed: 2
+                width: 24, height: 24,
+                speed: 2,
+                angle: 0
             });
         }
     }
@@ -3685,12 +4054,10 @@ class BreakoutGame {
                 this.start();
             }
         };
-        
         this.keyUpHandler = (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = false;
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = false;
         };
-        
         document.addEventListener('keydown', this.keyDownHandler);
         document.addEventListener('keyup', this.keyUpHandler);
     }
@@ -3699,391 +4066,259 @@ class BreakoutGame {
         if (this.running) return;
         this.running = true;
         this.lastUpdate = Date.now();
-        this.animationId = requestAnimationFrame(() => this.gameLoop());
+        this.gameLoop();
     }
 
     stop() {
         this.running = false;
-        if (this.animationId) {
-            cancelAnimationFrame(this.animationId);
-            this.animationId = null;
-        }
+        if (this.animationId) cancelAnimationFrame(this.animationId);
         document.removeEventListener('keydown', this.keyDownHandler);
         document.removeEventListener('keyup', this.keyUpHandler);
     }
 
     gameLoop() {
         if (!this.running) return;
-
         const now = Date.now();
         const delta = now - this.lastUpdate;
-        
-        if (!this.gameOver && !this.won) {
-            this.update(delta);
-        }
+        if (!this.gameOver && !this.won) this.update(delta);
         this.draw();
-        
         this.lastUpdate = now;
         this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
 
     update(delta) {
-        // Update power-up timers
+        // Power-ups timing
         if (this.activePowerUps.bigPaddle > 0) {
             this.activePowerUps.bigPaddle -= delta;
-            if (this.activePowerUps.bigPaddle <= 0) {
-                this.paddle.width = this.paddle.originalWidth;
-            }
+            if (this.activePowerUps.bigPaddle <= 0) this.paddle.width = this.paddle.originalWidth;
         }
         if (this.activePowerUps.bigBall > 0) {
             this.activePowerUps.bigBall -= delta;
-            if (this.activePowerUps.bigBall <= 0) {
-                this.balls.forEach(ball => ball.radius = ball.originalRadius);
-            }
+            if (this.activePowerUps.bigBall <= 0) this.balls.forEach(b => b.radius = b.originalRadius);
         }
-        
+
         // Paddle movement
-        if (this.keys.left && this.paddle.x > 0) {
-            this.paddle.x -= this.paddle.speed;
-        }
-        if (this.keys.right && this.paddle.x < this.canvas.width - this.paddle.width) {
-            this.paddle.x += this.paddle.speed;
-        }
-        
-        // Update power-ups
-        this.powerUps = this.powerUps.filter(powerUp => {
-            powerUp.y += powerUp.speed;
-            
-            // Check collision with paddle
-            if (powerUp.y + powerUp.height >= this.canvas.height - this.paddle.height - 10 &&
-                powerUp.x + powerUp.width > this.paddle.x &&
-                powerUp.x < this.paddle.x + this.paddle.width) {
-                
-                switch (powerUp.type) {
-                    case 'paddle':
-                        this.paddle.width = 120;
-                        this.activePowerUps.bigPaddle = 10000;
-                        break;
-                    case 'ball':
-                        this.balls.forEach(ball => ball.radius = 12);
-                        this.activePowerUps.bigBall = 8000;
-                        break;
+        if (this.keys.left) this.paddle.x = Math.max(0, this.paddle.x - this.paddle.speed);
+        if (this.keys.right) this.paddle.x = Math.min(this.canvas.width - this.paddle.width, this.paddle.x + this.paddle.speed);
+
+        // Update particles
+        this.particles = this.particles.filter(p => p.life > 0);
+        this.particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.05;
+            p.size *= 0.95;
+        });
+
+        // Update Power-ups
+        this.powerUps = this.powerUps.filter(p => {
+            p.y += p.speed;
+            p.angle += 0.05;
+
+            // Collision with paddle
+            if (p.y + p.height >= this.canvas.height - this.paddle.height - 10 &&
+                p.x + p.width > this.paddle.x && p.x < this.paddle.x + this.paddle.width) {
+                switch (p.type) {
+                    case 'paddle': this.paddle.width = 120; this.activePowerUps.bigPaddle = 10000; break;
+                    case 'ball': this.balls.forEach(b => b.radius = 12); this.activePowerUps.bigBall = 8000; break;
                     case 'multi':
-                        if (this.balls.length < 5) {
-                            const mainBall = this.balls[0];
-                            this.balls.push({
-                                x: mainBall.x,
-                                y: mainBall.y,
-                                radius: mainBall.radius,
-                                dx: mainBall.dx + 2,
-                                dy: mainBall.dy,
-                                originalRadius: 8
-                            });
-                            this.balls.push({
-                                x: mainBall.x,
-                                y: mainBall.y,
-                                radius: mainBall.radius,
-                                dx: mainBall.dx - 2,
-                                dy: mainBall.dy,
-                                originalRadius: 8
-                            });
+                        if (this.balls.length < 10) {
+                            const b = this.balls[0];
+                            this.balls.push({ ...b, dx: b.dx + 2, dy: b.dy }, { ...b, dx: b.dx - 2, dy: b.dy });
                         }
                         break;
-                    case 'life':
-                        this.lives = Math.min(this.lives + 1, 5);
-                        this.updateScoreDisplay();
-                        break;
+                    case 'life': this.lives++; this.updateScoreDisplay(); break;
                 }
                 return false;
             }
-            
-            return powerUp.y < this.canvas.height;
+            return p.y < this.canvas.height;
         });
 
-        // Update balls
-        this.balls = this.balls.filter((ball, index) => {
+        // Balls logic
+        this.balls = this.balls.filter(ball => {
             ball.x += ball.dx;
             ball.y += ball.dy;
 
-            // Wall collision
+            // Walls
             if (ball.x - ball.radius < 0 || ball.x + ball.radius > this.canvas.width) {
                 ball.dx *= -1;
                 ball.x = Math.max(ball.radius, Math.min(this.canvas.width - ball.radius, ball.x));
             }
-            if (ball.y - ball.radius < 0) {
-                ball.dy *= -1;
-            }
+            if (ball.y - ball.radius < 0) ball.dy *= -1;
 
-            // Paddle collision
-            if (
-                ball.y + ball.radius > this.canvas.height - this.paddle.height - 10 &&
+            // Paddle
+            if (ball.y + ball.radius > this.canvas.height - this.paddle.height - 10 &&
                 ball.y - ball.radius < this.canvas.height - 10 &&
-                ball.x > this.paddle.x &&
-                ball.x < this.paddle.x + this.paddle.width
-            ) {
+                ball.x > this.paddle.x && ball.x < this.paddle.x + this.paddle.width) {
+
                 ball.dy = -Math.abs(ball.dy);
-                const hitPos = (ball.x - this.paddle.x) / this.paddle.width;
-                ball.dx = (hitPos - 0.5) * 10;
+                // English effect
+                const hitPos = (ball.x - (this.paddle.x + this.paddle.width / 2)) / (this.paddle.width / 2);
+                ball.dx = hitPos * 6;
+                this.spawnParticles(ball.x, ball.y, this.theme.primary);
             }
 
-            // Lost ball
-            if (ball.y + ball.radius > this.canvas.height) {
-                if (this.balls.length > 1) {
-                    return false; // Remove this ball
-                } else {
-                    this.lives--;
-                    this.updateScoreDisplay();
-                    
-                    if (this.lives <= 0) {
-                        this.endGame();
-                    } else {
-                        ball.x = this.canvas.width / 2;
-                        ball.y = this.canvas.height - 50;
-                        ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
-                        ball.dy = -4;
-                    }
-                }
-            }
-
-            // Brick collision
+            // Bricks
             this.bricks.forEach(brick => {
                 if (brick.visible) {
-                    if (
-                        ball.x > brick.x - ball.radius &&
-                        ball.x < brick.x + brick.width + ball.radius &&
-                        ball.y - ball.radius < brick.y + brick.height &&
-                        ball.y + ball.radius > brick.y
-                    ) {
+                    if (ball.x > brick.x && ball.x < brick.x + brick.width &&
+                        ball.y > brick.y && ball.y < brick.y + brick.height) {
+
                         brick.hits--;
                         if (brick.hits <= 0) {
                             brick.visible = false;
+                            this.spawnParticles(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.color);
                             this.spawnPowerUp(brick.x + brick.width / 2, brick.y);
+                            this.score += brick.points;
+                        } else {
+                            // Flash effect?
                         }
                         ball.dy *= -1;
-                        this.score += brick.points;
                         this.updateScoreDisplay();
                     }
                 }
             });
 
+            // Lost
+            if (ball.y - ball.radius > this.canvas.height) {
+                if (this.balls.length > 1) return false;
+                this.lives--;
+                this.updateScoreDisplay();
+                if (this.lives <= 0) this.endGame();
+                else {
+                    ball.x = this.canvas.width / 2;
+                    ball.y = this.canvas.height - 50;
+                    ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
+                    ball.dy = -4;
+                }
+            }
             return true;
         });
 
-        // Ensure at least one ball exists
-        if (this.balls.length === 0) {
-            this.balls.push({
-                x: this.canvas.width / 2,
-                y: this.canvas.height - 50,
-                radius: 8,
-                dx: 4,
-                dy: -4,
-                originalRadius: 8
-            });
-        }
-
-        // Check phase complete
         if (this.bricks.every(b => !b.visible)) {
             if (this.phase < this.maxPhase) {
                 this.phase++;
                 this.generateBricks();
-                this.balls = [{
-                    x: this.canvas.width / 2,
-                    y: this.canvas.height - 50,
-                    radius: 8,
-                    dx: 4 + this.phase * 0.5,
-                    dy: -4 - this.phase * 0.5,
-                    originalRadius: 8
-                }];
-                this.updateScoreDisplay();
+                this.balls.forEach(b => {
+                    b.x = this.canvas.width / 2;
+                    b.y = this.canvas.height - 50;
+                    b.dx *= 1.1; b.dy *= 1.1;
+                });
             } else {
                 this.won = true;
                 this.onScore(this.score);
-                if (this.manager) {
-                    this.manager.unlockAchievement('destroyer');
-                }
             }
         }
     }
 
     draw() {
-        const isDark = document.documentElement.classList.contains('dark');
-        
-        // Background gradient
-        const bgGradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        bgGradient.addColorStop(0, '#0f172a');
-        bgGradient.addColorStop(1, '#1e293b');
-        this.ctx.fillStyle = bgGradient;
+        // Clear & BG
+        const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+        gradient.addColorStop(0, this.theme.bg);
+        gradient.addColorStop(1, '#000');
+        this.ctx.fillStyle = gradient;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw bricks
+        // Stars/Grid for premium feel
+        this.ctx.strokeStyle = this.theme.isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+        this.ctx.beginPath();
+        for (let i = 0; i < this.canvas.width; i += 20) { this.ctx.moveTo(i, 0); this.ctx.lineTo(i, this.canvas.height); }
+        for (let i = 0; i < this.canvas.height; i += 20) { this.ctx.moveTo(0, i); this.ctx.lineTo(this.canvas.width, i); }
+        this.ctx.stroke();
+
+        // Particles
+        this.particles.forEach(p => {
+            this.ctx.fillStyle = p.color;
+            this.ctx.globalAlpha = p.life;
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            this.ctx.fill();
+        });
+        this.ctx.globalAlpha = 1;
+
+        // Bricks
         this.bricks.forEach(brick => {
             if (brick.visible) {
-                // Brick color based on hits remaining
-                const alpha = brick.hits / brick.maxHits;
-                const gradient = this.ctx.createLinearGradient(brick.x, brick.y, brick.x, brick.y + brick.height);
-                gradient.addColorStop(0, brick.color);
-                gradient.addColorStop(1, this.adjustColorBrightness(brick.color, -30));
-                
-                this.ctx.fillStyle = gradient;
+                this.ctx.fillStyle = brick.color;
+                this.ctx.shadowBlur = this.theme.isDark ? 10 : 0;
+                this.ctx.shadowColor = brick.color;
                 this.ctx.beginPath();
-                this.ctx.roundRect(brick.x, brick.y, brick.width, brick.height, 3);
+                this.ctx.roundRect(brick.x, brick.y, brick.width, brick.height, 4);
                 this.ctx.fill();
-                
-                // Highlight
-                this.ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                this.ctx.fillRect(brick.x + 2, brick.y + 2, brick.width - 4, 4);
-                
-                // Show hits remaining for multi-hit bricks
+
+                // Gloss
+                this.ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                this.ctx.fillRect(brick.x, brick.y, brick.width, brick.height / 2);
+
                 if (brick.maxHits > 1) {
                     this.ctx.fillStyle = '#fff';
                     this.ctx.font = 'bold 10px Arial';
                     this.ctx.textAlign = 'center';
-                    this.ctx.fillText(brick.hits.toString(), brick.x + brick.width / 2, brick.y + brick.height / 2 + 3);
+                    this.ctx.shadowBlur = 0;
+                    this.ctx.fillText(brick.hits, brick.x + brick.width / 2, brick.y + 12);
                 }
             }
         });
+        this.ctx.shadowBlur = 0;
 
-        // Draw power-ups
-        this.powerUps.forEach(powerUp => {
-            this.ctx.fillStyle = powerUp.color;
-            this.ctx.beginPath();
-            this.ctx.arc(powerUp.x + 12, powerUp.y + 12, 12, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = '12px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(powerUp.icon, powerUp.x + 12, powerUp.y + 16);
-        });
-
-        // Draw paddle with gradient
-        const paddleGradient = this.ctx.createLinearGradient(
-            this.paddle.x, this.canvas.height - 20,
-            this.paddle.x + this.paddle.width, this.canvas.height - 8
-        );
-        paddleGradient.addColorStop(0, '#3b82f6');
-        paddleGradient.addColorStop(1, '#a855f7');
-        this.ctx.fillStyle = paddleGradient;
+        // Paddle
+        this.ctx.fillStyle = this.theme.primary;
+        this.ctx.shadowBlur = this.theme.isDark ? 15 : 0;
+        this.ctx.shadowColor = this.theme.primary;
         this.ctx.beginPath();
-        this.ctx.roundRect(
-            this.paddle.x,
-            this.canvas.height - this.paddle.height - 10,
-            this.paddle.width,
-            this.paddle.height,
-            6
-        );
+        this.ctx.roundRect(this.paddle.x, this.canvas.height - this.paddle.height - 10, this.paddle.width, this.paddle.height, 6);
         this.ctx.fill();
 
-        // Draw balls
+        // Paddle lights
+        this.ctx.fillStyle = '#60a5fa';
+        this.ctx.fillRect(this.paddle.x + 5, this.canvas.height - this.paddle.height - 8, this.paddle.width - 10, 2);
+
+        // PowerUps
+        this.powerUps.forEach(p => {
+            this.ctx.save();
+            this.ctx.translate(p.x + 12, p.y + 12);
+            this.ctx.rotate(p.angle);
+            this.ctx.fillStyle = p.color;
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowColor = p.color;
+            this.ctx.beginPath();
+
+            // Star shape for powerup
+            for (let i = 0; i < 5; i++) {
+                this.ctx.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * 10, -Math.sin((18 + i * 72) * Math.PI / 180) * 10);
+                this.ctx.lineTo(Math.cos((54 + i * 72) * Math.PI / 180) * 4, -Math.sin((54 + i * 72) * Math.PI / 180) * 4);
+            }
+            this.ctx.fill();
+            this.ctx.restore();
+        });
+
+        // Balls
         this.balls.forEach(ball => {
-            const ballGradient = this.ctx.createRadialGradient(
-                ball.x - 2, ball.y - 2, 0,
-                ball.x, ball.y, ball.radius
-            );
-            ballGradient.addColorStop(0, '#fff');
-            ballGradient.addColorStop(1, '#94a3b8');
-            this.ctx.fillStyle = ballGradient;
+            this.ctx.fillStyle = '#fff';
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowColor = '#fff';
             this.ctx.beginPath();
             this.ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
             this.ctx.fill();
         });
+        this.ctx.shadowBlur = 0;
 
-        // Draw lives
-        for (let i = 0; i < this.lives; i++) {
-            this.ctx.fillStyle = '#ef4444';
-            this.ctx.beginPath();
-            this.ctx.arc(20 + i * 20, 20, 6, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-
-        // Draw phase indicator
-        this.ctx.fillStyle = '#fff';
+        // UI
+        this.ctx.fillStyle = this.theme.text;
         this.ctx.font = 'bold 14px Arial';
         this.ctx.textAlign = 'right';
-        this.ctx.fillText(`Fase ${this.phase}/${this.maxPhase}`, this.canvas.width - 10, 22);
+        this.ctx.fillText(`Fase ${this.phase}/${this.maxPhase}`, this.canvas.width - 10, 20);
 
-        // Draw active power-up indicators
-        let indicatorY = 40;
-        if (this.activePowerUps.bigPaddle > 0) {
-            this.ctx.fillStyle = '#3b82f6';
-            this.ctx.font = '10px Arial';
-            this.ctx.textAlign = 'right';
-            this.ctx.fillText(`Paddle: ${Math.ceil(this.activePowerUps.bigPaddle / 1000)}s`, this.canvas.width - 10, indicatorY);
-            indicatorY += 15;
-        }
-        if (this.activePowerUps.bigBall > 0) {
-            this.ctx.fillStyle = '#22c55e';
-            this.ctx.font = '10px Arial';
-            this.ctx.textAlign = 'right';
-            this.ctx.fillText(`Ball: ${Math.ceil(this.activePowerUps.bigBall / 1000)}s`, this.canvas.width - 10, indicatorY);
-        }
-
-        // Game over / Won screen
         if (this.gameOver || this.won) {
-            // Colorful overlay for Breakout
-            const overlayGradient = this.ctx.createRadialGradient(
-                this.canvas.width / 2, this.canvas.height / 2, 0,
-                this.canvas.width / 2, this.canvas.height / 2, this.canvas.width
-            );
-            overlayGradient.addColorStop(0, this.won ? 'rgba(168, 85, 247, 0.9)' : 'rgba(239, 68, 68, 0.85)');
-            overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
-            this.ctx.fillStyle = overlayGradient;
+            this.ctx.fillStyle = 'rgba(0,0,0,0.85)';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
-            const time = Date.now() / 1000;
-            
-            // Draw floating bricks animation
-            for (let i = 0; i < 6; i++) {
-                const x = 60 + i * 50;
-                const y = this.canvas.height / 2 - 80 + Math.sin(time * 2 + i) * 10;
-                const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#a855f7'];
-                this.ctx.fillStyle = colors[i];
-                this.ctx.globalAlpha = 0.6;
-                this.ctx.beginPath();
-                this.ctx.roundRect(x, y, 30, 12, 2);
-                this.ctx.fill();
-                this.ctx.globalAlpha = 1;
-            }
-            
-            this.ctx.shadowColor = this.won ? '#a855f7' : '#ef4444';
-            this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 28px Arial';
+            this.ctx.font = 'bold 30px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.won ? '🎉 VOCÊ VENCEU!' : '💔 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 20);
-            this.ctx.shadowBlur = 0;
-            
-            // Stats box
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            this.ctx.beginPath();
-            this.ctx.roundRect(this.canvas.width / 2 - 80, this.canvas.height / 2 + 5, 160, 65, 12);
-            this.ctx.fill();
-            
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 22px Arial';
-            this.ctx.fillText(`${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 35);
-            this.ctx.font = '12px Arial';
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            this.ctx.fillText(`Fase ${this.phase}/${this.maxPhase}`, this.canvas.width / 2, this.canvas.height / 2 + 55);
-            
-            const pulse = 0.5 + Math.sin(time * 4) * 0.2;
-            this.ctx.fillStyle = `rgba(168, 85, 247, ${0.3 + pulse * 0.3})`;
-            this.ctx.beginPath();
-            this.ctx.roundRect(this.canvas.width / 2 - 115, this.canvas.height / 2 + 85, 230, 30, 8);
-            this.ctx.fill();
-            
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = '13px Arial';
-            this.ctx.fillText('⏎ ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 104);
+            this.ctx.fillText(this.won ? 'VITÓRIA' : 'GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.font = '14px Arial';
+            this.ctx.fillText('Pressione ESPAÇO', this.canvas.width / 2, this.canvas.height / 2 + 30);
         }
-    }
-
-    adjustColorBrightness(color, amount) {
-        const hex = color.replace('#', '');
-        const r = Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16) + amount));
-        const g = Math.max(0, Math.min(255, parseInt(hex.substr(2, 2), 16) + amount));
-        const b = Math.max(0, Math.min(255, parseInt(hex.substr(4, 2), 16) + amount));
-        return `rgb(${r}, ${g}, ${b})`;
     }
 
     updateScoreDisplay() {
@@ -4099,16 +4334,17 @@ class BreakoutGame {
     }
 }
 
+
 class TermoGame {
     constructor(canvas, onScore, manager) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.onScore = onScore;
         this.manager = manager;
-        
+
         this.canvas.width = 400;
         this.canvas.height = 500;
-        
+
         // General Portuguese 5-letter words (similar to term.ooo)
         this.words = [
             'ABRIR', 'ACASO', 'ACIMA', 'ADEUS', 'AGORA',
@@ -4232,16 +4468,36 @@ class TermoGame {
             'VISAR', 'VISOR', 'VIUVA', 'VIUVO', 'VIVAR',
             'VOADO', 'VOGAR', 'VOGOU', 'VOTOS', 'VULGO'
         ];
-        
+
         this.maxAttempts = 6;
         this.wordLength = 5;
         this.running = false;
-        
+
+        this.theme = this.getThemeColors();
+        this.particles = [];
         this.reset();
         this.setupControls();
     }
 
+    getThemeColors() {
+        const style = getComputedStyle(document.documentElement);
+        const isDark = document.documentElement.classList.contains('dark');
+        const getVar = (name, fallback) => { const val = style.getPropertyValue(name).trim(); return val || fallback; };
+        return {
+            isDark,
+            primary: getVar('--color-primary', '#3b82f6'),
+            bg: isDark ? '#0f172a' : '#f8fafc',
+            text: isDark ? '#f1f5f9' : '#1e293b',
+            surface: isDark ? '#1e293b' : '#ffffff',
+            border: isDark ? '#334155' : '#e2e8f0',
+            success: '#22c55e',
+            warning: '#eab308',
+            absent: isDark ? '#475569' : '#94a3b8'
+        };
+    }
+
     reset() {
+        this.theme = this.getThemeColors();
         // Select random word
         this.targetWord = this.words[Math.floor(Math.random() * this.words.length)].toUpperCase();
         this.attempts = [];
@@ -4255,7 +4511,7 @@ class TermoGame {
         this.revealIndex = -1;
         this.message = '';
         this.messageTimer = 0;
-        
+
         this.updateScoreDisplay();
     }
 
@@ -4284,7 +4540,7 @@ class TermoGame {
                 this.currentAttempt += letter;
             }
         };
-        
+
         document.addEventListener('keydown', this.keyHandler);
     }
 
@@ -4300,7 +4556,7 @@ class TermoGame {
         this.attempts.push(attempt);
         this.currentAttempt = '';
         this.currentRow++;
-        
+
         // Start reveal animation
         this.revealIndex = 0;
         this.revealTimer = setInterval(() => {
@@ -4320,12 +4576,12 @@ class TermoGame {
             const attemptBonus = (this.maxAttempts - this.attempts.length + 1) * 200;
             this.score = baseScore + attemptBonus;
             this.onScore(this.score);
-            
+
             // Check for first attempt achievement
             if (this.attempts.length === 1 && this.manager) {
                 this.manager.unlockAchievement('termo_master');
             }
-            
+
             this.showMessage('Parabéns! 🎉');
         } else if (this.attempts.length >= this.maxAttempts) {
             this.gameOver = true;
@@ -4333,7 +4589,7 @@ class TermoGame {
             this.onScore(this.score);
             this.showMessage(`Era: ${this.targetWord}`);
         }
-        
+
         this.updateScoreDisplay();
     }
 
@@ -4366,7 +4622,7 @@ class TermoGame {
 
         const now = Date.now();
         const delta = now - this.lastUpdate;
-        
+
         // Update timers
         if (this.shake) {
             this.shakeTimer -= delta;
@@ -4374,11 +4630,11 @@ class TermoGame {
                 this.shake = false;
             }
         }
-        
+
         if (this.messageTimer > 0) {
             this.messageTimer -= delta;
         }
-        
+
         this.draw();
         this.lastUpdate = now;
         this.animationId = requestAnimationFrame(() => this.gameLoop());
@@ -4386,24 +4642,24 @@ class TermoGame {
 
     getLetterStatus(letter, index, word) {
         const targetWord = this.targetWord;
-        
+
         if (targetWord[index] === letter) {
             return 'correct'; // Green - correct position
         } else if (targetWord.includes(letter)) {
             // Check if this letter is already matched correctly elsewhere
             let letterCount = 0;
             let matchedCount = 0;
-            
+
             for (let i = 0; i < targetWord.length; i++) {
                 if (targetWord[i] === letter) letterCount++;
             }
-            
+
             for (let i = 0; i < word.length; i++) {
                 if (word[i] === letter && targetWord[i] === letter) {
                     matchedCount++;
                 }
             }
-            
+
             // Count how many times this letter appears before current position in wrong spots
             let wrongSpotCount = 0;
             for (let i = 0; i < index; i++) {
@@ -4411,33 +4667,31 @@ class TermoGame {
                     wrongSpotCount++;
                 }
             }
-            
+
             if (wrongSpotCount < letterCount - matchedCount) {
                 return 'present'; // Yellow - wrong position
             }
         }
-        
+
         return 'absent'; // Gray - not in word
     }
 
     draw() {
-        const isDark = document.documentElement.classList.contains('dark');
-        
         // Background
-        this.ctx.fillStyle = isDark ? '#0f172a' : '#f1f5f9';
+        this.ctx.fillStyle = this.theme.bg;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
+
         // Title
-        this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
+        this.ctx.fillStyle = this.theme.text;
         this.ctx.font = 'bold 24px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText('TERMO', this.canvas.width / 2, 35);
-        
+
         // Subtitle
-        this.ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+        this.ctx.fillStyle = this.theme.isDark ? '#94a3b8' : '#64748b';
         this.ctx.font = '12px Arial';
         this.ctx.fillText('Adivinhe a palavra de 5 letras!', this.canvas.width / 2, 55);
-        
+
         // Grid settings
         const tileSize = 56;
         const gap = 6;
@@ -4445,73 +4699,87 @@ class TermoGame {
         const gridHeight = this.maxAttempts * tileSize + (this.maxAttempts - 1) * gap;
         const startX = (this.canvas.width - gridWidth) / 2;
         const startY = 75;
-        
+
         // Draw grid
         for (let row = 0; row < this.maxAttempts; row++) {
             const isCurrentRow = row === this.currentRow && !this.gameOver && !this.won;
             const isCompletedRow = row < this.attempts.length;
             const attempt = isCompletedRow ? this.attempts[row] : (isCurrentRow ? this.currentAttempt : '');
-            
+
             // Shake effect for current row
             let rowOffsetX = 0;
             if (isCurrentRow && this.shake) {
                 rowOffsetX = Math.sin(Date.now() / 20) * 5;
             }
-            
+
             for (let col = 0; col < this.wordLength; col++) {
                 const x = startX + col * (tileSize + gap) + rowOffsetX;
                 const y = startY + row * (tileSize + gap);
                 const letter = attempt[col] || '';
-                
+
                 let bgColor, borderColor, textColor;
-                
+
                 if (isCompletedRow) {
                     // Revealed row
                     const isRevealed = row < this.attempts.length - 1 || col <= this.revealIndex;
-                    
+
                     if (isRevealed) {
                         const status = this.getLetterStatus(letter, col, attempt);
-                        
+
                         if (status === 'correct') {
-                            bgColor = '#22c55e'; // Green
-                            borderColor = '#16a34a';
+                            bgColor = this.theme.success;
+                            borderColor = this.theme.success;
+                            textColor = '#ffffff';
                         } else if (status === 'present') {
-                            bgColor = '#eab308'; // Yellow
-                            borderColor = '#ca8a04';
+                            bgColor = this.theme.warning;
+                            borderColor = this.theme.warning;
+                            textColor = '#ffffff';
                         } else {
-                            bgColor = isDark ? '#475569' : '#94a3b8'; // Gray
-                            borderColor = isDark ? '#334155' : '#64748b';
+                            bgColor = this.theme.absent;
+                            borderColor = this.theme.absent;
+                            textColor = '#ffffff';
                         }
-                        textColor = '#ffffff';
                     } else {
                         // Not yet revealed
-                        bgColor = isDark ? '#1e293b' : '#ffffff';
-                        borderColor = isDark ? '#475569' : '#cbd5e1';
-                        textColor = isDark ? '#e2e8f0' : '#1e293b';
+                        bgColor = this.theme.surface;
+                        borderColor = this.theme.border;
+                        textColor = this.theme.text;
                     }
                 } else if (isCurrentRow && letter) {
                     // Current row with letter
-                    bgColor = isDark ? '#1e293b' : '#ffffff';
-                    borderColor = isDark ? '#64748b' : '#94a3b8';
-                    textColor = isDark ? '#e2e8f0' : '#1e293b';
+                    bgColor = this.theme.surface;
+                    borderColor = this.theme.isDark ? '#cbd5e1' : '#475569'; // Highlight border
+                    textColor = this.theme.text;
                 } else {
                     // Empty cell
-                    bgColor = isDark ? '#1e293b' : '#ffffff';
-                    borderColor = isDark ? '#334155' : '#e2e8f0';
-                    textColor = isDark ? '#e2e8f0' : '#1e293b';
+                    bgColor = this.theme.surface;
+                    borderColor = this.theme.border;
+                    textColor = this.theme.text;
                 }
-                
+
+                // Shadow for premium feel
+                if (!isCompletedRow) {
+                    this.ctx.shadowColor = 'rgba(0,0,0,0.05)';
+                    this.ctx.shadowBlur = 4;
+                    this.ctx.shadowOffsetY = 2;
+                }
+
                 // Draw cell background
                 this.ctx.fillStyle = bgColor;
                 this.ctx.beginPath();
-                this.ctx.roundRect(x, y, tileSize, tileSize, 4);
+                this.ctx.roundRect(x, y, tileSize, tileSize, 6);
                 this.ctx.fill();
-                
+                this.ctx.shadowBlur = 0;
+                this.ctx.shadowOffsetY = 0;
+
                 // Draw cell border
-                this.ctx.strokeStyle = borderColor;
-                this.ctx.lineWidth = 2;
-                this.ctx.stroke();
-                
+                if (!isCompletedRow || !isCompletedRow) { // Always stroke unless filled with solid color? 
+                    // Actually filled cells look better without border or matching border
+                    this.ctx.strokeStyle = borderColor;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+                }
+
                 // Draw letter
                 if (letter) {
                     this.ctx.fillStyle = textColor;
@@ -4522,13 +4790,13 @@ class TermoGame {
                 }
             }
         }
-        
+
         // Draw helper text (without virtual keyboard)
-        this.ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+        this.ctx.fillStyle = this.theme.isDark ? '#64748b' : '#94a3b8';
         this.ctx.font = '11px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText('Use o teclado para digitar • ENTER para confirmar • BACKSPACE para apagar', this.canvas.width / 2, startY + gridHeight + 25);
-        
+
         // Draw message
         if (this.messageTimer > 0) {
             const alpha = Math.min(1, this.messageTimer / 500);
@@ -4536,14 +4804,14 @@ class TermoGame {
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 100, startY + gridHeight / 2 - 20, 200, 40, 8);
             this.ctx.fill();
-            
+
             this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             this.ctx.font = 'bold 16px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(this.message, this.canvas.width / 2, startY + gridHeight / 2);
         }
-        
+
         // Game over / Won overlay
         if (this.gameOver || this.won) {
             const overlayGradient = this.ctx.createRadialGradient(
@@ -4554,14 +4822,15 @@ class TermoGame {
             overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
             this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
+
             const time = Date.now() / 1000;
-            
+
             // Animated letter tiles
             const letters = this.won ? this.targetWord : 'TERMO';
-            for (let i = 0; i < letters.length; i++) {
-                const x = this.canvas.width / 2 - 100 + i * 45;
-                const y = this.canvas.height / 2 - 100 + Math.sin(time * 3 + i) * 5;
+            for (let i = 0; i < 5; i++) {
+                const x = this.canvas.width / 2 - 100 + i * 42;
+                const y = this.canvas.height / 2 - 80 + Math.sin(time * 3 + i * 0.5) * 10;
+
                 this.ctx.fillStyle = this.won ? '#22c55e' : '#475569';
                 this.ctx.beginPath();
                 this.ctx.roundRect(x, y, 38, 38, 4);
@@ -4571,7 +4840,7 @@ class TermoGame {
                 this.ctx.textAlign = 'center';
                 this.ctx.fillText(letters[i], x + 19, y + 26);
             }
-            
+
             this.ctx.shadowColor = this.won ? '#22c55e' : '#64748b';
             this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
@@ -4579,12 +4848,12 @@ class TermoGame {
             this.ctx.textAlign = 'center';
             this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : '😔 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
             this.ctx.shadowBlur = 0;
-            
+
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 90, this.canvas.height / 2 - 5, 180, 65, 12);
             this.ctx.fill();
-            
+
             this.ctx.font = '16px Arial';
             this.ctx.fillStyle = '#fff';
             if (this.won) {
@@ -4595,13 +4864,13 @@ class TermoGame {
             this.ctx.font = '14px Arial';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 42);
-            
+
             const pulse = 0.5 + Math.sin(time * 4) * 0.2;
             this.ctx.fillStyle = `rgba(34, 197, 94, ${0.3 + pulse * 0.3})`;
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 70, 260, 30, 8);
             this.ctx.fill();
-            
+
             this.ctx.fillStyle = '#fff';
             this.ctx.font = '13px Arial';
             this.ctx.fillText('⏎ ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 89);
@@ -4622,10 +4891,10 @@ class TermoDuoGame {
         this.ctx = canvas.getContext('2d');
         this.onScore = onScore;
         this.manager = manager;
-        
+
         this.canvas.width = 650;
         this.canvas.height = 500;
-        
+
         // General Portuguese 5-letter words (similar to term.ooo)
         this.words = [
             'ABRIR', 'ACASO', 'ACIMA', 'ADEUS', 'AGORA',
@@ -4775,17 +5044,36 @@ class TermoDuoGame {
             'GOZOS', 'GRACA', 'GRAPA', 'GRAOS', 'GRATA',
             'GRATO', 'GRILO', 'GRUTA', 'GUIAS', 'GUIAR'
         ];
-        
+
         this.numWords = 2;
         this.maxAttempts = 7;
         this.wordLength = 5;
         this.running = false;
-        
+
+        this.theme = this.getThemeColors();
         this.reset();
         this.setupControls();
     }
 
+    getThemeColors() {
+        const style = getComputedStyle(document.documentElement);
+        const isDark = document.documentElement.classList.contains('dark');
+        const getVar = (name, fallback) => { const val = style.getPropertyValue(name).trim(); return val || fallback; };
+        return {
+            isDark,
+            primary: getVar('--color-primary', '#3b82f6'),
+            bg: isDark ? '#0f172a' : '#f8fafc',
+            text: isDark ? '#f1f5f9' : '#1e293b',
+            surface: isDark ? '#1e293b' : '#ffffff',
+            border: isDark ? '#334155' : '#e2e8f0',
+            success: '#22c55e',
+            warning: '#eab308',
+            absent: isDark ? '#475569' : '#94a3b8'
+        };
+    }
+
     reset() {
+        this.theme = this.getThemeColors();
         // Select random words (ensure they're different)
         const shuffled = [...this.words].sort(() => Math.random() - 0.5);
         this.targetWords = shuffled.slice(0, this.numWords).map(w => w.toUpperCase());
@@ -4800,7 +5088,7 @@ class TermoDuoGame {
         this.revealIndex = -1;
         this.message = '';
         this.messageTimer = 0;
-        
+
         this.updateScoreDisplay();
     }
 
@@ -4827,7 +5115,7 @@ class TermoDuoGame {
                 this.currentAttempt += letter;
             }
         };
-        
+
         document.addEventListener('keydown', this.keyHandler);
     }
 
@@ -4842,14 +5130,14 @@ class TermoDuoGame {
         const attempt = this.currentAttempt.toUpperCase();
         this.attempts.push(attempt);
         this.currentAttempt = '';
-        
+
         // Check if any word was solved
         for (let i = 0; i < this.numWords; i++) {
             if (!this.solvedWords[i] && attempt === this.targetWords[i]) {
                 this.solvedWords[i] = true;
             }
         }
-        
+
         // Start reveal animation
         this.revealIndex = 0;
         this.revealTimer = setInterval(() => {
@@ -4863,7 +5151,7 @@ class TermoDuoGame {
 
     checkGameEnd() {
         const allSolved = this.solvedWords.every(s => s);
-        
+
         if (allSolved) {
             this.won = true;
             const baseScore = 2000;
@@ -4878,7 +5166,7 @@ class TermoDuoGame {
             const unsolved = this.targetWords.filter((_, i) => !this.solvedWords[i]);
             this.showMessage(`Faltou: ${unsolved.join(', ')}`);
         }
-        
+
         this.updateScoreDisplay();
     }
 
@@ -4911,14 +5199,14 @@ class TermoDuoGame {
 
         const now = Date.now();
         const delta = now - this.lastUpdate;
-        
+
         if (this.shake) {
             this.shakeTimer -= delta;
             if (this.shakeTimer <= 0) this.shake = false;
         }
-        
+
         if (this.messageTimer > 0) this.messageTimer -= delta;
-        
+
         this.draw();
         this.lastUpdate = now;
         this.animationId = requestAnimationFrame(() => this.gameLoop());
@@ -4930,50 +5218,50 @@ class TermoDuoGame {
         } else if (targetWord.includes(letter)) {
             let letterCount = 0;
             let matchedCount = 0;
-            
+
             for (let i = 0; i < targetWord.length; i++) {
                 if (targetWord[i] === letter) letterCount++;
             }
-            
+
             for (let i = 0; i < attempt.length; i++) {
                 if (attempt[i] === letter && targetWord[i] === letter) {
                     matchedCount++;
                 }
             }
-            
+
             let wrongSpotCount = 0;
             for (let i = 0; i < index; i++) {
                 if (attempt[i] === letter && targetWord[i] !== letter && targetWord.includes(letter)) {
                     wrongSpotCount++;
                 }
             }
-            
+
             if (wrongSpotCount < letterCount - matchedCount) {
                 return 'present';
             }
         }
-        
+
         return 'absent';
     }
 
     draw() {
         const isDark = document.documentElement.classList.contains('dark');
-        
+
         // Background
         this.ctx.fillStyle = isDark ? '#0f172a' : '#f1f5f9';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
+
         // Title
         this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
         this.ctx.font = 'bold 24px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText('TERMO DUETO', this.canvas.width / 2, 35);
-        
+
         // Subtitle
         this.ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
         this.ctx.font = '12px Arial';
         this.ctx.fillText('Adivinhe 2 palavras aleatórias ao mesmo tempo!', this.canvas.width / 2, 55);
-        
+
         // Grid settings
         const tileSize = 48;
         const gap = 5;
@@ -4983,36 +5271,36 @@ class TermoDuoGame {
         const totalWidth = this.numWords * gridWidth + (this.numWords - 1) * gridSpacing;
         const startX = (this.canvas.width - totalWidth) / 2;
         const startY = 70;
-        
+
         // Draw grids for each word
         for (let wordIdx = 0; wordIdx < this.numWords; wordIdx++) {
             const gridStartX = startX + wordIdx * (gridWidth + gridSpacing);
             const targetWord = this.targetWords[wordIdx];
             const isSolved = this.solvedWords[wordIdx];
-            
+
             // Draw word indicator
             this.ctx.fillStyle = isSolved ? '#22c55e' : (isDark ? '#64748b' : '#94a3b8');
             this.ctx.font = 'bold 14px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.fillText(isSolved ? '✓' : `${wordIdx + 1}`, gridStartX + gridWidth / 2, startY - 10);
-            
+
             for (let row = 0; row < this.maxAttempts; row++) {
                 const isCurrentRow = row === this.attempts.length && !this.gameOver && !this.won;
                 const isCompletedRow = row < this.attempts.length;
                 const attempt = isCompletedRow ? this.attempts[row] : (isCurrentRow ? this.currentAttempt : '');
-                
+
                 let rowOffsetX = 0;
                 if (isCurrentRow && this.shake) {
                     rowOffsetX = Math.sin(Date.now() / 20) * 5;
                 }
-                
+
                 for (let col = 0; col < this.wordLength; col++) {
                     const x = gridStartX + col * (tileSize + gap) + rowOffsetX;
                     const y = startY + row * (tileSize + gap);
                     const letter = attempt[col] || '';
-                    
+
                     let bgColor, borderColor, textColor;
-                    
+
                     if (isSolved && row >= this.attempts.findIndex(a => a === targetWord)) {
                         // Word is solved, show all green from solve row onwards
                         if (row === this.attempts.findIndex(a => a === targetWord)) {
@@ -5026,10 +5314,10 @@ class TermoDuoGame {
                         }
                     } else if (isCompletedRow) {
                         const isRevealed = row < this.attempts.length - 1 || col <= this.revealIndex;
-                        
+
                         if (isRevealed) {
                             const status = this.getLetterStatus(letter, col, attempt, targetWord);
-                            
+
                             if (status === 'correct') {
                                 bgColor = '#22c55e';
                                 borderColor = '#16a34a';
@@ -5055,16 +5343,16 @@ class TermoDuoGame {
                         borderColor = isDark ? '#334155' : '#e2e8f0';
                         textColor = isDark ? '#e2e8f0' : '#1e293b';
                     }
-                    
+
                     this.ctx.fillStyle = bgColor;
                     this.ctx.beginPath();
                     this.ctx.roundRect(x, y, tileSize, tileSize, 4);
                     this.ctx.fill();
-                    
+
                     this.ctx.strokeStyle = borderColor;
                     this.ctx.lineWidth = 2;
                     this.ctx.stroke();
-                    
+
                     if (letter) {
                         this.ctx.fillStyle = textColor;
                         this.ctx.font = 'bold 22px Arial';
@@ -5075,13 +5363,13 @@ class TermoDuoGame {
                 }
             }
         }
-        
+
         // Draw helper text
         this.ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
         this.ctx.font = '11px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText('Use o teclado para digitar • ENTER para confirmar • BACKSPACE para apagar', this.canvas.width / 2, startY + gridHeight + 25);
-        
+
         // Draw message
         if (this.messageTimer > 0) {
             const alpha = Math.min(1, this.messageTimer / 500);
@@ -5089,14 +5377,14 @@ class TermoDuoGame {
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 120, startY + gridHeight / 2 - 20, 240, 40, 8);
             this.ctx.fill();
-            
+
             this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             this.ctx.font = 'bold 16px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(this.message, this.canvas.width / 2, startY + gridHeight / 2);
         }
-        
+
         // Game over / Won overlay
         if (this.gameOver || this.won) {
             const overlayGradient = this.ctx.createRadialGradient(
@@ -5107,9 +5395,9 @@ class TermoDuoGame {
             overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
             this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
+
             const time = Date.now() / 1000;
-            
+
             // Animated duo tiles
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 5; j++) {
@@ -5123,7 +5411,7 @@ class TermoDuoGame {
                     this.ctx.globalAlpha = 1;
                 }
             }
-            
+
             this.ctx.shadowColor = this.won ? '#22c55e' : '#64748b';
             this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
@@ -5131,12 +5419,12 @@ class TermoDuoGame {
             this.ctx.textAlign = 'center';
             this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : '😔 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 35);
             this.ctx.shadowBlur = 0;
-            
+
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 110, this.canvas.height / 2 - 10, 220, 70, 12);
             this.ctx.fill();
-            
+
             this.ctx.font = '16px Arial';
             this.ctx.fillStyle = '#fff';
             if (this.won) {
@@ -5148,13 +5436,13 @@ class TermoDuoGame {
             this.ctx.font = '14px Arial';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 40);
-            
+
             const pulse = 0.5 + Math.sin(time * 4) * 0.2;
             this.ctx.fillStyle = `rgba(59, 130, 246, ${0.3 + pulse * 0.3})`;
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 70, 260, 30, 8);
             this.ctx.fill();
-            
+
             this.ctx.fillStyle = '#fff';
             this.ctx.font = '13px Arial';
             this.ctx.fillText('⏎ ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 89);
@@ -5176,10 +5464,10 @@ class TermoQuartetGame {
         this.ctx = canvas.getContext('2d');
         this.onScore = onScore;
         this.manager = manager;
-        
+
         this.canvas.width = 700;
         this.canvas.height = 600;
-        
+
         // Portuguese 4-letter words for Quarteto mode
         this.words = [
             'AMOR', 'ALMA', 'AGUA', 'ALTO', 'AZUL', 'BOLA', 'BOCA', 'BELO', 'BEBE', 'BICO',
@@ -5213,12 +5501,12 @@ class TermoQuartetGame {
             'LACA', 'LACO', 'LAMA', 'LAPA', 'LAVA', 'LEAL', 'LEIA', 'LEME', 'LENO', 'LERO',
             'LEVA', 'LIDE', 'LIMO', 'LIRA', 'LITE', 'LOCA', 'LONA', 'LOTE', 'LOTO', 'LOUA'
         ];
-        
+
         this.numWords = 4;
         this.maxAttempts = 9;
         this.wordLength = 4;
         this.running = false;
-        
+
         this.reset();
         this.setupControls();
     }
@@ -5237,7 +5525,7 @@ class TermoQuartetGame {
         this.revealIndex = -1;
         this.message = '';
         this.messageTimer = 0;
-        
+
         this.updateScoreDisplay();
     }
 
@@ -5264,7 +5552,7 @@ class TermoQuartetGame {
                 this.currentAttempt += letter;
             }
         };
-        
+
         document.addEventListener('keydown', this.keyHandler);
     }
 
@@ -5279,13 +5567,13 @@ class TermoQuartetGame {
         const attempt = this.currentAttempt.toUpperCase();
         this.attempts.push(attempt);
         this.currentAttempt = '';
-        
+
         for (let i = 0; i < this.numWords; i++) {
             if (!this.solvedWords[i] && attempt === this.targetWords[i]) {
                 this.solvedWords[i] = true;
             }
         }
-        
+
         this.revealIndex = 0;
         this.revealTimer = setInterval(() => {
             this.revealIndex++;
@@ -5298,7 +5586,7 @@ class TermoQuartetGame {
 
     checkGameEnd() {
         const allSolved = this.solvedWords.every(s => s);
-        
+
         if (allSolved) {
             this.won = true;
             const baseScore = 4000;
@@ -5313,7 +5601,7 @@ class TermoQuartetGame {
             const unsolved = this.targetWords.filter((_, i) => !this.solvedWords[i]);
             this.showMessage(`Faltou: ${unsolved.slice(0, 2).join(', ')}...`);
         }
-        
+
         this.updateScoreDisplay();
     }
 
@@ -5346,14 +5634,14 @@ class TermoQuartetGame {
 
         const now = Date.now();
         const delta = now - this.lastUpdate;
-        
+
         if (this.shake) {
             this.shakeTimer -= delta;
             if (this.shakeTimer <= 0) this.shake = false;
         }
-        
+
         if (this.messageTimer > 0) this.messageTimer -= delta;
-        
+
         this.draw();
         this.lastUpdate = now;
         this.animationId = requestAnimationFrame(() => this.gameLoop());
@@ -5365,50 +5653,50 @@ class TermoQuartetGame {
         } else if (targetWord.includes(letter)) {
             let letterCount = 0;
             let matchedCount = 0;
-            
+
             for (let i = 0; i < targetWord.length; i++) {
                 if (targetWord[i] === letter) letterCount++;
             }
-            
+
             for (let i = 0; i < attempt.length; i++) {
                 if (attempt[i] === letter && targetWord[i] === letter) {
                     matchedCount++;
                 }
             }
-            
+
             let wrongSpotCount = 0;
             for (let i = 0; i < index; i++) {
                 if (attempt[i] === letter && targetWord[i] !== letter && targetWord.includes(letter)) {
                     wrongSpotCount++;
                 }
             }
-            
+
             if (wrongSpotCount < letterCount - matchedCount) {
                 return 'present';
             }
         }
-        
+
         return 'absent';
     }
 
     draw() {
         const isDark = document.documentElement.classList.contains('dark');
-        
+
         // Background
         this.ctx.fillStyle = isDark ? '#0f172a' : '#f1f5f9';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
+
         // Title
         this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
         this.ctx.font = 'bold 22px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText('TERMO QUARTETO', this.canvas.width / 2, 30);
-        
+
         // Subtitle
         this.ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
         this.ctx.font = '11px Arial';
         this.ctx.fillText('Adivinhe 4 palavras aleatórias ao mesmo tempo!', this.canvas.width / 2, 48);
-        
+
         // Grid settings - 2x2 layout with all attempts visible in each grid
         const tileSize = 28;
         const gap = 3;
@@ -5420,7 +5708,7 @@ class TermoQuartetGame {
         const totalHeight = 2 * gridHeight + gridSpacingY;
         const startX = (this.canvas.width - totalWidth) / 2;
         const startY = 55;
-        
+
         // Draw grids in 2x2 layout - each grid shows all attempts for its word
         for (let wordIdx = 0; wordIdx < this.numWords; wordIdx++) {
             const gridCol = wordIdx % 2;
@@ -5429,25 +5717,25 @@ class TermoQuartetGame {
             const gridStartY = startY + gridRow * (gridHeight + gridSpacingY);
             const targetWord = this.targetWords[wordIdx];
             const isSolved = this.solvedWords[wordIdx];
-            
+
             // Show all attempts in each grid
             for (let row = 0; row < this.maxAttempts; row++) {
                 const isCurrentRow = row === this.attempts.length && !this.gameOver && !this.won;
                 const isCompletedRow = row < this.attempts.length;
                 const attempt = isCompletedRow ? this.attempts[row] : (isCurrentRow ? this.currentAttempt : '');
-                
+
                 let rowOffsetX = 0;
                 if (isCurrentRow && this.shake) {
                     rowOffsetX = Math.sin(Date.now() / 20) * 3;
                 }
-                
+
                 for (let col = 0; col < this.wordLength; col++) {
                     const x = gridStartX + col * (tileSize + gap) + rowOffsetX;
                     const y = gridStartY + row * (tileSize + gap);
                     const letter = attempt[col] || '';
-                    
+
                     let bgColor, borderColor, textColor;
-                    
+
                     if (isSolved && row >= this.attempts.findIndex(a => a === targetWord)) {
                         if (row === this.attempts.findIndex(a => a === targetWord)) {
                             bgColor = '#22c55e';
@@ -5460,10 +5748,10 @@ class TermoQuartetGame {
                         }
                     } else if (isCompletedRow) {
                         const isRevealed = row < this.attempts.length - 1 || col <= this.revealIndex;
-                        
+
                         if (isRevealed) {
                             const status = this.getLetterStatus(letter, col, attempt, targetWord);
-                            
+
                             if (status === 'correct') {
                                 bgColor = '#22c55e';
                                 borderColor = '#16a34a';
@@ -5489,16 +5777,16 @@ class TermoQuartetGame {
                         borderColor = isDark ? '#334155' : '#e2e8f0';
                         textColor = isDark ? '#e2e8f0' : '#1e293b';
                     }
-                    
+
                     this.ctx.fillStyle = bgColor;
                     this.ctx.beginPath();
                     this.ctx.roundRect(x, y, tileSize, tileSize, 3);
                     this.ctx.fill();
-                    
+
                     this.ctx.strokeStyle = borderColor;
                     this.ctx.lineWidth = 2;
                     this.ctx.stroke();
-                    
+
                     if (letter) {
                         this.ctx.fillStyle = textColor;
                         this.ctx.font = 'bold 14px Arial';
@@ -5508,7 +5796,7 @@ class TermoQuartetGame {
                     }
                 }
             }
-            
+
             // Draw solved indicator
             if (isSolved) {
                 this.ctx.fillStyle = '#22c55e';
@@ -5517,13 +5805,13 @@ class TermoQuartetGame {
                 this.ctx.fillText('✓', gridStartX + gridWidth + 8, gridStartY + gridHeight / 2);
             }
         }
-        
+
         // Draw helper text at bottom
         this.ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
         this.ctx.font = '10px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText('Use o teclado para digitar • ENTER para confirmar • BACKSPACE para apagar', this.canvas.width / 2, this.canvas.height - 10);
-        
+
         // Draw message
         if (this.messageTimer > 0) {
             const alpha = Math.min(1, this.messageTimer / 500);
@@ -5531,14 +5819,14 @@ class TermoQuartetGame {
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 120, this.canvas.height / 2 - 20, 240, 40, 8);
             this.ctx.fill();
-            
+
             this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             this.ctx.font = 'bold 14px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(this.message, this.canvas.width / 2, this.canvas.height / 2);
         }
-        
+
         // Game over / Won overlay
         if (this.gameOver || this.won) {
             const overlayGradient = this.ctx.createRadialGradient(
@@ -5549,9 +5837,9 @@ class TermoQuartetGame {
             overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
             this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
+
             const time = Date.now() / 1000;
-            
+
             // Animated quartet grid pattern
             for (let i = 0; i < 2; i++) {
                 for (let k = 0; k < 2; k++) {
@@ -5567,7 +5855,7 @@ class TermoQuartetGame {
                     }
                 }
             }
-            
+
             this.ctx.shadowColor = this.won ? '#22c55e' : '#64748b';
             this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
@@ -5575,12 +5863,12 @@ class TermoQuartetGame {
             this.ctx.textAlign = 'center';
             this.ctx.fillText(this.won ? '🎉 PARABÉNS!' : '😔 GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
             this.ctx.shadowBlur = 0;
-            
+
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 120, this.canvas.height / 2 - 5, 240, 65, 12);
             this.ctx.fill();
-            
+
             this.ctx.font = '14px Arial';
             this.ctx.fillStyle = '#fff';
             if (this.won) {
@@ -5592,13 +5880,13 @@ class TermoQuartetGame {
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             this.ctx.font = '13px Arial';
             this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 40);
-            
+
             const pulse = 0.5 + Math.sin(time * 4) * 0.2;
             this.ctx.fillStyle = `rgba(59, 130, 246, ${0.3 + pulse * 0.3})`;
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 70, 260, 28, 8);
             this.ctx.fill();
-            
+
             this.ctx.fillStyle = '#fff';
             this.ctx.font = '12px Arial';
             this.ctx.fillText('⏎ ENTER ou ESPAÇO para jogar novamente', this.canvas.width / 2, this.canvas.height / 2 + 88);
@@ -5620,27 +5908,27 @@ class WordSearchGame {
         this.ctx = canvas.getContext('2d');
         this.onScore = onScore;
         this.manager = manager;
-        
+
         this.canvas.width = 650;
         this.canvas.height = 500;
-        
+
         this.words = [
             ['BICICLETA', 'PEDAL', 'RODA', 'FREIO', 'GUIDAO'],
             ['CAPACETE', 'CORRENTE', 'SELIM', 'PNEU', 'RAIO'],
             ['CICLISTA', 'GARFO', 'CUBO', 'ARO', 'MESA'],
             ['QUADRO', 'CAMBIO', 'MANOPLA', 'BANCO', 'CABO']
         ];
-        
+
         this.gridSize = 12;
         this.cellSize = 32;
         this.running = false;
         this.level = 0;
         this.score = 0;
-        
+
         this.reset();
         this.setupControls();
     }
-    
+
     reset() {
         this.grid = [];
         this.targetWords = this.words[this.level % this.words.length];
@@ -5649,19 +5937,19 @@ class WordSearchGame {
         this.selecting = false;
         this.gameOver = false;
         this.won = false;
-        
+
         for (let i = 0; i < this.gridSize; i++) {
             this.grid[i] = [];
             for (let j = 0; j < this.gridSize; j++) {
                 this.grid[i][j] = '';
             }
         }
-        
+
         this.placeWords();
         this.fillEmptyCells();
         this.updateScoreDisplay();
     }
-    
+
     placeWords() {
         const directions = [
             { dx: 1, dy: 0 },
@@ -5669,22 +5957,22 @@ class WordSearchGame {
             { dx: 1, dy: 1 },
             { dx: 1, dy: -1 }
         ];
-        
+
         this.wordPositions = [];
-        
+
         for (const word of this.targetWords) {
             let placed = false;
             let attempts = 0;
-            
+
             while (!placed && attempts < 100) {
                 const dir = directions[Math.floor(Math.random() * directions.length)];
                 const maxX = this.gridSize - (dir.dx > 0 ? word.length : 1);
                 const maxY = this.gridSize - (dir.dy > 0 ? word.length : 1);
                 const minY = dir.dy < 0 ? word.length - 1 : 0;
-                
+
                 const startX = Math.floor(Math.random() * (maxX + 1));
                 const startY = minY + Math.floor(Math.random() * (maxY - minY + 1));
-                
+
                 let canPlace = true;
                 for (let i = 0; i < word.length; i++) {
                     const x = startX + i * dir.dx;
@@ -5698,7 +5986,7 @@ class WordSearchGame {
                         break;
                     }
                 }
-                
+
                 if (canPlace) {
                     for (let i = 0; i < word.length; i++) {
                         const x = startX + i * dir.dx;
@@ -5716,7 +6004,7 @@ class WordSearchGame {
             }
         }
     }
-    
+
     fillEmptyCells() {
         const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         for (let i = 0; i < this.gridSize; i++) {
@@ -5727,7 +6015,7 @@ class WordSearchGame {
             }
         }
     }
-    
+
     setupControls() {
         this.mouseDownHandler = (e) => {
             const rect = this.canvas.getBoundingClientRect();
@@ -5740,7 +6028,7 @@ class WordSearchGame {
                 this.selection.end = cell;
             }
         };
-        
+
         this.mouseMoveHandler = (e) => {
             if (!this.selecting) return;
             const rect = this.canvas.getBoundingClientRect();
@@ -5751,7 +6039,7 @@ class WordSearchGame {
                 this.selection.end = cell;
             }
         };
-        
+
         this.mouseUpHandler = (e) => {
             if (this.selecting) {
                 this.checkSelection();
@@ -5759,7 +6047,7 @@ class WordSearchGame {
                 this.selection = { start: null, end: null };
             }
         };
-        
+
         this.keyHandler = (e) => {
             if ((this.gameOver || this.won) && (e.key === ' ' || e.key === 'Enter')) {
                 this.level++;
@@ -5767,13 +6055,13 @@ class WordSearchGame {
                 this.start();
             }
         };
-        
+
         this.canvas.addEventListener('mousedown', this.mouseDownHandler);
         this.canvas.addEventListener('mousemove', this.mouseMoveHandler);
         this.canvas.addEventListener('mouseup', this.mouseUpHandler);
         document.addEventListener('keydown', this.keyHandler);
     }
-    
+
     getCellFromCoords(x, y) {
         const offsetX = (this.canvas.width - this.gridSize * this.cellSize) / 2;
         const offsetY = 60;
@@ -5784,15 +6072,15 @@ class WordSearchGame {
         }
         return null;
     }
-    
+
     getSelectedWord() {
         if (!this.selection.start || !this.selection.end) return '';
-        
+
         const dx = Math.sign(this.selection.end.x - this.selection.start.x);
         const dy = Math.sign(this.selection.end.y - this.selection.start.y);
-        
+
         if (dx !== 0 && dy !== 0 && Math.abs(dx) !== Math.abs(dy)) return '';
-        
+
         let word = '';
         let x = this.selection.start.x;
         let y = this.selection.start.y;
@@ -5800,7 +6088,7 @@ class WordSearchGame {
             Math.abs(this.selection.end.x - this.selection.start.x),
             Math.abs(this.selection.end.y - this.selection.start.y)
         ) + 1;
-        
+
         for (let i = 0; i < length; i++) {
             if (x >= 0 && x < this.gridSize && y >= 0 && y < this.gridSize) {
                 word += this.grid[y][x];
@@ -5808,20 +6096,20 @@ class WordSearchGame {
             x += dx;
             y += dy;
         }
-        
+
         return word;
     }
-    
+
     checkSelection() {
         const selectedWord = this.getSelectedWord();
         const reversedWord = selectedWord.split('').reverse().join('');
-        
+
         for (const word of this.targetWords) {
             if ((selectedWord === word || reversedWord === word) && !this.foundWords.includes(word)) {
                 this.foundWords.push(word);
                 this.score += word.length * 100;
                 this.updateScoreDisplay();
-                
+
                 if (this.foundWords.length === this.targetWords.length) {
                     this.won = true;
                     this.score += 500;
@@ -5830,13 +6118,13 @@ class WordSearchGame {
             }
         }
     }
-    
+
     start() {
         if (this.running) return;
         this.running = true;
         this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
-    
+
     stop() {
         this.running = false;
         if (this.animationId) {
@@ -5848,32 +6136,32 @@ class WordSearchGame {
         this.canvas.removeEventListener('mouseup', this.mouseUpHandler);
         document.removeEventListener('keydown', this.keyHandler);
     }
-    
+
     gameLoop() {
         if (!this.running) return;
         this.draw();
         this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
-    
+
     draw() {
         const isDark = document.documentElement.classList.contains('dark');
-        
+
         this.ctx.fillStyle = isDark ? '#0f172a' : '#f1f5f9';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
+
         this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
         this.ctx.font = 'bold 20px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText('CAÇA PALAVRAS', this.canvas.width / 2, 30);
-        
+
         const offsetX = (this.canvas.width - this.gridSize * this.cellSize) / 2;
         const offsetY = 60;
-        
+
         for (let row = 0; row < this.gridSize; row++) {
             for (let col = 0; col < this.gridSize; col++) {
                 const x = offsetX + col * this.cellSize;
                 const y = offsetY + row * this.cellSize;
-                
+
                 let isSelected = false;
                 if (this.selection.start && this.selection.end) {
                     const dx = Math.sign(this.selection.end.x - this.selection.start.x);
@@ -5882,7 +6170,7 @@ class WordSearchGame {
                         Math.abs(this.selection.end.x - this.selection.start.x),
                         Math.abs(this.selection.end.y - this.selection.start.y)
                     ) + 1;
-                    
+
                     let sx = this.selection.start.x;
                     let sy = this.selection.start.y;
                     for (let i = 0; i < length; i++) {
@@ -5894,7 +6182,7 @@ class WordSearchGame {
                         sy += dy;
                     }
                 }
-                
+
                 let isFound = false;
                 for (const wp of this.wordPositions) {
                     if (this.foundWords.includes(wp.word)) {
@@ -5912,7 +6200,7 @@ class WordSearchGame {
                         }
                     }
                 }
-                
+
                 if (isFound) {
                     this.ctx.fillStyle = '#22c55e';
                 } else if (isSelected) {
@@ -5920,11 +6208,11 @@ class WordSearchGame {
                 } else {
                     this.ctx.fillStyle = isDark ? '#1e293b' : '#ffffff';
                 }
-                
+
                 this.ctx.fillRect(x, y, this.cellSize - 2, this.cellSize - 2);
                 this.ctx.strokeStyle = isDark ? '#334155' : '#e2e8f0';
                 this.ctx.strokeRect(x, y, this.cellSize - 2, this.cellSize - 2);
-                
+
                 this.ctx.fillStyle = (isSelected || isFound) ? '#ffffff' : (isDark ? '#e2e8f0' : '#1e293b');
                 this.ctx.font = 'bold 16px Arial';
                 this.ctx.textAlign = 'center';
@@ -5932,13 +6220,13 @@ class WordSearchGame {
                 this.ctx.fillText(this.grid[row][col], x + this.cellSize / 2 - 1, y + this.cellSize / 2);
             }
         }
-        
+
         const listY = offsetY + this.gridSize * this.cellSize + 20;
         this.ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
         this.ctx.font = '14px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText('Encontre as palavras:', this.canvas.width / 2, listY);
-        
+
         let wordX = (this.canvas.width - this.targetWords.length * 100) / 2 + 50;
         for (const word of this.targetWords) {
             const found = this.foundWords.includes(word);
@@ -5947,7 +6235,7 @@ class WordSearchGame {
             this.ctx.fillText(found ? `✓ ${word}` : word, wordX, listY + 25);
             wordX += 100;
         }
-        
+
         if (this.won) {
             const overlayGradient = this.ctx.createRadialGradient(
                 this.canvas.width / 2, this.canvas.height / 2, 0,
@@ -5957,9 +6245,9 @@ class WordSearchGame {
             overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
             this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
+
             const time = Date.now() / 1000;
-            
+
             // Animated checkmarks
             for (let i = 0; i < 5; i++) {
                 const x = this.canvas.width / 2 - 80 + i * 40;
@@ -5973,7 +6261,7 @@ class WordSearchGame {
                 this.ctx.textAlign = 'center';
                 this.ctx.fillText('✓', x, y + 6);
             }
-            
+
             this.ctx.shadowColor = '#22c55e';
             this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
@@ -5981,31 +6269,31 @@ class WordSearchGame {
             this.ctx.textAlign = 'center';
             this.ctx.fillText('🎯 PARABÉNS!', this.canvas.width / 2, this.canvas.height / 2 - 20);
             this.ctx.shadowBlur = 0;
-            
+
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 110, this.canvas.height / 2 + 5, 220, 55, 12);
             this.ctx.fill();
-            
+
             this.ctx.font = '16px Arial';
             this.ctx.fillStyle = '#fff';
             this.ctx.fillText('Todas as palavras encontradas!', this.canvas.width / 2, this.canvas.height / 2 + 28);
             this.ctx.font = '14px Arial';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 48);
-            
+
             const pulse = 0.5 + Math.sin(time * 4) * 0.2;
             this.ctx.fillStyle = `rgba(59, 130, 246, ${0.3 + pulse * 0.3})`;
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 75, 260, 30, 8);
             this.ctx.fill();
-            
+
             this.ctx.fillStyle = '#fff';
             this.ctx.font = '13px Arial';
             this.ctx.fillText('⏎ ENTER ou ESPAÇO para próximo nível', this.canvas.width / 2, this.canvas.height / 2 + 94);
         }
     }
-    
+
     updateScoreDisplay() {
         const scoreEl = document.getElementById('game-score');
         const infoEl = document.getElementById('game-phase');
@@ -6020,21 +6308,21 @@ class CrosswordGame {
         this.ctx = canvas.getContext('2d');
         this.onScore = onScore;
         this.manager = manager;
-        
+
         this.canvas.width = 650;
         this.canvas.height = 550;
-        
+
         this.puzzles = [
             {
                 grid: [
-                    ['B','I','C','I','C','L','E','T','A','#'],
-                    ['#','#','A','#','#','#','#','#','R','#'],
-                    ['P','E','D','A','L','#','R','O','D','A'],
-                    ['#','#','E','#','#','#','#','#','O','#'],
-                    ['F','R','E','I','O','#','C','A','B','O'],
-                    ['#','#','I','#','#','#','#','#','#','#'],
-                    ['S','E','L','I','M','#','C','U','B','O'],
-                    ['#','#','A','#','#','#','#','#','#','#']
+                    ['B', 'I', 'C', 'I', 'C', 'L', 'E', 'T', 'A', '#'],
+                    ['#', '#', 'A', '#', '#', '#', '#', '#', 'R', '#'],
+                    ['P', 'E', 'D', 'A', 'L', '#', 'R', 'O', 'D', 'A'],
+                    ['#', '#', 'E', '#', '#', '#', '#', '#', 'O', '#'],
+                    ['F', 'R', 'E', 'I', 'O', '#', 'C', 'A', 'B', 'O'],
+                    ['#', '#', 'I', '#', '#', '#', '#', '#', '#', '#'],
+                    ['S', 'E', 'L', 'I', 'M', '#', 'C', 'U', 'B', 'O'],
+                    ['#', '#', 'A', '#', '#', '#', '#', '#', '#', '#']
                 ],
                 clues: {
                     across: [
@@ -6053,23 +6341,23 @@ class CrosswordGame {
                 }
             }
         ];
-        
+
         this.cellSize = 36;
         this.running = false;
         this.level = 0;
         this.score = 0;
-        
+
         this.reset();
         this.setupControls();
     }
-    
+
     reset() {
         const puzzle = this.puzzles[this.level % this.puzzles.length];
         this.solution = puzzle.grid;
         this.clues = puzzle.clues;
         this.rows = this.solution.length;
         this.cols = this.solution[0].length;
-        
+
         this.userGrid = [];
         for (let i = 0; i < this.rows; i++) {
             this.userGrid[i] = [];
@@ -6077,7 +6365,7 @@ class CrosswordGame {
                 this.userGrid[i][j] = this.solution[i][j] === '#' ? '#' : '';
             }
         }
-        
+
         this.selectedCell = { row: 0, col: 0 };
         while (this.solution[this.selectedCell.row][this.selectedCell.col] === '#') {
             this.selectedCell.col++;
@@ -6086,14 +6374,14 @@ class CrosswordGame {
                 this.selectedCell.row++;
             }
         }
-        
+
         this.direction = 'across';
         this.gameOver = false;
         this.won = false;
-        
+
         this.updateScoreDisplay();
     }
-    
+
     setupControls() {
         this.keyHandler = (e) => {
             if (this.won) {
@@ -6104,9 +6392,9 @@ class CrosswordGame {
                 }
                 return;
             }
-            
+
             const { row, col } = this.selectedCell;
-            
+
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 this.moveSelection(-1, 0);
@@ -6139,28 +6427,28 @@ class CrosswordGame {
             } else if (/^[a-zA-Z]$/.test(e.key)) {
                 e.preventDefault();
                 this.userGrid[row][col] = e.key.toUpperCase();
-                
+
                 if (this.direction === 'across') {
                     this.moveSelection(0, 1);
                 } else {
                     this.moveSelection(1, 0);
                 }
-                
+
                 this.checkWin();
             }
         };
-        
+
         this.clickHandler = (e) => {
             const rect = this.canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            
+
             const offsetX = 20;
             const offsetY = 50;
-            
+
             const col = Math.floor((x - offsetX) / this.cellSize);
             const row = Math.floor((y - offsetY) / this.cellSize);
-            
+
             if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
                 if (this.solution[row][col] !== '#') {
                     if (this.selectedCell.row === row && this.selectedCell.col === col) {
@@ -6171,15 +6459,15 @@ class CrosswordGame {
                 }
             }
         };
-        
+
         document.addEventListener('keydown', this.keyHandler);
         this.canvas.addEventListener('click', this.clickHandler);
     }
-    
+
     moveSelection(dRow, dCol) {
         let newRow = this.selectedCell.row + dRow;
         let newCol = this.selectedCell.col + dCol;
-        
+
         while (newRow >= 0 && newRow < this.rows && newCol >= 0 && newCol < this.cols) {
             if (this.solution[newRow][newCol] !== '#') {
                 this.selectedCell = { row: newRow, col: newCol };
@@ -6189,7 +6477,7 @@ class CrosswordGame {
             newCol += dCol;
         }
     }
-    
+
     checkWin() {
         for (let i = 0; i < this.rows; i++) {
             for (let j = 0; j < this.cols; j++) {
@@ -6198,18 +6486,18 @@ class CrosswordGame {
                 }
             }
         }
-        
+
         this.won = true;
         this.score += 1000 + this.level * 200;
         this.onScore(this.score);
     }
-    
+
     start() {
         if (this.running) return;
         this.running = true;
         this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
-    
+
     stop() {
         this.running = false;
         if (this.animationId) {
@@ -6219,39 +6507,39 @@ class CrosswordGame {
         document.removeEventListener('keydown', this.keyHandler);
         this.canvas.removeEventListener('click', this.clickHandler);
     }
-    
+
     gameLoop() {
         if (!this.running) return;
         this.draw();
         this.animationId = requestAnimationFrame(() => this.gameLoop());
     }
-    
+
     draw() {
         const isDark = document.documentElement.classList.contains('dark');
-        
+
         this.ctx.fillStyle = isDark ? '#0f172a' : '#f1f5f9';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
+
         this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
         this.ctx.font = 'bold 20px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText('CRUZADINHA', this.canvas.width / 2, 30);
-        
+
         const offsetX = 20;
         const offsetY = 50;
-        
+
         for (let row = 0; row < this.rows; row++) {
             for (let col = 0; col < this.cols; col++) {
                 const x = offsetX + col * this.cellSize;
                 const y = offsetY + row * this.cellSize;
                 const cell = this.solution[row][col];
-                
+
                 if (cell === '#') {
                     this.ctx.fillStyle = isDark ? '#1e293b' : '#334155';
                 } else {
                     const isSelected = row === this.selectedCell.row && col === this.selectedCell.col;
                     const isCorrect = this.userGrid[row][col] === this.solution[row][col];
-                    
+
                     if (isSelected) {
                         this.ctx.fillStyle = '#3b82f6';
                     } else if (this.userGrid[row][col] && isCorrect) {
@@ -6262,13 +6550,13 @@ class CrosswordGame {
                         this.ctx.fillStyle = isDark ? '#1e293b' : '#ffffff';
                     }
                 }
-                
+
                 this.ctx.fillRect(x, y, this.cellSize - 2, this.cellSize - 2);
-                
+
                 if (cell !== '#') {
                     this.ctx.strokeStyle = isDark ? '#475569' : '#cbd5e1';
                     this.ctx.strokeRect(x, y, this.cellSize - 2, this.cellSize - 2);
-                    
+
                     if (this.userGrid[row][col]) {
                         const isSelected = row === this.selectedCell.row && col === this.selectedCell.col;
                         this.ctx.fillStyle = isSelected ? '#ffffff' : (isDark ? '#e2e8f0' : '#1e293b');
@@ -6280,38 +6568,38 @@ class CrosswordGame {
                 }
             }
         }
-        
+
         const clueX = offsetX + this.cols * this.cellSize + 30;
         let clueY = offsetY;
-        
+
         this.ctx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
         this.ctx.font = 'bold 14px Arial';
         this.ctx.textAlign = 'left';
         this.ctx.fillText('Horizontal:', clueX, clueY);
         clueY += 20;
-        
+
         this.ctx.font = '11px Arial';
         for (const clue of this.clues.across) {
             this.ctx.fillText(`${clue.num}. ${clue.clue}`, clueX, clueY);
             clueY += 16;
         }
-        
+
         clueY += 15;
         this.ctx.font = 'bold 14px Arial';
         this.ctx.fillText('Vertical:', clueX, clueY);
         clueY += 20;
-        
+
         this.ctx.font = '11px Arial';
         for (const clue of this.clues.down) {
             this.ctx.fillText(`${clue.num}. ${clue.clue}`, clueX, clueY);
             clueY += 16;
         }
-        
+
         this.ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
         this.ctx.font = '11px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText('Use as setas para navegar • Tab para mudar direção • Digite as letras', this.canvas.width / 2, this.canvas.height - 15);
-        
+
         if (this.won) {
             const overlayGradient = this.ctx.createRadialGradient(
                 this.canvas.width / 2, this.canvas.height / 2, 0,
@@ -6321,9 +6609,9 @@ class CrosswordGame {
             overlayGradient.addColorStop(1, 'rgba(15, 23, 42, 0.95)');
             this.ctx.fillStyle = overlayGradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
+
             const time = Date.now() / 1000;
-            
+
             // Animated crossword pattern
             for (let i = 0; i < 3; i++) {
                 for (let j = 0; j < 5; j++) {
@@ -6337,7 +6625,7 @@ class CrosswordGame {
                     this.ctx.globalAlpha = 1;
                 }
             }
-            
+
             this.ctx.shadowColor = '#a855f7';
             this.ctx.shadowBlur = 20;
             this.ctx.fillStyle = '#fff';
@@ -6345,31 +6633,31 @@ class CrosswordGame {
             this.ctx.textAlign = 'center';
             this.ctx.fillText('🧩 PARABÉNS!', this.canvas.width / 2, this.canvas.height / 2 - 10);
             this.ctx.shadowBlur = 0;
-            
+
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 100, this.canvas.height / 2 + 15, 200, 55, 12);
             this.ctx.fill();
-            
+
             this.ctx.font = '16px Arial';
             this.ctx.fillStyle = '#fff';
             this.ctx.fillText('Cruzadinha completa!', this.canvas.width / 2, this.canvas.height / 2 + 38);
             this.ctx.font = '14px Arial';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             this.ctx.fillText(`${this.score} pontos`, this.canvas.width / 2, this.canvas.height / 2 + 58);
-            
+
             const pulse = 0.5 + Math.sin(time * 4) * 0.2;
             this.ctx.fillStyle = `rgba(168, 85, 247, ${0.3 + pulse * 0.3})`;
             this.ctx.beginPath();
             this.ctx.roundRect(this.canvas.width / 2 - 130, this.canvas.height / 2 + 80, 260, 30, 8);
             this.ctx.fill();
-            
+
             this.ctx.fillStyle = '#fff';
             this.ctx.font = '13px Arial';
             this.ctx.fillText('⏎ ENTER ou ESPAÇO para próximo nível', this.canvas.width / 2, this.canvas.height / 2 + 99);
         }
     }
-    
+
     updateScoreDisplay() {
         const scoreEl = document.getElementById('game-score');
         const infoEl = document.getElementById('game-phase');

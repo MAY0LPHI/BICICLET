@@ -87,4 +87,19 @@ export class FileStorage {
         }
         return {};
     }
+
+    // Imagens
+    static async uploadImage(base64Data) {
+        try {
+            const response = await fetch(`${API_URL}/upload-image`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64Data })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error("Erro no upload de imagem:", error);
+            return { success: false, error: error.message };
+        }
+    }
 }

@@ -30,17 +30,17 @@ export class ClientesManager {
 
     setupEventListeners() {
         const nomeInput = document.getElementById('nome');
-        
+
         this.elements.addClientForm.addEventListener('submit', this.handleAddClient.bind(this));
         this.elements.searchInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
             this.renderClientList(e.target.value);
         });
-        
+
         nomeInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
         });
-        
+
         this.elements.cpfInput.addEventListener('input', (e) => {
             e.target.value = Utils.formatCPF(e.target.value);
         });
@@ -49,11 +49,11 @@ export class ClientesManager {
         });
         this.elements.editClientForm.addEventListener('submit', this.handleEditClient.bind(this));
         this.elements.cancelEditClient.addEventListener('click', () => this.app.toggleModal('edit-client-modal', false));
-        
+
         this.elements.editClientNome.addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
         });
-        
+
         this.elements.editClientCpf.addEventListener('input', (e) => {
             e.target.value = Utils.formatCPF(e.target.value);
         });
@@ -64,19 +64,19 @@ export class ClientesManager {
 
     async handleAddClient(e) {
         e.preventDefault();
-        
+
         try {
             Auth.requirePermission('clientes', 'adicionar');
         } catch (error) {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const formData = new FormData(this.elements.addClientForm);
         const nome = formData.get('nome');
         const cpf = formData.get('cpf');
         const telefone = formData.get('telefone');
-        
+
         this.elements.cpfError.classList.add('hidden');
         this.elements.cpfInput.classList.remove('border-red-500');
 
@@ -87,7 +87,7 @@ export class ClientesManager {
             return;
         }
 
-        if(this.app.data.clients.some(c => c.cpf === cpf)) {
+        if (this.app.data.clients.some(c => c.cpf === cpf)) {
             this.elements.cpfError.textContent = 'CPF já cadastrado.';
             this.elements.cpfError.classList.remove('hidden');
             this.elements.cpfInput.classList.add('border-red-500');
@@ -95,23 +95,24 @@ export class ClientesManager {
         }
 
         const categoria = formData.get('categoria') || '';
-        const newClient = { 
-            id: Utils.generateUUID(), 
-            nome, 
-            cpf, 
-            telefone, 
+        const newClient = {
+            id: Utils.generateUUID(),
+            nome,
+            cpf,
+            telefone,
             categoria,
+            dataCadastro: new Date().toISOString(),
             comentarios: [],
-            bicicletas: [] 
+            bicicletas: []
         };
         this.app.data.clients.push(newClient);
         await Storage.saveClient(newClient);
-        
+
         logAction('create', 'cliente', newClient.id, { nome, cpf, telefone, categoria });
-        
+
         this.renderClientList();
         this.elements.addClientForm.reset();
-        
+
         if (this.app.configuracaoManager) {
             this.app.configuracaoManager.renderCategoriasStats();
         }
@@ -120,24 +121,34 @@ export class ClientesManager {
     renderClientList(filter = '') {
         const lowercasedFilter = filter.toLowerCase();
         const numericFilter = filter.replace(/\D/g, '');
-        
+
         const filteredClients = this.app.data.clients.filter(client => {
             const nome = client.nome.toLowerCase();
             const cpf = client.cpf.replace(/\D/g, '');
             const telefone = client.telefone.replace(/\D/g, '');
-            
+
             const matchesName = nome.includes(lowercasedFilter);
             const matchesCPF = numericFilter.length > 0 && cpf.includes(numericFilter);
             const matchesTelefone = numericFilter.length > 0 && telefone.includes(numericFilter);
-            
-            return matchesName || matchesCPF || matchesTelefone;
-        }).sort((a,b) => a.nome.localeCompare(b.nome));
+
+            // Global Bike Search
+            const matchesBike = client.bicicletas && client.bicicletas.some(bike => {
+                const modelo = (bike.modelo || '').toLowerCase();
+                const marca = (bike.marca || '').toLowerCase();
+                const cor = (bike.cor || '').toLowerCase();
+                return modelo.includes(lowercasedFilter) ||
+                    marca.includes(lowercasedFilter) ||
+                    cor.includes(lowercasedFilter);
+            });
+
+            return matchesName || matchesCPF || matchesTelefone || matchesBike;
+        }).sort((a, b) => a.nome.localeCompare(b.nome));
 
         if (filteredClients.length === 0) {
             this.elements.clientList.innerHTML = `<p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum cliente encontrado.</p>`;
             return;
         }
-        
+
         this.elements.clientList.innerHTML = filteredClients.map(client => {
             let comentarios = client.comentarios || [];
             if (typeof comentarios === 'string') {
@@ -147,7 +158,7 @@ export class ClientesManager {
             const hasComments = comentarios.length > 0;
             const commentCount = comentarios.length;
             const categoryBadge = client.categoria ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">${client.categoria}</span>` : '';
-            
+
             return `
             <div class="client-item p-3 rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-blue-400 cursor-pointer transition-colors dark:border-slate-700 dark:hover:bg-slate-700/50 dark:hover:border-blue-500 ${this.app.data.selectedClientId === client.id ? 'bg-blue-100 border-blue-400 dark:bg-blue-900/50 dark:border-blue-500' : ''}" data-id="${client.id}">
                 <div class="flex items-start justify-between">
@@ -176,7 +187,7 @@ export class ClientesManager {
                 this.renderClientList(this.elements.searchInput.value);
             });
         });
-        
+
         lucide.createIcons();
     }
 
@@ -201,7 +212,7 @@ export class ClientesManager {
         if (this.app.configuracaoManager) {
             this.app.configuracaoManager.updateCategoryDropdowns();
         }
-        
+
         const categoriaSelect = document.getElementById('edit-client-categoria');
         if (categoriaSelect && client.categoria) {
             categoriaSelect.value = client.categoria;
@@ -212,14 +223,14 @@ export class ClientesManager {
 
     async handleEditClient(e) {
         e.preventDefault();
-        
+
         try {
             Auth.requirePermission('clientes', 'editar');
         } catch (error) {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const clientId = this.elements.editClientId.value;
         const nome = this.elements.editClientNome.value;
         const cpfFormatted = this.elements.editClientCpf.value;
@@ -248,28 +259,28 @@ export class ClientesManager {
         if (client) {
             const categoriaSelect = document.getElementById('edit-client-categoria');
             const categoria = categoriaSelect ? categoriaSelect.value : (client.categoria || '');
-            
+
             const oldData = { nome: client.nome, cpf: client.cpf, telefone: client.telefone, categoria: client.categoria };
             client.nome = nome;
             client.cpf = cpf;
             client.telefone = telefone;
             client.categoria = categoria;
             if (!client.comentarios) client.comentarios = [];
-            
+
             await Storage.saveClient(client);
-            
-            logAction('edit', 'cliente', clientId, { 
-                nome, 
-                cpf, 
+
+            logAction('edit', 'cliente', clientId, {
+                nome,
+                cpf,
                 telefone,
                 categoria,
                 changes: { before: oldData, after: { nome, cpf, telefone, categoria } }
             });
-            
+
             this.renderClientList(this.elements.searchInput.value);
             this.app.bicicletasManager.renderClientDetails();
             this.app.toggleModal('edit-client-modal', false);
-            
+
             if (this.app.configuracaoManager) {
                 this.app.configuracaoManager.renderCategoriasStats();
             }
@@ -289,12 +300,12 @@ export class ClientesManager {
             };
             client.comentarios.push(newComment);
             await Storage.saveClient(client);
-            
-            logAction('add_comment', 'cliente', clientId, { 
+
+            logAction('add_comment', 'cliente', clientId, {
                 comentario,
                 usuario: currentSession?.username || 'Anônimo'
             });
-            
+
             this.renderClientList(this.elements.searchInput.value);
             this.app.bicicletasManager.renderClientDetails();
         }
@@ -305,9 +316,9 @@ export class ClientesManager {
         if (client && client.comentarios) {
             client.comentarios = client.comentarios.filter(c => c.id !== commentId);
             await Storage.saveClient(client);
-            
+
             logAction('delete_comment', 'cliente', clientId, { commentId });
-            
+
             this.renderClientList(this.elements.searchInput.value);
             this.app.bicicletasManager.renderClientDetails();
         }
@@ -317,7 +328,7 @@ export class ClientesManager {
         const canAdd = Auth.hasPermission('clientes', 'adicionar');
         const canEdit = Auth.hasPermission('clientes', 'editar');
         const canDelete = Auth.hasPermission('clientes', 'excluir');
-        
+
         const addClientForm = this.elements.addClientForm;
         if (addClientForm) {
             const addClientSection = addClientForm.closest('.bg-white, .dark\\:bg-slate-800');

@@ -36,6 +36,8 @@ export class RegistrosManager {
             categoriaModalTitle: document.getElementById('categoria-modal-title'),
             categoriaModalList: document.getElementById('categoria-modal-list'),
             closeCategoriaModalBtn: document.getElementById('close-categoria-modal-btn'),
+            openDashboardModalBtn: document.getElementById('open-dashboard-modal-btn'),
+            dashboardModal: document.getElementById('dashboard-modal'),
         };
         this.setupEventListeners();
     }
@@ -68,7 +70,11 @@ export class RegistrosManager {
         });
         this.elements.exportCsvBtn.addEventListener('click', () => this.exportToCSV());
         this.elements.exportPdfBtn.addEventListener('click', () => this.exportToPDF());
-        
+
+        if (this.elements.openDashboardModalBtn) {
+            this.elements.openDashboardModalBtn.addEventListener('click', this.openDashboardModal.bind(this));
+        }
+
         window.addEventListener('click', (e) => {
             this.toggleExportMenu(false);
             // Close all action dropdowns when clicking outside
@@ -117,17 +123,32 @@ export class RegistrosManager {
         const categorias = Storage.loadCategorias();
         const listHtml = categoriaRecords.map(({ client, bike, registro }) => {
             const categoriaEmoji = categoria !== 'Sem Categoria' && categorias[categoria] ? categorias[categoria] : '';
+
+            let statusHtml = '';
+            if (registro.dataHoraSaida) {
+                const saida = new Date(registro.dataHoraSaida);
+                statusHtml = `<span class="text-xs text-green-600 dark:text-green-400 font-medium whitespace-nowrap">Saída: ${saida.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>`;
+            } else {
+                const entrada = new Date(registro.dataHoraEntrada);
+                statusHtml = `<span class="text-xs text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">Entrada: ${entrada.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>`;
+            }
+
             return `
-                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                    <div class="flex-1">
-                        <p class="font-medium text-slate-800 dark:text-slate-100">${client.nome}</p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">${client.cpf}</p>
-                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg mb-2">
+                    <div class="flex-1 min-w-0 pr-3">
+                        <div class="flex justify-between items-start gap-2">
+                             <div class="min-w-0">
+                                <p class="font-medium text-slate-800 dark:text-slate-100 truncate">${client.nome}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">${client.cpf}</p>
+                             </div>
+                             ${statusHtml}
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1 truncate">
                             <i data-lucide="bike" class="w-3 h-3 inline"></i>
                             ${bike.modelo} - ${bike.marca}
                         </p>
                     </div>
-                    <button class="edit-categoria-registro-btn p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors" data-registro-id="${registro.id}" title="Editar registro">
+                    <button class="edit-categoria-registro-btn flex-shrink-0 p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors" data-registro-id="${registro.id}" title="Editar registro">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -135,10 +156,10 @@ export class RegistrosManager {
         }).join('');
 
         this.elements.categoriaModalList.innerHTML = listHtml || '<p class="text-sm text-slate-500 dark:text-slate-400">Nenhuma pessoa registrada nesta categoria.</p>';
-        
+
         // Recreate icons
         lucide.createIcons();
-        
+
         // Add event listeners to edit buttons
         this.elements.categoriaModalList.querySelectorAll('.edit-categoria-registro-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -151,27 +172,134 @@ export class RegistrosManager {
         this.app.toggleModal('categoria-modal', true);
     }
 
+    openCustomListModal(title, recordsData) {
+        if (!this.elements.categoriaModal || !this.elements.categoriaModalList) return;
+
+        // Update modal title
+        if (this.elements.categoriaModalTitle) {
+            this.elements.categoriaModalTitle.textContent = title;
+        }
+
+        const categorias = Storage.loadCategorias();
+        const listHtml = recordsData.map(({ client, bike, registro }) => {
+            const categoria = registro.categoria || client.categoria || '';
+            const categoriaEmoji = categoria && categorias[categoria] ? categorias[categoria] : '';
+
+            let statusHtml = '';
+            if (registro.dataHoraSaida) {
+                const saida = new Date(registro.dataHoraSaida);
+                statusHtml = `<span class="text-xs text-green-600 dark:text-green-400 font-medium whitespace-nowrap">Saída: ${saida.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>`;
+            } else {
+                const entrada = new Date(registro.dataHoraEntrada);
+                // Calculate duration nicely
+                const now = new Date();
+                const diffMs = now - entrada;
+                const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+
+                let timeText = `Entrada: ${entrada.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+                if (diffHrs >= 24) {
+                    const days = Math.floor(diffHrs / 24);
+                    timeText = `${days}d ${diffHrs % 24}h`;
+                }
+
+                statusHtml = `<span class="text-xs ${diffHrs >= 24 ? 'text-red-500 font-bold' : 'text-amber-600 dark:text-amber-400 font-medium'} whitespace-nowrap">${timeText}</span>`;
+            }
+
+            return `
+                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg mb-2">
+                    <div class="flex-1 min-w-0 pr-3">
+                        <div class="flex justify-between items-start gap-2">
+                             <div class="min-w-0">
+                                <p class="font-medium text-slate-800 dark:text-slate-100 truncate">${client.nome}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">${client.cpf}</p>
+                             </div>
+                             ${statusHtml}
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1 truncate">
+                            <i data-lucide="bike" class="w-3 h-3 inline"></i>
+                            ${bike.modelo} - ${bike.marca}
+                        </p>
+                    </div>
+                    <button class="edit-categoria-registro-btn flex-shrink-0 p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors" data-registro-id="${registro.id}" title="Editar registro">
+                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        this.elements.categoriaModalList.innerHTML = listHtml || '<p class="text-sm text-slate-500 dark:text-slate-400">Nenhum registro encontrado.</p>';
+
+        // Recreate icons
+        lucide.createIcons();
+
+        // Add event listeners to edit buttons
+        this.elements.categoriaModalList.querySelectorAll('.edit-categoria-registro-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const registroId = btn.dataset.registroId;
+                this.app.toggleModal('categoria-modal', false);
+                this.openEditRegistroModal(registroId);
+            });
+        });
+
+        this.app.toggleModal('categoria-modal', true);
+    }
+
+
+    async openDashboardModal() {
+        console.log('Abrindo modal do dashboard...');
+
+        try {
+            // 1. Mostrar o modal primeiro
+            if (this.app && typeof this.app.toggleModal === 'function') {
+                this.app.toggleModal('dashboard-modal', true);
+            } else {
+                const modal = document.getElementById('dashboard-modal');
+                if (modal) modal.classList.remove('hidden');
+            }
+
+            // 2. Carregar o script do dashboard dinamicamente
+            console.log('Carregando módulo DonoDashboard...');
+            const { DonoDashboard } = await import('../dono/dashboard.js');
+
+            // 3. Renderizar o dashboard
+            const dashboardContainer = document.getElementById('modal-dashboard-container');
+            if (dashboardContainer) {
+                dashboardContainer.innerHTML = '<div class="flex justify-center p-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>'; // Loading indicator
+
+                console.log('Instanciando DonoDashboard...');
+                const dashboard = new DonoDashboard(this.app, 'modal-dashboard-container');
+                await dashboard.render();
+                console.log('Dashboard renderizado com sucesso');
+            } else {
+                console.error('Container do dashboard não encontrado: modal-dashboard-container');
+            }
+        } catch (error) {
+            console.error('Erro fatal ao abrir dashboard:', error);
+            alert('Erro ao carregar gráficos: ' + error.message);
+        }
+    }
+
     async handleAddRegistro(e) {
         e.preventDefault();
-        
+
         try {
             Auth.requirePermission('registros', 'adicionar');
         } catch (error) {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const clientId = this.elements.registroClientIdInput.value;
         const bikeId = this.elements.registroBikeIdInput.value;
         const client = this.app.data.clients.find(c => c.id === clientId);
         const bike = client?.bicicletas.find(b => b.id === bikeId);
         const categoriaSelect = document.getElementById('registro-categoria');
         const categoria = categoriaSelect ? categoriaSelect.value : (client?.categoria || '');
-        
-        if(bike) {
-            const newRegistro = { 
-                id: Utils.generateUUID(), 
-                dataHoraEntrada: Utils.getLocalISOString(), 
+
+        if (bike) {
+            const newRegistro = {
+                id: Utils.generateUUID(),
+                dataHoraEntrada: Utils.getLocalISOString(),
                 dataHoraSaida: null,
                 clientId: clientId,
                 bikeId: bikeId,
@@ -184,10 +312,10 @@ export class RegistrosManager {
             };
             this.app.data.registros.push(newRegistro);
             await Storage.saveRegistros(this.app.data.registros);
-            
+
             // Notificar o gerenciador de notificações sobre a atividade
             notificationManager.onClientActivity();
-            
+
             logAction('register_entry', 'registro', newRegistro.id, {
                 cliente: client.nome,
                 clienteCpf: client.cpf,
@@ -196,7 +324,7 @@ export class RegistrosManager {
                 categoria: categoria,
                 dataHoraEntrada: newRegistro.dataHoraEntrada
             });
-            
+
             this.app.bicicletasManager.renderClientDetails();
             if (this.app.data.activeTab === 'registros-diarios') {
                 this.renderDailyRecords();
@@ -215,16 +343,16 @@ export class RegistrosManager {
             this.elements.registroBikeIdInput.value = bikeId;
             this.elements.registroClientName.textContent = client.nome;
             this.elements.registroBikeInfo.textContent = `${bike.modelo} (${bike.marca} - ${bike.cor})`;
-            
+
             if (this.app.configuracaoManager) {
                 this.app.configuracaoManager.updateCategoryDropdowns();
             }
-            
+
             const categoriaSelect = document.getElementById('registro-categoria');
             if (categoriaSelect && client.categoria) {
                 categoriaSelect.value = client.categoria;
             }
-            
+
             this.app.toggleModal('add-registro-modal', true);
         }
     }
@@ -241,14 +369,14 @@ export class RegistrosManager {
             const btn = e.target.closest('.register-saida-btn');
             const registroId = btn.dataset.registroId;
             const registro = this.app.data.registros.find(r => r.id === registroId);
-            
+
             if (registro && !registro.dataHoraSaida) {
                 registro.dataHoraSaida = Utils.getLocalISOString();
                 await Storage.saveRegistros(this.app.data.registros);
-                
+
                 // Notificar o gerenciador de notificações sobre a atividade
                 notificationManager.onClientActivity();
-                
+
                 this.renderDailyRecords();
                 this.app.bicicletasManager.renderClientDetails();
             }
@@ -262,7 +390,7 @@ export class RegistrosManager {
             const registroId = select.dataset.registroId;
             const clientId = select.dataset.clientId;
             const bikeId = select.dataset.bikeId;
-            
+
             if (!action) return;
 
             const requiresEdit = ['saida', 'remover', 'pernoite', 'alterar'].includes(action);
@@ -280,7 +408,7 @@ export class RegistrosManager {
                 return;
             }
 
-            switch(action) {
+            switch (action) {
                 case 'saida':
                     await this.registerSaida(registroId);
                     break;
@@ -297,7 +425,7 @@ export class RegistrosManager {
                     await this.registrarPernoite(registroId);
                     break;
             }
-            
+
             select.value = '';
         }
     }
@@ -310,7 +438,7 @@ export class RegistrosManager {
             const dropdown = dropdownButton.closest('.action-dropdown');
             const menu = dropdown.querySelector('.dropdown-menu');
             const isOpen = !menu.classList.contains('hidden');
-            
+
             // Close all other action dropdowns
             document.querySelectorAll('.action-dropdown .dropdown-menu').forEach(m => {
                 if (m !== menu) {
@@ -318,7 +446,7 @@ export class RegistrosManager {
                     m.closest('.action-dropdown').querySelector('.dropdown-button').classList.remove('active');
                 }
             });
-            
+
             // Toggle this dropdown
             if (isOpen) {
                 menu.classList.add('hidden');
@@ -340,11 +468,11 @@ export class RegistrosManager {
             const bikeId = dropdown.dataset.bikeId;
             const menu = dropdown.querySelector('.dropdown-menu');
             const button = dropdown.querySelector('.dropdown-button');
-            
+
             // Close dropdown
             menu.classList.add('hidden');
             button.classList.remove('active');
-            
+
             if (!action) return;
 
             const requiresEdit = ['saida', 'remover', 'pernoite', 'alterar'].includes(action);
@@ -360,7 +488,7 @@ export class RegistrosManager {
                 return;
             }
 
-            switch(action) {
+            switch (action) {
                 case 'saida':
                     await this.registerSaida(registroId);
                     break;
@@ -387,15 +515,15 @@ export class RegistrosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const registro = this.app.data.registros.find(r => r.id === registroId);
         if (registro && !registro.dataHoraSaida) {
             registro.dataHoraSaida = Utils.getLocalISOString();
             await Storage.saveRegistros(this.app.data.registros);
-            
+
             // Notificar o gerenciador de notificações sobre a atividade
             notificationManager.onClientActivity();
-            
+
             const client = this.app.data.clients.find(c => c.id === registro.clientId);
             logAction('register_exit', 'registro', registroId, {
                 cliente: client?.nome || 'Desconhecido',
@@ -405,7 +533,7 @@ export class RegistrosManager {
                 dataHoraEntrada: registro.dataHoraEntrada,
                 dataHoraSaida: registro.dataHoraSaida
             });
-            
+
             this.renderDailyRecords();
             this.app.bicicletasManager.renderClientDetails();
         }
@@ -418,7 +546,7 @@ export class RegistrosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const confirmed = await Modals.showConfirm('Tem certeza que deseja remover o acesso desta bicicleta?', 'Remover Acesso');
         if (confirmed) {
             const registro = this.app.data.registros.find(r => r.id === registroId);
@@ -455,7 +583,7 @@ export class RegistrosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const registro = this.app.data.registros.find(r => r.id === registroId);
         if (!registro || !registro.dataHoraSaida) {
             return;
@@ -469,13 +597,13 @@ export class RegistrosManager {
                 delete registro.acessoRemovido;
             }
             await Storage.saveRegistros(this.app.data.registros);
-            
+
             const client = this.app.data.clients.find(c => c.id === registro.clientId);
-            logAction('revert_action', 'registro', registroId, { 
+            logAction('revert_action', 'registro', registroId, {
                 acao: tipoAcao === 'remoção de acesso' ? 'remocao_acesso' : 'saida',
                 clienteNome: client?.nome || 'desconhecido'
             });
-            
+
             this.renderDailyRecords();
             this.app.bicicletasManager.renderClientDetails();
         }
@@ -627,7 +755,7 @@ export class RegistrosManager {
 
     populateBikeSelect(clientId, selectedBikeId = null) {
         this.elements.editRegistroBikeSelect.innerHTML = '<option value="">Selecione uma bicicleta</option>';
-        
+
         if (!clientId) return;
 
         const client = this.app.data.clients.find(c => c.id === clientId);
@@ -655,14 +783,14 @@ export class RegistrosManager {
 
     async handleEditRegistroSubmit(e) {
         e.preventDefault();
-        
+
         try {
             Auth.requirePermission('registros', 'editar');
         } catch (error) {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const registroId = this.elements.editRegistroIdInput.value;
         const registro = this.app.data.registros.find(r => r.id === registroId);
         if (!registro) return;
@@ -695,7 +823,7 @@ export class RegistrosManager {
             cor: bike.cor
         };
         registro.dataHoraEntrada = Utils.getLocalISOString(new Date(newEntrada));
-        
+
         if (newSaida) {
             registro.dataHoraSaida = Utils.getLocalISOString(new Date(newSaida));
         } else {
@@ -719,7 +847,7 @@ export class RegistrosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const registro = this.app.data.registros.find(r => r.id === registroId);
         if (!registro) return;
 
@@ -737,15 +865,15 @@ export class RegistrosManager {
         const bikeAtual = client.bicicletas.find(b => b.id === registro.bikeId);
         const outrasBikes = client.bicicletas.filter(b => b.id !== registro.bikeId);
 
-        let options = outrasBikes.map((bike, idx) => 
+        let options = outrasBikes.map((bike, idx) =>
             `${idx + 1}. ${bike.modelo} (${bike.marca} - ${bike.cor})`
         ).join('\n');
 
         const bikeAtualInfo = bikeAtual ? `${bikeAtual.modelo} (${bikeAtual.marca} - ${bikeAtual.cor})` : 'Desconhecida';
-        
+
         const escolhaText = `Bicicleta atual: ${bikeAtualInfo}\n\nEscolha a nova bicicleta:\n${options}\n\nDigite o número:`;
         const escolha = await Modals.showInputPrompt(escolhaText, 'Trocar Bicicleta');
-        
+
         if (escolha !== null && escolha.trim() !== '') {
             const index = parseInt(escolha) - 1;
             if (index >= 0 && index < outrasBikes.length) {
@@ -773,7 +901,7 @@ export class RegistrosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const client = this.app.data.clients.find(c => c.id === clientId);
         if (!client || !client.bicicletas || client.bicicletas.length === 0) {
             await Modals.showAlert('Cliente não tem bicicletas cadastradas.', 'Atenção');
@@ -781,9 +909,9 @@ export class RegistrosManager {
         }
 
         const registroOriginal = this.app.data.registros.find(r => r.id === registroId);
-        
+
         const bikesDisponiveis = client.bicicletas.filter(bike => {
-            const temRegistroAberto = this.app.data.registros.some(r => 
+            const temRegistroAberto = this.app.data.registros.some(r =>
                 r.bikeId === bike.id && !r.dataHoraSaida
             );
             return !temRegistroAberto;
@@ -794,12 +922,12 @@ export class RegistrosManager {
             return;
         }
 
-        let options = bikesDisponiveis.map((bike, idx) => 
+        let options = bikesDisponiveis.map((bike, idx) =>
             `${idx + 1}. ${bike.modelo} (${bike.marca} - ${bike.cor})`
         ).join('\n');
-        
+
         const escolha = await Modals.showInputPrompt(`Escolha uma bicicleta para adicionar:\n${options}\n\nDigite o número:`, 'Adicionar Outra Bike');
-        
+
         if (escolha !== null && escolha.trim() !== '') {
             const index = parseInt(escolha) - 1;
             if (index >= 0 && index < bikesDisponiveis.length) {
@@ -833,7 +961,7 @@ export class RegistrosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const registro = this.app.data.registros.find(r => r.id === registroId);
         if (!registro || registro.dataHoraSaida) {
             return;
@@ -846,7 +974,7 @@ export class RegistrosManager {
             diaSeguinte.setDate(diaSeguinte.getDate() + 1);
 
             const novoRegistroId = Utils.generateUUID();
-            
+
             const novoRegistro = {
                 id: novoRegistroId,
                 dataHoraEntrada: Utils.getLocalISOString(diaSeguinte),
@@ -864,12 +992,12 @@ export class RegistrosManager {
 
             this.app.data.registros.push(novoRegistro);
             await Storage.saveRegistros(this.app.data.registros);
-            
+
             const client = this.app.data.clients.find(c => c.id === registro.clientId);
-            logAction('overnight_stay', 'registro', registroId, { 
+            logAction('overnight_stay', 'registro', registroId, {
                 clienteNome: client?.nome || 'desconhecido'
             });
-            
+
             this.renderDailyRecords();
             await Modals.showAlert('Registro de PERNOITE criado com sucesso! Verifique o dia seguinte.', 'Sucesso');
         }
@@ -882,7 +1010,7 @@ export class RegistrosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const registro = this.app.data.registros.find(r => r.id === registroId);
         if (!registro || !registro.pernoite) {
             return;
@@ -891,7 +1019,7 @@ export class RegistrosManager {
         const confirmed = await Modals.showConfirm('Tem certeza que deseja reverter o PERNOITE?', 'Reverter Pernoite');
         if (confirmed) {
             const client = this.app.data.clients.find(c => c.id === registro.clientId);
-            
+
             if (registro.registroPernoiteId) {
                 const indexPernoite = this.app.data.registros.findIndex(r => r.id === registro.registroPernoiteId);
                 if (indexPernoite >= 0) {
@@ -910,14 +1038,14 @@ export class RegistrosManager {
                     this.app.data.registros.splice(indexAtual, 1);
                 }
             }
-            
+
             await Storage.saveRegistros(this.app.data.registros);
-            
-            logAction('revert_action', 'registro', registroId, { 
+
+            logAction('revert_action', 'registro', registroId, {
                 acao: 'pernoite',
                 clienteNome: client?.nome || 'desconhecido'
             });
-            
+
             this.renderDailyRecords();
             this.app.bicicletasManager.renderClientDetails();
         }
@@ -928,7 +1056,7 @@ export class RegistrosManager {
         if (!bikeRegistros || bikeRegistros.length === 0) {
             return '<p class="text-xs text-slate-500 dark:text-slate-400">Nenhum registro encontrado.</p>';
         }
-        
+
         const sortedRegistros = [...bikeRegistros].sort((a, b) => new Date(b.dataHoraEntrada) - new Date(a.dataHoraEntrada));
 
         return `
@@ -962,7 +1090,7 @@ export class RegistrosManager {
             this.app.data.currentDailyRecords = [];
             return;
         }
-        
+
         const dailyRecordsRaw = this.app.data.registros.filter(registro => {
             const entradaDate = new Date(registro.dataHoraEntrada);
             const localDateStr = Utils.getLocalDateString(entradaDate);
@@ -979,11 +1107,12 @@ export class RegistrosManager {
 
         const searchTerm = this.elements.dailyRecordsSearchInput.value.toLowerCase();
         if (searchTerm) {
-            dailyRecords = dailyRecords.filter(({ client, bike }) => 
+            dailyRecords = dailyRecords.filter(({ client, bike }) =>
                 client.nome.toLowerCase().includes(searchTerm) ||
                 client.cpf.includes(searchTerm) ||
                 bike.modelo.toLowerCase().includes(searchTerm) ||
-                bike.marca.toLowerCase().includes(searchTerm)
+                bike.marca.toLowerCase().includes(searchTerm) ||
+                bike.cor.toLowerCase().includes(searchTerm)
             );
         }
 
@@ -1020,33 +1149,33 @@ export class RegistrosManager {
                         </thead>
                         <tbody>
                             ${dailyRecords.map(({ client, bike, registro }) => {
-                                const categoria = registro.categoria || client.categoria || '';
-                                const categoriaEmoji = categoria && categorias[categoria] ? categorias[categoria] : '';
-                                const categoriaDisplay = categoria ? (() => {
-                                    const iconMap = {
-                                        '👤': 'user',
-                                        '🏢': 'building',
-                                        '🍽️': 'utensils',
-                                        '💪': 'dumbbell',
-                                        '👨': 'user',
-                                        '🏪': 'store',
-                                        '⚙️': 'settings',
-                                        '🎯': 'target',
-                                        '📱': 'smartphone',
-                                        '📊': 'bar-chart',
-                                        '🔧': 'wrench',
-                                        '🎨': 'palette',
-                                        '⭐': 'star',
-                                        '📦': 'package',
-                                        '🚀': 'rocket',
-                                        '🛍️': 'shopping-bag',
-                                        '☕': 'coffee'
-                                    };
-                                    const iconName = iconMap[categoriaEmoji] || 'circle';
-                                    return `<i data-lucide="${iconName}" class="w-4 h-4 inline mr-2"></i>${categoria}`;
-                                })() : '<span class="text-xs text-slate-400">-</span>';
-                                
-                                return `
+            const categoria = registro.categoria || client.categoria || '';
+            const categoriaEmoji = categoria && categorias[categoria] ? categorias[categoria] : '';
+            const categoriaDisplay = categoria ? (() => {
+                const iconMap = {
+                    '👤': 'user',
+                    '🏢': 'building',
+                    '🍽️': 'utensils',
+                    '💪': 'dumbbell',
+                    '👨': 'user',
+                    '🏪': 'store',
+                    '⚙️': 'settings',
+                    '🎯': 'target',
+                    '📱': 'smartphone',
+                    '📊': 'bar-chart',
+                    '🔧': 'wrench',
+                    '🎨': 'palette',
+                    '⭐': 'star',
+                    '📦': 'package',
+                    '🚀': 'rocket',
+                    '🛍️': 'shopping-bag',
+                    '☕': 'coffee'
+                };
+                const iconName = iconMap[categoriaEmoji] || 'circle';
+                return `<i data-lucide="${iconName}" class="w-4 h-4 inline mr-2"></i>${categoria}`;
+            })() : '<span class="text-xs text-slate-400">-</span>';
+
+            return `
                         <tr class="border-b border-slate-100 dark:border-slate-700">
                             <td class="p-3 align-top">
                                 <p class="font-medium text-slate-800 dark:text-slate-100">${client.nome}</p>
@@ -1060,11 +1189,11 @@ export class RegistrosManager {
                                 <p class="text-xs text-slate-500 dark:text-slate-400">${bike.marca} - ${bike.cor}</p>
                             </td>
                             <td class="p-3 align-top text-slate-600 dark:text-slate-300">
-                                ${registro.pernoite && registro.dataHoraEntradaOriginal ? 
-                                    `${new Date(registro.dataHoraEntradaOriginal).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>` 
-                                    : registro.pernoite ? 
-                                        `${new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>`
-                                        : new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')}
+                                ${registro.pernoite && registro.dataHoraEntradaOriginal ?
+                    `${new Date(registro.dataHoraEntradaOriginal).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>`
+                    : registro.pernoite ?
+                        `${new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>`
+                        : new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')}
                             </td>
                             <td class="p-3 align-top text-slate-600 dark:text-slate-300">${registro.dataHoraSaida ? new Date(registro.dataHoraSaida).toLocaleString('pt-BR') : ''}</td>
                             <td class="p-3 align-top">
@@ -1153,10 +1282,10 @@ export class RegistrosManager {
                             </td>
                             <td class="p-3 align-top flex items-center gap-2">
                                 ${(() => {
-                                    let c = client.comentarios || [];
-                                    if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { c = []; } }
-                                    if (!Array.isArray(c)) { c = []; }
-                                    return c.length > 0 ? `
+                    let c = client.comentarios || [];
+                    if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { c = []; } }
+                    if (!Array.isArray(c)) { c = []; }
+                    return c.length > 0 ? `
                                 <div class="relative">
                                     <button class="view-comments-btn flex items-center justify-center w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full cursor-pointer" 
                                             data-client-id="${client.id}"
@@ -1172,7 +1301,7 @@ export class RegistrosManager {
                                     <i data-lucide="message-circle" class="w-4 h-4"></i>
                                 </button>
                                 `;
-                                })()}
+                })()}
                                 ${canEditRegistros ? `
                                 <button class="edit-registro-btn text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" 
                                         data-registro-id="${registro.id}"
@@ -1186,7 +1315,7 @@ export class RegistrosManager {
                             </td>
                         </tr>
                     `;
-                }).join('')}
+        }).join('')}
                 </tbody>
             </table>
                 </div>
@@ -1215,7 +1344,7 @@ export class RegistrosManager {
 
     renderCategoriasSummary(dailyRecords) {
         const categorias = Storage.loadCategorias();
-        
+
         // Contar registros por categoria
         const categoriasCount = {};
         dailyRecords.forEach(({ registro }) => {
@@ -1230,28 +1359,28 @@ export class RegistrosManager {
         return `
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 ${Object.entries(categoriasCount).map(([categoria, count]) => {
-                    const emoji = categoria === 'Sem Categoria' ? '⚙️' : (categorias[categoria] || '⚙️');
-                    const iconMap = {
-                        '👤': 'user',
-                        '🏢': 'building',
-                        '🍽️': 'utensils',
-                        '💪': 'dumbbell',
-                        '👨': 'user',
-                        '🏪': 'store',
-                        '⚙️': 'settings',
-                        '🎯': 'target',
-                        '📱': 'smartphone',
-                        '📊': 'bar-chart',
-                        '🔧': 'wrench',
-                        '🎨': 'palette',
-                        '⭐': 'star',
-                        '📦': 'package',
-                        '🚀': 'rocket',
-                        '🛍️': 'shopping-bag',
-                        '☕': 'coffee'
-                    };
-                    const iconName = iconMap[emoji] || 'circle';
-                    return `
+            const emoji = categoria === 'Sem Categoria' ? '⚙️' : (categorias[categoria] || '⚙️');
+            const iconMap = {
+                '👤': 'user',
+                '🏢': 'building',
+                '🍽️': 'utensils',
+                '💪': 'dumbbell',
+                '👨': 'user',
+                '🏪': 'store',
+                '⚙️': 'settings',
+                '🎯': 'target',
+                '📱': 'smartphone',
+                '📊': 'bar-chart',
+                '🔧': 'wrench',
+                '🎨': 'palette',
+                '⭐': 'star',
+                '📦': 'package',
+                '🚀': 'rocket',
+                '🛍️': 'shopping-bag',
+                '☕': 'coffee'
+            };
+            const iconName = iconMap[emoji] || 'circle';
+            return `
                         <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer categoria-box" data-categoria="${categoria}">
                             <i data-lucide="${iconName}" class="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0"></i>
                             <div class="flex-1">
@@ -1260,20 +1389,20 @@ export class RegistrosManager {
                             </div>
                         </div>
                     `;
-                }).join('')}
+        }).join('')}
             </div>
         `;
     }
 
     renderPernoiteSummary(dailyRecords) {
         const pernoiteRecords = dailyRecords.filter(({ registro }) => registro.pernoite);
-        
+
         if (pernoiteRecords.length === 0) {
             return `<p class="text-sm text-slate-500 dark:text-slate-400">Nenhum pernoite registrado.</p>`;
         }
 
         const canEditRegistros = Auth.hasPermission('registros', 'editar');
-        
+
         return `
             <div class="space-y-3">
                 ${pernoiteRecords.map(({ client, bike, registro }) => `
@@ -1360,16 +1489,16 @@ export class RegistrosManager {
             await Modals.showAlert('Não há dados para exportar.', 'Atenção');
             return;
         }
-        
+
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const categorias = Storage.loadCategorias();
-        
+
         const head = [['Cliente', 'Categoria', 'Bicicleta', 'Entrada', 'Saída']];
         const body = this.app.data.currentDailyRecords.map(({ client, bike, registro }) => {
             const categoria = registro.categoria || client.categoria || '';
             const categoriaDisplay = categoria ? categoria : '-';
-            
+
             return [
                 `${client.nome}\n(${client.cpf})`,
                 categoriaDisplay,
@@ -1378,10 +1507,10 @@ export class RegistrosManager {
                 registro.dataHoraSaida ? new Date(registro.dataHoraSaida).toLocaleString('pt-BR') : 'Em aberto'
             ];
         });
-        
+
         const selectedDateStr = this.elements.dailyRecordsDateInput.value;
         const selectedDate = new Date(selectedDateStr);
-        const formattedDate = selectedDate.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+        const formattedDate = selectedDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
         doc.text(`Registros do dia: ${formattedDate}`, 14, 15);
         doc.autoTable({
@@ -1406,7 +1535,7 @@ export class RegistrosManager {
         doc.setFontSize(12);
         doc.text('Estatísticas por Categoria:', 14, finalY);
         finalY += 7;
-        
+
         doc.setFontSize(10);
         Object.entries(categoriaCounts).sort((a, b) => b[1] - a[1]).forEach(([nome, count]) => {
             const pernoiteCount = categoriaPernoite[nome] || 0;

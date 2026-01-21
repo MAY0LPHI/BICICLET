@@ -81,12 +81,12 @@ export class ConfiguracaoManager {
         this.renderHistoricoOrganizado();
         this.setupNotificationSettings();
         this.setupJobMonitorCallbacks();
-        
+
         // Pequeno atraso para garantir que o Storage carregou tudo
         setTimeout(() => {
             this.renderCategorias();
         }, 100);
-        
+
         // Carregar gerenciamento de backups
         this.loadBackupManagement();
     }
@@ -96,7 +96,7 @@ export class ConfiguracaoManager {
         const clientes = Storage.loadClientsSync();
         let categoriasChanged = false;
         let clientesChanged = false;
-        
+
         const newCategorias = {};
         Object.entries(categorias).forEach(([nome, emoji]) => {
             const cleanName = this.sanitizeCategory(nome);
@@ -107,15 +107,15 @@ export class ConfiguracaoManager {
                 newCategorias[cleanName] = emoji;
             }
         });
-        
+
         if (categoriasChanged) {
             Storage.saveCategorias(newCategorias);
         }
-        
+
         const updatedClientes = clientes.map(cliente => {
             let updatedClient = { ...cliente };
             let changed = false;
-            
+
             if (cliente.nome) {
                 const cleanNome = this.sanitizeCategory(cliente.nome);
                 if (cleanNome !== cliente.nome) {
@@ -123,7 +123,7 @@ export class ConfiguracaoManager {
                     changed = true;
                 }
             }
-            
+
             if (cliente.categoria) {
                 const cleanCategoria = this.sanitizeCategory(cliente.categoria);
                 if (cleanCategoria !== cliente.categoria) {
@@ -131,14 +131,14 @@ export class ConfiguracaoManager {
                     changed = true;
                 }
             }
-            
+
             if (changed) {
                 clientesChanged = true;
                 return updatedClient;
             }
             return cliente;
         });
-        
+
         if (clientesChanged) {
             await Storage.saveClients(updatedClientes, true);
             if (this.app && this.app.data) {
@@ -149,13 +149,13 @@ export class ConfiguracaoManager {
 
     loadThemePreference() {
         const savedTheme = localStorage.getItem('themePreference') || 'system';
-        
+
         setTimeout(() => {
             const allRadios = document.querySelectorAll('input[name="theme"]');
             allRadios.forEach(radio => {
                 radio.checked = radio.value === savedTheme;
             });
-            
+
             this.updateThemeLabels(savedTheme);
             this.applyTheme(savedTheme);
         }, 100);
@@ -172,13 +172,12 @@ export class ConfiguracaoManager {
     }
 
     addEventListeners() {
-        setTimeout(() => {
-            document.querySelectorAll('input[name="theme"]').forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    this.handleThemeChange(e.target.value);
-                });
-            });
-        }, 50);
+        // Event delegation for theme radio buttons to ensure reliability
+        document.body.addEventListener('change', (e) => {
+            if (e.target.matches('input[name="theme"]')) {
+                this.handleThemeChange(e.target.value);
+            }
+        });
 
         this.elements.globalSearch.addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
@@ -202,11 +201,11 @@ export class ConfiguracaoManager {
         if (this.elements.importSystemBtn) {
             this.elements.importSystemBtn.addEventListener('click', () => this.handleSystemImport());
         }
-        
+
         if (this.elements.exportSystemExcelBtn) {
             this.elements.exportSystemExcelBtn.addEventListener('click', () => this.exportSystemToExcel());
         }
-        
+
         if (this.elements.exportSystemCsvBtn) {
             this.elements.exportSystemCsvBtn.addEventListener('click', () => this.exportSystemToCSV());
         }
@@ -218,11 +217,11 @@ export class ConfiguracaoManager {
 
         const addCategoriaBtn = document.getElementById('add-categoria-btn');
         const novaCategoriaInput = document.getElementById('nova-categoria');
-        
+
         if (addCategoriaBtn) {
             addCategoriaBtn.addEventListener('click', () => this.addCategoria());
         }
-        
+
         if (novaCategoriaInput) {
             novaCategoriaInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -242,13 +241,13 @@ export class ConfiguracaoManager {
         if (!categoriasList) return;
 
         let categorias = Storage.loadCategorias();
-        
+
         // Garantir que categorias seja um objeto válido
         if (!categorias || typeof categorias !== 'object' || Array.isArray(categorias)) {
             console.error('Categorias inválidas carregadas:', categorias);
             categorias = {};
         }
-        
+
         const entries = Object.entries(categorias);
         if (entries.length === 0) {
             categoriasList.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhuma categoria cadastrada</p>';
@@ -302,21 +301,21 @@ export class ConfiguracaoManager {
         if (!statsContainer) return;
 
         let categorias = Storage.loadCategorias();
-        
+
         // Garantir que categorias seja um objeto válido
         if (!categorias || typeof categorias !== 'object' || Array.isArray(categorias)) {
             categorias = {};
         }
 
         const clientes = Storage.loadClientsSync();
-        
+
         const categoriaCounts = {};
         Object.keys(categorias).forEach(categoria => {
             categoriaCounts[categoria] = 0;
         });
-        
+
         let semCategoria = 0;
-        
+
         Object.values(clientes).forEach(cliente => {
             const categoria = cliente.categoria || '';
             if (categoria && categoria in categoriaCounts) {
@@ -341,7 +340,7 @@ export class ConfiguracaoManager {
 
         let statsHTML = '';
         let semCategoriaHTML = '';
-        
+
         if (Object.keys(categorias).length > 0) {
             statsHTML = Object.entries(categoriaCounts)
                 .sort((a, b) => b[1] - a[1])
@@ -399,7 +398,7 @@ export class ConfiguracaoManager {
                 ${semCategoriaHTML}
             </div>
         `;
-        
+
         lucide.createIcons();
 
         statsContainer.querySelectorAll('.categoria-stats-row').forEach(row => {
@@ -413,11 +412,11 @@ export class ConfiguracaoManager {
     showClientsByCategory(categoria) {
         const clientes = Storage.loadClientsSync();
         let categorias = Storage.loadCategorias();
-        
+
         if (!categorias || typeof categorias !== 'object' || Array.isArray(categorias)) {
             categorias = {};
         }
-        
+
         const clientesFiltrados = clientes.filter(cliente => {
             const clienteCategoria = cliente.categoria || '';
             if (categoria === '') {
@@ -428,9 +427,9 @@ export class ConfiguracaoManager {
 
         const titulo = categoria ? `Clientes: ${categoria}` : 'Clientes: Sem Categoria';
         const iconName = categoria ? this.getIconForEmoji(categorias[categoria]) : 'settings';
-        
+
         let listaHTML = '';
-        
+
         if (clientesFiltrados.length === 0) {
             listaHTML = `
                 <div class="text-center py-8 text-slate-500 dark:text-slate-400">
@@ -485,7 +484,7 @@ export class ConfiguracaoManager {
                     e.stopPropagation();
                     const clientId = btn.getAttribute('data-client-id');
                     if (!clientId) return;
-                    
+
                     Modals.close();
                     setTimeout(() => {
                         if (self.app && self.app.clientesManager) {
@@ -512,7 +511,7 @@ export class ConfiguracaoManager {
         }
 
         const categorias = Storage.loadCategorias();
-        
+
         if (categoria in categorias) {
             Modals.alert('Esta categoria já existe.', 'Categoria duplicada');
             return;
@@ -541,7 +540,7 @@ export class ConfiguracaoManager {
     async editCategoria(categoria) {
         const categorias = Storage.loadCategorias();
         const emojiAtual = categorias[categoria];
-        
+
         const iconOptions = [
             { icon: 'user', emoji: '👨' },
             { icon: 'building', emoji: '🏢' },
@@ -559,7 +558,7 @@ export class ConfiguracaoManager {
             { icon: 'shopping-bag', emoji: '🛍️' },
             { icon: 'coffee', emoji: '☕' }
         ];
-        
+
         const content = `
             <div class="space-y-4">
                 <div>
@@ -584,15 +583,15 @@ export class ConfiguracaoManager {
                 </div>
             </div>
         `;
-        
+
         Modals.show('Editar Categoria', content);
-        
+
         setTimeout(() => {
             lucide.createIcons();
         }, 0);
-        
+
         let emojiSelecionado = emojiAtual;
-        
+
         document.querySelectorAll('.icon-option').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.icon-option').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30'));
@@ -600,28 +599,28 @@ export class ConfiguracaoManager {
                 emojiSelecionado = btn.dataset.emoji;
             });
         });
-        
+
         document.getElementById('cancel-edit-cat').addEventListener('click', () => {
             Modals.close();
         });
-        
+
         document.getElementById('save-edit-cat').addEventListener('click', async () => {
             const novoNome = document.getElementById('edit-cat-nome').value.trim().toUpperCase();
-            
+
             if (!novoNome) {
                 Modals.alert('Por favor, digite um nome para a categoria.', 'Campo vazio');
                 return;
             }
-            
+
             if (novoNome !== categoria && novoNome in categorias) {
                 Modals.alert('Uma categoria com este nome já existe.', 'Categoria duplicada');
                 return;
             }
-            
+
             if (novoNome !== categoria) {
                 delete categorias[categoria];
             }
-            
+
             categorias[novoNome] = emojiSelecionado;
             await Storage.saveCategorias(categorias);
             Modals.close();
@@ -644,7 +643,7 @@ export class ConfiguracaoManager {
                 }
             }
         });
-        
+
         this.updateCustomDropdowns(categorias);
     }
 
@@ -702,28 +701,40 @@ export class ConfiguracaoManager {
 
     applyTheme(theme) {
         const htmlElement = document.documentElement;
-        
+
         // Sempre salvar a preferência do usuário
         localStorage.setItem('themePreference', theme);
-        
+
         // Determinar o tema real a ser aplicado
         let realTheme = theme;
         if (theme === 'system') {
             realTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
-        
+
         // Aplicar classe dark apenas se for dark
         if (realTheme === 'dark') {
             htmlElement.classList.add('dark');
+            htmlElement.style.colorScheme = 'dark';
+            document.body.classList.add('dark');
+
+            // "Nuclear Option": Force inline styles to ensure change is visible
+            document.body.style.backgroundColor = '#0f172a'; // slate-900
+            document.body.style.color = '#e2e8f0'; // slate-200
         } else {
             htmlElement.classList.remove('dark');
+            htmlElement.style.colorScheme = 'light';
+            document.body.classList.remove('dark');
+
+            // "Nuclear Option": Force inline styles to ensure change is visible
+            document.body.style.backgroundColor = '#f1f5f9'; // slate-100
+            document.body.style.color = '#1e293b'; // slate-800
         }
 
         // Aplica cores customizadas do usuário atual se existirem
         const session = Auth.getCurrentSession();
         const username = session ? session.username : null;
         const storageKey = username ? `customThemeColors_${username}` : 'customThemeColors';
-        
+
         const customColors = JSON.parse(localStorage.getItem(storageKey) || '{}');
         if (customColors.primary) {
             document.documentElement.style.setProperty('--color-primary', customColors.primary);
@@ -740,9 +751,9 @@ export class ConfiguracaoManager {
         const session = Auth.getCurrentSession();
         const username = session ? session.username : null;
         const storageKey = username ? `customThemeColors_${username}` : 'customThemeColors';
-        
+
         const customColors = JSON.parse(localStorage.getItem(storageKey) || '{}');
-        
+
         const themes = [
             { name: 'Padrão (Slate)', primary: '#2563eb', secondary: '#1e40af', accent: '#0ea5e9' },
             { name: 'Oceano', primary: '#0891b2', secondary: '#0369a1', accent: '#06b6d4' },
@@ -828,12 +839,12 @@ export class ConfiguracaoManager {
                 document.documentElement.style.setProperty('--color-primary', primary);
                 document.documentElement.style.setProperty('--color-secondary', secondary);
                 document.documentElement.style.setProperty('--color-accent', accent);
-                
+
                 const session = Auth.getCurrentSession();
                 const username = session ? session.username : null;
                 const key = username ? `customThemeColors_${username}` : 'customThemeColors';
                 localStorage.setItem(key, JSON.stringify({ primary, secondary, accent }));
-                
+
                 Modals.close();
                 Modals.alert('Tema salvo com sucesso!', 'Tema Atualizado');
             };
@@ -856,7 +867,7 @@ export class ConfiguracaoManager {
 
     handleGlobalSearch(query) {
         const resultsContainer = this.elements.globalSearchResults;
-        
+
         if (!query.trim()) {
             resultsContainer.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Digite para buscar clientes</p>';
             return;
@@ -864,16 +875,16 @@ export class ConfiguracaoManager {
 
         const searchTerm = query.toLowerCase();
         const numericSearch = query.replace(/\D/g, '');
-        
+
         const results = this.app.data.clients.filter(client => {
             const name = client.nome.toLowerCase();
             const cpf = client.cpf.replace(/\D/g, '');
             const telefone = client.telefone.replace(/\D/g, '');
-            
+
             const matchesName = name.includes(searchTerm);
             const matchesCPF = numericSearch.length > 0 && cpf.includes(numericSearch);
             const matchesTelefone = numericSearch.length > 0 && telefone.includes(numericSearch);
-            
+
             return matchesName || matchesCPF || matchesTelefone;
         });
 
@@ -881,7 +892,7 @@ export class ConfiguracaoManager {
             resultsContainer.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum cliente encontrado para "<span class="font-semibold">' + query + '</span>"</p>';
             return;
         }
-        
+
         const resultCountMsg = `<p class="text-xs text-blue-600 dark:text-blue-400 font-medium mb-3">${results.length} cliente(s) encontrado(s)</p>`;
 
         resultsContainer.innerHTML = resultCountMsg + results.map(client => `
@@ -944,20 +955,20 @@ export class ConfiguracaoManager {
 
         const colorClass = type === 'success' ? 'text-green-600 dark:text-green-400' :
             type === 'error' ? 'text-red-600 dark:text-red-400' :
-            type === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
-            'text-blue-600 dark:text-blue-400';
+                type === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
+                    'text-blue-600 dark:text-blue-400';
 
         const progressColorClass = type === 'success' ? 'bg-green-500' :
             type === 'error' ? 'bg-red-500' : 'bg-orange-500';
 
         if (progress !== null && progress >= 0 && progress <= 100) {
-            const countDisplay = (current !== null && total !== null) 
-                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>` 
+            const countDisplay = (current !== null && total !== null)
+                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>`
                 : '';
-            const progressDisplay = (current !== null && total !== null) 
+            const progressDisplay = (current !== null && total !== null)
                 ? `${countDisplay} <span class="text-slate-500 dark:text-slate-400">(${progress}%)</span>`
                 : `${progress}%`;
-            
+
             statusEl.innerHTML = `
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
@@ -972,7 +983,7 @@ export class ConfiguracaoManager {
         } else {
             statusEl.innerHTML = `<p class="${colorClass}">${message}</p>`;
         }
-        
+
         statusEl.className = 'text-sm mt-2';
         statusEl.classList.remove('hidden');
     }
@@ -984,7 +995,7 @@ export class ConfiguracaoManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const file = this.elements.importFile.files[0];
         if (!file) return;
 
@@ -1005,7 +1016,7 @@ export class ConfiguracaoManager {
             this.showImportStatus('Importando clientes...', 'info', 60);
             await this.delay(100);
             const imported = this.processImportData(data);
-            
+
             if (imported > 0) {
                 const totalClients = this.app.data.clients.length;
                 this.showImportStatus('Salvando clientes...', 'info', 80, 0, totalClients);
@@ -1037,15 +1048,15 @@ export class ConfiguracaoManager {
 
     sanitizeCsvCell(cell) {
         if (typeof cell !== 'string') return cell;
-        
+
         let sanitized = cell.trim();
-        
+
         if (sanitized.startsWith('"') && sanitized.endsWith('"')) {
             sanitized = sanitized.slice(1, -1);
         }
-        
+
         sanitized = sanitized.replace(/""/g, '"');
-        
+
         return sanitized;
     }
 
@@ -1058,7 +1069,7 @@ export class ConfiguracaoManager {
                 try {
                     if (isCSV) {
                         const text = e.target.result;
-                        const rows = text.split('\n').map(row => 
+                        const rows = text.split('\n').map(row =>
                             row.split(',').map(cell => this.sanitizeCsvCell(cell))
                         );
                         resolve(rows);
@@ -1075,7 +1086,7 @@ export class ConfiguracaoManager {
             };
 
             reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-            
+
             if (isCSV) {
                 reader.readAsText(file);
             } else {
@@ -1087,7 +1098,7 @@ export class ConfiguracaoManager {
     processImportData(rows) {
         let imported = 0;
         const categoriasExistentes = Storage.loadCategorias();
-        
+
         rows.forEach((row, index) => {
             if (index === 0 && (row[0]?.toLowerCase().includes('nome') || row[0]?.toLowerCase().includes('name'))) {
                 return;
@@ -1101,7 +1112,7 @@ export class ConfiguracaoManager {
                 const cpf = String(row[2]).replace(/\D/g, '');
                 const categoriaRawValue = row.length >= 4 ? String(row[3] || '').trim().toUpperCase() : '';
                 const categoriaRaw = this.sanitizeCategory(categoriaRawValue);
-                
+
                 let categoria = '';
                 if (categoriaRaw) {
                     if (categoriaRaw in categoriasExistentes) {
@@ -1115,7 +1126,7 @@ export class ConfiguracaoManager {
 
                 if (nome && cpf && Utils.validateCPF(cpf)) {
                     const exists = this.app.data.clients.some(c => c.cpf.replace(/\D/g, '') === cpf);
-                    
+
                     if (!exists) {
                         const newClient = {
                             id: Utils.generateUUID(),
@@ -1144,32 +1155,32 @@ export class ConfiguracaoManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const dataInicio = this.elements.exportDataInicio.value;
         const dataFim = this.elements.exportDataFim.value;
-        
+
         const exportData = this.prepareSimpleExportData(dataInicio, dataFim);
         const totalClientes = exportData.length - 1;
-        
+
         if (totalClientes === 0) {
-            const periodoMsg = dataInicio || dataFim 
-                ? ` no período selecionado` 
+            const periodoMsg = dataInicio || dataFim
+                ? ` no período selecionado`
                 : '';
             Modals.alert(`Nenhum cliente encontrado${periodoMsg} para exportar.`, 'Aviso');
             return;
         }
-        
+
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(exportData);
         XLSX.utils.book_append_sheet(wb, ws, "Clientes");
 
-        const periodoStr = dataInicio && dataFim 
-            ? `${dataInicio}_${dataFim}` 
+        const periodoStr = dataInicio && dataFim
+            ? `${dataInicio}_${dataFim}`
             : new Date().toISOString().split('T')[0];
         const fileName = `clientes_${periodoStr}.xlsx`;
-        
+
         XLSX.writeFile(wb, fileName);
-        
+
         Modals.alert(`Exportação concluída! ${totalClientes} cliente(s) exportado(s).`);
     }
 
@@ -1180,22 +1191,22 @@ export class ConfiguracaoManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const dataInicio = this.elements.exportDataInicio.value;
         const dataFim = this.elements.exportDataFim.value;
-        
+
         const exportData = this.prepareSimpleExportData(dataInicio, dataFim);
         const totalClientes = exportData.length - 1;
-        
+
         if (totalClientes === 0) {
-            const periodoMsg = dataInicio || dataFim 
-                ? ` no período selecionado` 
+            const periodoMsg = dataInicio || dataFim
+                ? ` no período selecionado`
                 : '';
             Modals.alert(`Nenhum cliente encontrado${periodoMsg} para exportar.`, 'Aviso');
             return;
         }
 
-        const csvContent = exportData.map(row => 
+        const csvContent = exportData.map(row =>
             row.map(cell => {
                 const cellStr = String(cell);
                 const escaped = cellStr.replace(/"/g, '""');
@@ -1206,44 +1217,44 @@ export class ConfiguracaoManager {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
-        const periodoStr = dataInicio && dataFim 
-            ? `${dataInicio}_${dataFim}` 
+
+        const periodoStr = dataInicio && dataFim
+            ? `${dataInicio}_${dataFim}`
             : new Date().toISOString().split('T')[0];
         const fileName = `clientes_${periodoStr}.csv`;
-        
+
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
-        
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         Modals.alert(`Exportação concluída! ${totalClientes} cliente(s) exportado(s).`);
     }
 
     prepareSimpleExportData(dataInicio, dataFim) {
         let clientesToExport = this.app.data.clients;
-        
+
         if (dataInicio || dataFim) {
             const inicio = dataInicio ? new Date(dataInicio) : null;
             const fim = dataFim ? new Date(dataFim) : null;
-            
+
             if (inicio) inicio.setHours(0, 0, 0, 0);
             if (fim) fim.setHours(23, 59, 59, 999);
-            
+
             const filteredRegistros = this.app.data.registros.filter(registro => {
                 const dataEntrada = new Date(registro.dataHoraEntrada);
                 if (inicio && dataEntrada < inicio) return false;
                 if (fim && dataEntrada > fim) return false;
                 return true;
             });
-            
+
             const clientIds = new Set(filteredRegistros.map(r => r.clientId));
             clientesToExport = this.app.data.clients.filter(c => clientIds.has(c.id));
         }
-        
+
         const headers = ['Nome', 'Telefone', 'CPF', 'Categoria'];
         const rows = clientesToExport.map(client => [
             client.nome,
@@ -1260,7 +1271,7 @@ export class ConfiguracaoManager {
         if (!client) return null;
 
         const clientRecords = this.app.data.registros.filter(r => r.clientId === clientId);
-        
+
         const recordsWithDetails = clientRecords.map(registro => {
             let bikeModel = 'N/A';
             let bikeBrand = 'N/A';
@@ -1290,7 +1301,7 @@ export class ConfiguracaoManager {
         });
 
         recordsWithDetails.sort((a, b) => new Date(b.dataHoraEntrada) - new Date(a.dataHoraEntrada));
-        
+
         return {
             client,
             records: recordsWithDetails
@@ -1306,7 +1317,7 @@ export class ConfiguracaoManager {
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        
+
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 14;
@@ -1315,17 +1326,17 @@ export class ConfiguracaoManager {
         doc.setFontSize(18);
         doc.setFont(undefined, 'bold');
         doc.text('Relatório de Registros de Acesso', pageWidth / 2, yPos, { align: 'center' });
-        
+
         yPos += 10;
         doc.setFontSize(10);
         doc.setFont(undefined, 'normal');
         doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth / 2, yPos, { align: 'center' });
-        
+
         yPos += 15;
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
         doc.text('Informações do Cliente', margin, yPos);
-        
+
         yPos += 7;
         doc.setFontSize(10);
         doc.setFont(undefined, 'normal');
@@ -1341,7 +1352,7 @@ export class ConfiguracaoManager {
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
         doc.text('Histórico de Registros', margin, yPos);
-        
+
         yPos += 8;
 
         data.records.forEach((registro, index) => {
@@ -1353,15 +1364,15 @@ export class ConfiguracaoManager {
             doc.setFontSize(10);
             doc.setFont(undefined, 'bold');
             doc.text(`Registro #${index + 1}`, margin, yPos);
-            
+
             yPos += 6;
             doc.setFont(undefined, 'normal');
             doc.text(`Bicicleta: ${registro.bikeModel} (${registro.bikeBrand} - ${registro.bikeColor})`, margin + 5, yPos);
-            
+
             yPos += 5;
             const entradaDate = new Date(registro.dataHoraEntrada);
             doc.text(`Entrada: ${entradaDate.toLocaleString('pt-BR')}`, margin + 5, yPos);
-            
+
             yPos += 5;
             if (registro.dataHoraSaida) {
                 const saidaDate = new Date(registro.dataHoraSaida);
@@ -1391,9 +1402,9 @@ export class ConfiguracaoManager {
         const rows = data.records.map(registro => {
             const entradaDate = new Date(registro.dataHoraEntrada);
             const saidaDate = registro.dataHoraSaida ? new Date(registro.dataHoraSaida) : null;
-            const status = !registro.dataHoraSaida ? 'No estacionamento' : 
-                          (registro.accessRemoved ? 'Acesso Removido' : 'Saída Normal');
-            
+            const status = !registro.dataHoraSaida ? 'No estacionamento' :
+                (registro.accessRemoved ? 'Acesso Removido' : 'Saída Normal');
+
             return [
                 entradaDate.toLocaleString('pt-BR'),
                 saidaDate ? saidaDate.toLocaleString('pt-BR') : '-',
@@ -1418,7 +1429,7 @@ export class ConfiguracaoManager {
         ];
 
         const ws = XLSX.utils.aoa_to_sheet(clientInfo);
-        
+
         ws['!cols'] = [
             { wch: 20 },
             { wch: 20 },
@@ -1430,14 +1441,14 @@ export class ConfiguracaoManager {
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Registros");
-        
+
         XLSX.writeFile(wb, `registros_${data.client.nome.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
     }
 
     async renderHistoricoOrganizado() {
         const summary = await Storage.loadStorageSummary();
         const organized = await Storage.getOrganizedRegistros();
-        
+
         if (!summary || summary.totalRegistros === 0) {
             this.elements.historicoOrganizado.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum registro encontrado</p>';
             this.elements.historicoSummary.innerHTML = '';
@@ -1452,11 +1463,11 @@ export class ConfiguracaoManager {
         `;
 
         const years = Object.keys(organized).sort((a, b) => b - a);
-        
+
         this.elements.historicoOrganizado.innerHTML = years.map(year => {
             const yearData = summary.anos[year];
             const isExpanded = this.expandedYears.has(year);
-            
+
             return `
                 <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
                     <div class="folder-header flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" data-year="${year}">
@@ -1489,11 +1500,11 @@ export class ConfiguracaoManager {
 
     renderMonths(year, monthsData, summaryData) {
         const months = Object.keys(monthsData).sort((a, b) => b - a);
-        
+
         return months.map(month => {
             const monthInfo = summaryData.meses[month];
             const isExpanded = this.expandedMonths.has(`${year}-${month}`);
-            
+
             return `
                 <div class="border border-slate-200 dark:border-slate-600 rounded-lg overflow-hidden">
                     <div class="month-header flex items-center justify-between p-2 bg-white dark:bg-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors" data-year="${year}" data-month="${month}">
@@ -1524,14 +1535,14 @@ export class ConfiguracaoManager {
     renderDays(year, month, daysData, monthInfo) {
         const days = Object.keys(daysData).sort((a, b) => b - a);
         const categorias = Storage.loadCategorias();
-        
+
         return days.map(day => {
             const dayCount = monthInfo.dias[day];
             const date = new Date(year, month - 1, day);
             const dayName = date.toLocaleDateString('pt-BR', { weekday: 'long' });
-            
+
             const registrosDay = daysData[day] || [];
-            
+
             const categoriaRegistros = {};
             const categoriaPernoites = {};
             Object.keys(categorias).forEach(cat => {
@@ -1540,11 +1551,11 @@ export class ConfiguracaoManager {
             });
             let semCategoriaRegistros = 0;
             let semCategoriaPernoites = 0;
-            
+
             registrosDay.forEach(r => {
                 const cat = r.categoria || '';
                 const isPernoite = r.pernoite === true;
-                
+
                 if (cat && cat in categorias) {
                     if (isPernoite) {
                         categoriaPernoites[cat]++;
@@ -1559,7 +1570,7 @@ export class ConfiguracaoManager {
                     }
                 }
             });
-            
+
             const categoriaRegistrosBadges = Object.entries(categoriaRegistros)
                 .filter(([_, count]) => count > 0)
                 .sort((a, b) => b[1] - a[1])
@@ -1568,11 +1579,11 @@ export class ConfiguracaoManager {
                     return `<span class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded flex items-center gap-1" title="Registros ${nome}">${emoji} ${count}</span>`;
                 })
                 .join('');
-            
-            const semCategoriaRegistrosBadge = semCategoriaRegistros > 0 
-                ? `<span class="text-xs px-2 py-0.5 bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded flex items-center gap-1" title="Sem categoria">⚙️ ${semCategoriaRegistros}</span>` 
+
+            const semCategoriaRegistrosBadge = semCategoriaRegistros > 0
+                ? `<span class="text-xs px-2 py-0.5 bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded flex items-center gap-1" title="Sem categoria">⚙️ ${semCategoriaRegistros}</span>`
                 : '';
-            
+
             const categoriaPernoitesBadges = Object.entries(categoriaPernoites)
                 .filter(([_, count]) => count > 0)
                 .sort((a, b) => b[1] - a[1])
@@ -1581,14 +1592,14 @@ export class ConfiguracaoManager {
                     return `<span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded flex items-center gap-1" title="Pernoites ${nome}"><i data-lucide="moon" class="w-3 h-3"></i> ${emoji} ${count}</span>`;
                 })
                 .join('');
-            
-            const semCategoriaPernoitesBadge = semCategoriaPernoites > 0 
-                ? `<span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded flex items-center gap-1" title="Pernoites sem categoria"><i data-lucide="moon" class="w-3 h-3"></i> ⚙️ ${semCategoriaPernoites}</span>` 
+
+            const semCategoriaPernoitesBadge = semCategoriaPernoites > 0
+                ? `<span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded flex items-center gap-1" title="Pernoites sem categoria"><i data-lucide="moon" class="w-3 h-3"></i> ⚙️ ${semCategoriaPernoites}</span>`
                 : '';
-            
+
             const totalPernoites = Object.values(categoriaPernoites).reduce((sum, c) => sum + c, 0) + semCategoriaPernoites;
             const totalRegistrosNormais = Object.values(categoriaRegistros).reduce((sum, c) => sum + c, 0) + semCategoriaRegistros;
-            
+
             return `
                 <div class="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/30 rounded hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
                     <div class="flex items-center gap-2">
@@ -1624,7 +1635,7 @@ export class ConfiguracaoManager {
                 const year = e.currentTarget.dataset.year;
                 const content = e.currentTarget.nextElementSibling;
                 const icon = e.currentTarget.querySelector('svg');
-                
+
                 if (this.expandedYears.has(year)) {
                     this.expandedYears.delete(year);
                     content.classList.add('hidden');
@@ -1645,7 +1656,7 @@ export class ConfiguracaoManager {
                 const key = `${year}-${month}`;
                 const content = e.currentTarget.nextElementSibling;
                 const icon = e.currentTarget.querySelector('svg');
-                
+
                 if (this.expandedMonths.has(key)) {
                     this.expandedMonths.delete(key);
                     content.classList.add('hidden');
@@ -1681,7 +1692,7 @@ export class ConfiguracaoManager {
         const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         let periodLabel = '';
         let periodSelectorHtml = '';
-        
+
         if (type === 'year') {
             periodLabel = `Ano ${year}`;
         } else if (type === 'month') {
@@ -1749,13 +1760,13 @@ export class ConfiguracaoManager {
         const modal = document.getElementById('report-export-modal');
         const useCustomPeriod = document.getElementById('use-custom-period');
         const customPeriodFields = document.getElementById('custom-period-fields');
-        
+
         if (useCustomPeriod && customPeriodFields) {
             useCustomPeriod.addEventListener('change', () => {
                 customPeriodFields.classList.toggle('hidden', !useCustomPeriod.checked);
             });
         }
-        
+
         document.getElementById('cancel-report-modal').addEventListener('click', () => modal.remove());
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.remove();
@@ -1787,7 +1798,7 @@ export class ConfiguracaoManager {
         const organized = await Storage.getOrganizedRegistros();
         const categorias = Storage.loadCategorias();
         const clients = Storage.loadClientsSync();
-        
+
         let registros = [];
         let periodLabel = '';
         let fileName = '';
@@ -1892,7 +1903,7 @@ export class ConfiguracaoManager {
         const categorias = Storage.loadCategorias();
         const clients = Storage.loadClientsSync();
         const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-        
+
         let registros = [];
         let periodLabel = '';
 
@@ -1934,12 +1945,12 @@ export class ConfiguracaoManager {
         }
 
         const stats = this.calculateReportStats(registros, clients, categorias);
-        
+
         const printWindow = window.open('', '_blank');
         const maxAcessos = Math.max(...Object.values(stats.porCliente).map(d => d.acessos), 1);
         const categoriasArray = Object.entries(stats.porCategoria).filter(([_, d]) => d.acessos > 0 || d.pernoites > 0);
         const maxCatAcessos = Math.max(...categoriasArray.map(([_, d]) => d.acessos + d.pernoites), 1);
-        
+
         const printContent = `
             <!DOCTYPE html>
             <html>
@@ -2047,9 +2058,9 @@ export class ConfiguracaoManager {
                         </div>
                         <div class="category-list">
                             ${categoriasArray.length > 0 ? categoriasArray.map(([cat, data]) => {
-                                const total = data.acessos + data.pernoites;
-                                const width = Math.max((total / maxCatAcessos) * 100, 10);
-                                return `
+            const total = data.acessos + data.pernoites;
+            const width = Math.max((total / maxCatAcessos) * 100, 10);
+            return `
                                     <div class="category-item">
                                         <div class="category-name">${cat || 'Sem categoria'}</div>
                                         <div class="category-bar-container">
@@ -2061,7 +2072,7 @@ export class ConfiguracaoManager {
                                         </div>
                                     </div>
                                 `;
-                            }).join('') : '<p style="color: #94a3b8; text-align: center;">Nenhuma categoria registrada</p>'}
+        }).join('') : '<p style="color: #94a3b8; text-align: center;">Nenhuma categoria registrada</p>'}
                         </div>
                     </div>
 
@@ -2183,10 +2194,10 @@ export class ConfiguracaoManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const dataInicio = this.elements.exportSystemDataInicio?.value || '';
         const dataFim = this.elements.exportSystemDataFim?.value || '';
-        
+
         const systemData = this.prepareSystemExportData(dataInicio, dataFim);
         const wb = XLSX.utils.book_new();
 
@@ -2215,14 +2226,14 @@ export class ConfiguracaoManager {
             XLSX.utils.book_append_sheet(wb, usuariosWs, "Usuarios");
         }
 
-        const periodoStr = dataInicio && dataFim 
-            ? `${dataInicio}_${dataFim}` 
+        const periodoStr = dataInicio && dataFim
+            ? `${dataInicio}_${dataFim}`
             : new Date().toISOString().split('T')[0];
         const fileName = `backup_sistema_${periodoStr}.xlsx`;
         XLSX.writeFile(wb, fileName);
-        
-        const periodoMsg = dataInicio || dataFim 
-            ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})` 
+
+        const periodoMsg = dataInicio || dataFim
+            ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})`
             : '';
         Modals.alert(`Backup exportado com sucesso${periodoMsg} para ${fileName}`);
     }
@@ -2234,12 +2245,12 @@ export class ConfiguracaoManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const dataInicio = this.elements.exportSystemDataInicio?.value || '';
         const dataFim = this.elements.exportSystemDataFim?.value || '';
-        
+
         const systemData = this.prepareSystemExportData(dataInicio, dataFim);
-        
+
         const sections = [];
         if (systemData.clientes && systemData.clientes.length > 1) {
             sections.push({ name: 'Clientes', data: systemData.clientes });
@@ -2261,7 +2272,7 @@ export class ConfiguracaoManager {
         sections.forEach((section, index) => {
             if (index > 0) csvContent += '\n\n';
             csvContent += `=== ${section.name} ===\n`;
-            csvContent += section.data.map(row => 
+            csvContent += section.data.map(row =>
                 row.map(cell => {
                     const cellStr = String(cell);
                     const escaped = cellStr.replace(/"/g, '""');
@@ -2273,21 +2284,21 @@ export class ConfiguracaoManager {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
-        const periodoStr = dataInicio && dataFim 
-            ? `${dataInicio}_${dataFim}` 
+
+        const periodoStr = dataInicio && dataFim
+            ? `${dataInicio}_${dataFim}`
             : new Date().toISOString().split('T')[0];
         const fileName = `backup_sistema_${periodoStr}.csv`;
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
-        
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        const periodoMsg = dataInicio || dataFim 
-            ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})` 
+
+        const periodoMsg = dataInicio || dataFim
+            ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})`
             : '';
         Modals.alert(`Backup exportado com sucesso${periodoMsg} para ${fileName}`);
     }
@@ -2295,7 +2306,7 @@ export class ConfiguracaoManager {
     prepareSystemExportData(dataInicio = '', dataFim = '') {
         let registrosFiltrados = this.app.data.registros;
         let clienteIds = new Set();
-        
+
         if (dataInicio || dataFim) {
             registrosFiltrados = this.app.data.registros.filter(registro => {
                 const dataEntrada = Utils.getLocalDateString(registro.dataHoraEntrada);
@@ -2303,11 +2314,11 @@ export class ConfiguracaoManager {
                 if (dataFim && dataEntrada > dataFim) return false;
                 return true;
             });
-            
+
             registrosFiltrados.forEach(reg => clienteIds.add(reg.clientId));
         }
-        
-        const clientesFiltrados = (dataInicio || dataFim) 
+
+        const clientesFiltrados = (dataInicio || dataFim)
             ? this.app.data.clients.filter(c => clienteIds.has(c.id))
             : this.app.data.clients;
 
@@ -2440,15 +2451,15 @@ export class ConfiguracaoManager {
                 stats.usuariosNovos++;
             }
         });
-        
+
         const mergedUsuarios = [...existingUsuarios, ...usuariosToAdd];
-        
+
         let mergedCategorias = null;
         if (importedData.categorias) {
             mergedCategorias = importedData.categorias;
             stats.categoriasImportadas = Object.keys(mergedCategorias).length;
         }
-        
+
         return {
             clients: existingClients,
             registros: existingRegistros,
@@ -2465,20 +2476,20 @@ export class ConfiguracaoManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const file = this.elements.importSystemFile.files[0];
         if (!file) return;
 
         const confirmed = await Modals.showConfirm(
             'Esta operação irá MESCLAR os dados do arquivo com os dados existentes no sistema. Clientes duplicados (mesmo CPF) terão suas bicicletas mescladas, registros e usuários duplicados (mesmo ID/username) serão ignorados. Deseja continuar?'
         );
-        
+
         if (!confirmed) return;
 
         try {
             this.showImportSystemStatus('Lendo arquivo...', 'info', 0);
             await this.delay(100);
-            
+
             const fileExtension = file.name.split('.').pop().toLowerCase();
             let importedData;
 
@@ -2529,11 +2540,11 @@ export class ConfiguracaoManager {
             await this.delay(200);
 
             this.showImportSystemStatus(`Backup importado com sucesso! ${mergedData.stats.clientesNovos} clientes novos, ${mergedData.stats.clientesMesclados} mesclados, ${mergedData.stats.bicicletasAdicionadas} bicicletas adicionadas, ${mergedData.stats.registrosNovos} registros novos, ${mergedData.stats.usuariosNovos} usuários novos, ${mergedData.stats.categoriasImportadas} categorias.`, 'success', 100);
-            
+
             this.app.clientesManager.renderClientList();
-            
+
             sessionStorage.setItem('skipLoadingScreen', 'true');
-            
+
             setTimeout(() => {
                 Modals.alert('Dados importados com sucesso! A página será recarregada.', 'Importação Concluída', 'check-circle');
                 setTimeout(() => {
@@ -2550,7 +2561,7 @@ export class ConfiguracaoManager {
     async processSystemExcelImport(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            
+
             reader.onload = (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
@@ -2597,11 +2608,11 @@ export class ConfiguracaoManager {
         const result = [];
         let current = '';
         let inQuotes = false;
-        
+
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
             const nextChar = line[i + 1];
-            
+
             if (char === '"') {
                 if (inQuotes && nextChar === '"') {
                     current += '"';
@@ -2616,7 +2627,7 @@ export class ConfiguracaoManager {
                 current += char;
             }
         }
-        
+
         result.push(current.trim());
         return result;
     }
@@ -2624,26 +2635,26 @@ export class ConfiguracaoManager {
     async processSystemCSVImport(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            
+
             reader.onload = (e) => {
                 try {
                     const text = e.target.result;
                     const sections = text.split(/\n\n=== /);
-                    
+
                     let clientesData = [];
                     let bicicletasData = [];
                     let categoriasData = [];
                     let registrosData = [];
                     let usuariosData = [];
-                    
+
                     sections.forEach(section => {
                         const lines = section.split('\n');
                         const sectionName = lines[0].replace('=== ', '').replace(' ===', '').trim();
-                        
+
                         const rows = lines.slice(1).filter(line => line.trim()).map(line => {
                             return this.parseCSVLine(line);
                         });
-                        
+
                         if (sectionName === 'Clientes') {
                             clientesData = rows;
                         } else if (sectionName === 'Bicicletas') {
@@ -2656,16 +2667,16 @@ export class ConfiguracaoManager {
                             usuariosData = rows;
                         }
                     });
-                    
+
                     if (clientesData.length === 0) {
                         throw new Error('Arquivo CSV inválido. Certifique-se de que contém dados de Clientes');
                     }
-                    
+
                     const clients = this.parseClientesData(clientesData, bicicletasData);
                     const registros = this.parseRegistrosData(registrosData);
                     const usuarios = this.parseUsuariosData(usuariosData);
                     const categorias = this.parseCategoriasData(categoriasData);
-                    
+
                     resolve({
                         clients,
                         registros,
@@ -2676,7 +2687,7 @@ export class ConfiguracaoManager {
                     reject(error);
                 }
             };
-            
+
             reader.onerror = () => reject(new Error('Erro ao ler arquivo CSV'));
             reader.readAsText(file);
         });
@@ -2684,7 +2695,7 @@ export class ConfiguracaoManager {
 
     parseClientesData(clientesData, bicicletasData) {
         const clientesMap = new Map();
-        
+
         for (let i = 1; i < clientesData.length; i++) {
             const row = clientesData[i];
             if (!row[0]) continue;
@@ -2692,15 +2703,15 @@ export class ConfiguracaoManager {
             let bicicletas = [];
             let categoria = '';
             let comentarios = [];
-            
+
             // Detectar formato pela quantidade total de colunas (incluindo vazias)
             // Formato novo: 7 colunas (ID, Nome, CPF, Telefone, Categoria, Comentários, Bicicletas)
             // Formato antigo: 5 colunas (ID, Nome, CPF, Telefone, Bicicletas)
-            
+
             if (row.length >= 7) {
                 // Formato novo detectado
                 categoria = row[4] || '';
-                
+
                 // Parse comentários com validação
                 if (row[5] && row[5].trim()) {
                     try {
@@ -2711,7 +2722,7 @@ export class ConfiguracaoManager {
                         comentarios = [];
                     }
                 }
-                
+
                 // Parse bicicletas com validação
                 if (row[6] && row[6].trim()) {
                     try {
@@ -2756,7 +2767,7 @@ export class ConfiguracaoManager {
 
                 const clienteId = row[1];
                 const client = clientesMap.get(clienteId);
-                
+
                 if (client) {
                     client.bicicletas.push({
                         id: row[0],
@@ -2773,7 +2784,7 @@ export class ConfiguracaoManager {
 
     parseRegistrosData(registrosData) {
         const registros = [];
-        
+
         for (let i = 1; i < registrosData.length; i++) {
             const row = registrosData[i];
             if (!row[0]) continue;
@@ -2781,11 +2792,11 @@ export class ConfiguracaoManager {
             // Detectar formato pela quantidade total de colunas (incluindo vazias)
             // Formato novo: 10 colunas (ID, Cliente ID, Bicicleta ID, Categoria, Data Entrada, Data Saída, Pernoite, Acesso Removido, Registro Original ID, Bike Snapshot)
             // Formato antigo: 8 colunas (ID, Cliente ID, Bicicleta ID, Data Entrada, Data Saída, Pernoite, Acesso Removido, Registro Original ID)
-            
+
             if (row.length >= 10) {
                 // Formato novo detectado
                 let bikeSnapshot = null;
-                
+
                 // Parse bikeSnapshot com validação
                 if (row[9]) {
                     try {
@@ -2796,7 +2807,7 @@ export class ConfiguracaoManager {
                         bikeSnapshot = null;
                     }
                 }
-                
+
                 registros.push({
                     id: row[0],
                     clientId: row[1],
@@ -2833,7 +2844,7 @@ export class ConfiguracaoManager {
 
     parseUsuariosData(usuariosData) {
         const usuarios = [];
-        
+
         for (let i = 1; i < usuariosData.length; i++) {
             const row = usuariosData[i];
             if (!row[0]) continue;
@@ -2864,7 +2875,7 @@ export class ConfiguracaoManager {
 
     parseCategoriasData(categoriasData) {
         const categorias = {};
-        
+
         for (let i = 1; i < categoriasData.length; i++) {
             const row = categoriasData[i];
             if (!row[0]) continue;
@@ -2881,19 +2892,19 @@ export class ConfiguracaoManager {
 
         const colorClass = type === 'success' ? 'text-green-600 dark:text-green-400' :
             type === 'error' ? 'text-red-600 dark:text-red-400' :
-            'text-blue-600 dark:text-blue-400';
+                'text-blue-600 dark:text-blue-400';
 
         const progressColorClass = type === 'success' ? 'bg-green-500' :
             type === 'error' ? 'bg-red-500' : 'bg-orange-500';
 
         if (progress !== null && progress >= 0 && progress <= 100) {
-            const countDisplay = (current !== null && total !== null) 
-                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>` 
+            const countDisplay = (current !== null && total !== null)
+                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>`
                 : '';
-            const progressDisplay = (current !== null && total !== null) 
+            const progressDisplay = (current !== null && total !== null)
                 ? `${countDisplay} <span class="text-slate-500 dark:text-slate-400">(${progress}%)</span>`
                 : `${progress}%`;
-            
+
             statusEl.innerHTML = `
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
@@ -2908,7 +2919,7 @@ export class ConfiguracaoManager {
         } else {
             statusEl.innerHTML = `<p class="${colorClass}">${message}</p>`;
         }
-        
+
         statusEl.className = 'text-sm mt-2';
         statusEl.classList.remove('hidden');
     }
@@ -2942,12 +2953,12 @@ export class ConfiguracaoManager {
             storageSection.style.display = canStorageVer ? '' : 'none';
         }
     }
-    
+
     setupJobMonitorCallbacks() {
         try {
             const jobMonitor = getJobMonitor();
             const self = this;
-            
+
             jobMonitor.onChanges(async (changes) => {
                 try {
                     if (changes.clients || changes.registros || changes.categorias) {
@@ -2957,7 +2968,7 @@ export class ConfiguracaoManager {
                         if (typeof self.renderHistoricoOrganizado === 'function') {
                             await self.renderHistoricoOrganizado();
                         }
-                        
+
                         if (changes.categorias && typeof self.renderCategorias === 'function') {
                             self.renderCategorias();
                         }
@@ -2970,26 +2981,26 @@ export class ConfiguracaoManager {
             console.warn('Erro ao configurar callbacks do JobMonitor:', e);
         }
     }
-    
+
     setupNotificationSettings() {
         const settings = notificationManager.getSettings();
-        
+
         // Elementos de controle
         const inactivityEnabled = document.getElementById('inactivity-enabled');
         const inactivitySettings = document.getElementById('inactivity-settings');
         const inactivityInterval = document.getElementById('inactivity-interval');
         const inactivityRandom = document.getElementById('inactivity-random');
-        
+
         const patrolRequestEnabled = document.getElementById('patrol-request-enabled');
         const patrolRequestSettings = document.getElementById('patrol-request-settings');
         const patrolRequestCount = document.getElementById('patrol-request-count');
-        
+
         const patrolRoundEnabled = document.getElementById('patrol-round-enabled');
         const patrolRoundSettings = document.getElementById('patrol-round-settings');
         const patrolRoundInterval = document.getElementById('patrol-round-interval');
-        
+
         const saveBtn = document.getElementById('save-notification-settings');
-        
+
         // Carregar configurações salvas
         if (inactivityEnabled) {
             inactivityEnabled.checked = settings.inactivityEnabled;
@@ -2997,37 +3008,37 @@ export class ConfiguracaoManager {
                 inactivitySettings.classList.remove('hidden');
             }
         }
-        
+
         if (inactivityInterval) {
             inactivityInterval.value = settings.inactivityInterval;
         }
-        
+
         if (inactivityRandom) {
             inactivityRandom.checked = settings.inactivityRandom;
         }
-        
+
         if (patrolRequestEnabled) {
             patrolRequestEnabled.checked = settings.patrolRequestEnabled;
             if (settings.patrolRequestEnabled && patrolRequestSettings) {
                 patrolRequestSettings.classList.remove('hidden');
             }
         }
-        
+
         if (patrolRequestCount) {
             patrolRequestCount.value = settings.patrolRequestCount;
         }
-        
+
         if (patrolRoundEnabled) {
             patrolRoundEnabled.checked = settings.patrolRoundEnabled;
             if (settings.patrolRoundEnabled && patrolRoundSettings) {
                 patrolRoundSettings.classList.remove('hidden');
             }
         }
-        
+
         if (patrolRoundInterval) {
             patrolRoundInterval.value = settings.patrolRoundInterval;
         }
-        
+
         // Event listeners para toggles
         if (inactivityEnabled) {
             inactivityEnabled.addEventListener('change', (e) => {
@@ -3036,7 +3047,7 @@ export class ConfiguracaoManager {
                 }
             });
         }
-        
+
         if (patrolRequestEnabled) {
             patrolRequestEnabled.addEventListener('change', (e) => {
                 if (patrolRequestSettings) {
@@ -3044,7 +3055,7 @@ export class ConfiguracaoManager {
                 }
             });
         }
-        
+
         if (patrolRoundEnabled) {
             patrolRoundEnabled.addEventListener('change', (e) => {
                 if (patrolRoundSettings) {
@@ -3052,7 +3063,7 @@ export class ConfiguracaoManager {
                 }
             });
         }
-        
+
         // Salvar configurações
         if (saveBtn) {
             saveBtn.addEventListener('click', () => {
@@ -3065,23 +3076,23 @@ export class ConfiguracaoManager {
                     patrolRoundEnabled: patrolRoundEnabled?.checked || false,
                     patrolRoundInterval: parseInt(patrolRoundInterval?.value || 60),
                 };
-                
+
                 notificationManager.saveSettings(newSettings);
-                
+
                 Modals.alert('Configurações de notificações salvas com sucesso!', 'Configurações Salvas', 'check-circle');
             });
         }
-        
+
         this.loadStorageModeSettings();
     }
-    
+
     async loadStorageModeSettings() {
         const container = document.getElementById('storage-mode-container');
         if (!container) return;
-        
+
         // Check if running in Electron (desktop mode)
         const isDesktop = window.AppPlatform && typeof window.AppPlatform.isDesktop === 'function' && window.AppPlatform.isDesktop();
-        
+
         if (isDesktop) {
             // Desktop mode - storage is file-based only
             container.innerHTML = `
@@ -3101,12 +3112,12 @@ export class ConfiguracaoManager {
             if (window.lucide) lucide.createIcons();
             return;
         }
-        
+
         // Browser mode - try to fetch from API
         try {
             const response = await fetch('/api/storage-mode');
             if (!response.ok) throw new Error('API not available');
-            
+
             const stats = await response.json();
             this.renderStorageModeUI(container, stats);
         } catch (error) {
@@ -3125,13 +3136,13 @@ export class ConfiguracaoManager {
             if (window.lucide) lucide.createIcons();
         }
     }
-    
+
     renderStorageModeUI(container, stats) {
         const currentMode = stats.current_mode || 'sqlite';
         const sqliteActive = currentMode === 'sqlite';
         const lastMigration = stats.last_migration ? new Date(stats.last_migration).toLocaleString('pt-BR') : 'Nunca';
         const canStorageGerenciar = Auth.hasPermission('configuracao', 'storageGerenciar');
-        
+
         container.innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="border-2 rounded-lg p-4 cursor-pointer transition-all ${sqliteActive ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-purple-300'}" data-mode="sqlite">
@@ -3205,46 +3216,46 @@ export class ConfiguracaoManager {
                 ` : ''}
             </div>
         `;
-        
+
         if (window.lucide) lucide.createIcons();
-        
+
         const sqliteCard = container.querySelector('[data-mode="sqlite"]');
         const jsonCard = container.querySelector('[data-mode="json"]');
         const migrateToSqliteBtn = document.getElementById('migrate-to-sqlite-btn');
         const migrateToJsonBtn = document.getElementById('migrate-to-json-btn');
-        
+
         sqliteCard?.addEventListener('click', () => {
             if (!sqliteActive) this.changeStorageMode('sqlite');
         });
-        
+
         jsonCard?.addEventListener('click', () => {
             if (sqliteActive) this.changeStorageMode('json');
         });
-        
+
         migrateToSqliteBtn?.addEventListener('click', () => {
             if (!sqliteActive) this.confirmMigration('json_to_sqlite');
         });
-        
+
         migrateToJsonBtn?.addEventListener('click', () => {
             if (sqliteActive) this.confirmMigration('sqlite_to_json');
         });
     }
-    
+
     async changeStorageMode(newMode) {
         const confirmed = await Modals.confirm(
             `Deseja alterar o modo de armazenamento para ${newMode === 'sqlite' ? 'SQLite' : 'Arquivos JSON'}?`,
             'Alterar Modo de Armazenamento'
         );
-        
+
         if (!confirmed) return;
-        
+
         try {
             const response = await fetch('/api/storage-mode', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mode: newMode })
             });
-            
+
             if (response.ok) {
                 Modals.alert(`Modo alterado para ${newMode === 'sqlite' ? 'SQLite' : 'JSON'} com sucesso!`, 'Sucesso', 'check-circle');
                 this.loadStorageModeSettings();
@@ -3257,17 +3268,17 @@ export class ConfiguracaoManager {
             Modals.alert('Erro ao conectar com o servidor.', 'Erro', 'alert-circle');
         }
     }
-    
+
     async confirmMigration(direction) {
         const isToSqlite = direction === 'json_to_sqlite';
         const title = isToSqlite ? 'Migrar para SQLite' : 'Migrar para JSON';
         const message = isToSqlite
             ? 'Esta ação irá copiar todos os dados dos arquivos JSON para o banco de dados SQLite. Um backup será criado automaticamente. Deseja continuar?'
             : 'Esta ação irá exportar todos os dados do SQLite para arquivos JSON. Um backup será criado automaticamente. Deseja continuar?';
-        
+
         const confirmed = await Modals.confirm(message, title);
         if (!confirmed) return;
-        
+
         const container = document.getElementById('storage-mode-container');
         container.innerHTML = `
             <div class="flex items-center justify-center py-8">
@@ -3278,23 +3289,23 @@ export class ConfiguracaoManager {
             </div>
         `;
         if (window.lucide) lucide.createIcons();
-        
+
         try {
             const response = await fetch('/api/migrate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ direction })
             });
-            
+
             if (!response.ok) {
                 const error = await response.json();
                 Modals.alert(`Erro na migração: ${error.error || 'Serviço indisponível'}`, 'Erro', 'alert-circle');
                 this.loadStorageModeSettings();
                 return;
             }
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 const oldMode = isToSqlite ? 'json' : 'sqlite';
                 const newMode = isToSqlite ? 'sqlite' : 'json';
@@ -3303,14 +3314,14 @@ export class ConfiguracaoManager {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ mode: newMode })
                 });
-                
-                logAction('change_storage', 'sistema', null, { 
-                    de: oldMode, 
+
+                logAction('change_storage', 'sistema', null, {
+                    de: oldMode,
                     para: newMode,
                     clientesMigrados: result.migrated?.clientes || 0,
                     registrosMigrados: result.migrated?.registros || 0
                 });
-                
+
                 Modals.alert(
                     `Migração concluída com sucesso!\n\nClientes migrados: ${result.migrated?.clientes || 0}\nBicicletas migradas: ${result.migrated?.bicicletas || 0}\nRegistros migrados: ${result.migrated?.registros || 0}`,
                     'Migração Concluída',
@@ -3323,7 +3334,7 @@ export class ConfiguracaoManager {
                     'alert-triangle'
                 );
             }
-            
+
             this.loadStorageModeSettings();
         } catch (error) {
             console.error('Erro na migração:', error);
@@ -3331,13 +3342,13 @@ export class ConfiguracaoManager {
             this.loadStorageModeSettings();
         }
     }
-    
+
     // ==================== BACKUP MANAGEMENT ====================
-    
+
     async loadBackupManagement() {
         const container = document.getElementById('backup-management-container');
         if (!container) return;
-        
+
         container.innerHTML = `
             <div class="flex items-center justify-center py-8">
                 <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-blue-600"></i>
@@ -3345,10 +3356,10 @@ export class ConfiguracaoManager {
             </div>
         `;
         if (window.lucide) lucide.createIcons();
-        
+
         // Check if running in Electron (desktop mode)
         const isDesktop = window.AppPlatform && typeof window.AppPlatform.isDesktop === 'function' && window.AppPlatform.isDesktop();
-        
+
         if (isDesktop) {
             // Desktop mode - use Electron IPC to list backups
             try {
@@ -3359,21 +3370,21 @@ export class ConfiguracaoManager {
             }
             return;
         }
-        
+
         // Browser mode - use HTTP API
         try {
             const [backupsResponse, settingsResponse] = await Promise.all([
                 fetch('/api/backups'),
                 fetch('/api/backup/settings')
             ]);
-            
+
             if (!backupsResponse.ok || !settingsResponse.ok) {
                 throw new Error('API not available');
             }
-            
+
             const backups = await backupsResponse.json();
             const settings = await settingsResponse.json();
-            
+
             this.renderBackupManagement(backups, settings);
         } catch (error) {
             console.error('Erro ao carregar backups:', error);
@@ -3391,19 +3402,19 @@ export class ConfiguracaoManager {
             if (window.lucide) lucide.createIcons();
         }
     }
-    
+
     renderBackupManagement(backups, settings) {
         const container = document.getElementById('backup-management-container');
         if (!container) return;
-        
+
         const canBackupGerenciar = Auth.hasPermission('configuracao', 'backupGerenciar');
-        
+
         const intervalLabels = {
             'daily': 'Diário',
             'weekly': 'Semanal',
             'monthly': 'Mensal'
         };
-        
+
         const backupsList = backups.length > 0 ? backups.map(backup => {
             const date = new Date(backup.created_at);
             const formattedDate = date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
@@ -3439,7 +3450,7 @@ export class ConfiguracaoManager {
                 <p class="text-sm">Nenhum backup disponível</p>
             </div>
         `;
-        
+
         container.innerHTML = `
             <div class="space-y-6">
                 <!-- Ações de Backup -->
@@ -3511,35 +3522,35 @@ export class ConfiguracaoManager {
                 ` : ''}
             </div>
         `;
-        
+
         if (window.lucide) lucide.createIcons();
         this.setupBackupEventListeners();
     }
-    
+
     setupBackupEventListeners() {
         document.getElementById('create-backup-btn')?.addEventListener('click', () => this.createBackup());
-        
+
         document.getElementById('backup-upload-input')?.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 this.uploadBackup(e.target.files[0]);
             }
         });
-        
+
         document.getElementById('save-backup-settings-btn')?.addEventListener('click', () => this.saveBackupSettings());
-        
+
         document.querySelectorAll('.backup-restore-btn').forEach(btn => {
             btn.addEventListener('click', () => this.restoreBackup(btn.dataset.filename));
         });
-        
+
         document.querySelectorAll('.backup-download-btn').forEach(btn => {
             btn.addEventListener('click', () => this.downloadBackup(btn.dataset.filename));
         });
-        
+
         document.querySelectorAll('.backup-delete-btn').forEach(btn => {
             btn.addEventListener('click', () => this.deleteBackup(btn.dataset.filename));
         });
     }
-    
+
     async createBackup() {
         const btn = document.getElementById('create-backup-btn');
         if (!btn) {
@@ -3547,18 +3558,18 @@ export class ConfiguracaoManager {
             Modals.alert('Erro: Botão de criar backup não encontrado', 'Erro', 'alert-circle');
             return;
         }
-        
+
         const originalContent = btn.innerHTML;
         btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Criando...';
         btn.disabled = true;
         if (window.lucide) lucide.createIcons();
-        
+
         try {
             const response = await fetch('/api/backup', { method: 'POST' });
             const result = await response.json();
-            
+
             if (response.ok && result.success) {
-                logAction('create', 'backup', result.filename, { 
+                logAction('create', 'backup', result.filename, {
                     tipo: 'manual',
                     clientes: result.stats?.clientes || 0,
                     registros: result.stats?.registros || 0
@@ -3583,26 +3594,26 @@ export class ConfiguracaoManager {
             }
         }
     }
-    
+
     async restoreBackup(filename) {
         const confirmed = await Modals.confirm(
             `Deseja restaurar o backup "${filename}"?\n\nAVISO: Os dados atuais serão substituídos pelos dados do backup.`,
             'Restaurar Backup'
         );
-        
+
         if (!confirmed) return;
-        
+
         try {
             const response = await fetch('/api/backup/restore', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename })
             });
-            
+
             const result = await response.json();
-            
+
             if (response.ok && result.success) {
-                logAction('restore', 'backup', filename, { 
+                logAction('restore', 'backup', filename, {
                     tipo: 'restauracao',
                     clientes: result.restored?.clientes || 0,
                     registros: result.restored?.registros || 0
@@ -3612,7 +3623,7 @@ export class ConfiguracaoManager {
                     'Backup Restaurado',
                     'check-circle'
                 );
-                
+
                 if (this.app && this.app.loadData) {
                     await this.app.loadData();
                 }
@@ -3625,15 +3636,15 @@ export class ConfiguracaoManager {
             Modals.alert('Erro ao restaurar backup: ' + error.message, 'Erro', 'alert-circle');
         }
     }
-    
+
     async downloadBackup(filename) {
         try {
             const response = await fetch(`/api/backup/download/${filename}`);
-            
+
             if (!response.ok) {
                 throw new Error('Falha ao baixar backup');
             }
-            
+
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -3648,19 +3659,19 @@ export class ConfiguracaoManager {
             Modals.alert('Erro ao baixar backup: ' + error.message, 'Erro', 'alert-circle');
         }
     }
-    
+
     async deleteBackup(filename) {
         const confirmed = await Modals.confirm(
             `Deseja excluir o backup "${filename}"?\n\nEsta ação não pode ser desfeita.`,
             'Excluir Backup'
         );
-        
+
         if (!confirmed) return;
-        
+
         try {
             const response = await fetch(`/api/backup/${filename}`, { method: 'DELETE' });
             const result = await response.json();
-            
+
             if (response.ok && result.success) {
                 logAction('delete', 'backup', filename, {});
                 Modals.alert('Backup excluído com sucesso!', 'Sucesso', 'check-circle');
@@ -3673,16 +3684,16 @@ export class ConfiguracaoManager {
             Modals.alert('Erro ao excluir backup: ' + error.message, 'Erro', 'alert-circle');
         }
     }
-    
+
     async uploadBackup(file) {
         try {
             const text = await file.text();
             const backupData = JSON.parse(text);
-            
+
             if (!backupData.data) {
                 throw new Error('Estrutura de backup inválida');
             }
-            
+
             const response = await fetch('/api/backup/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -3691,11 +3702,11 @@ export class ConfiguracaoManager {
                     filename: file.name
                 })
             });
-            
+
             const result = await response.json();
-            
+
             if (response.ok && result.success) {
-                logAction('import', 'backup', result.filename, { 
+                logAction('import', 'backup', result.filename, {
                     tipo: 'upload'
                 });
                 Modals.alert(`Backup importado com sucesso!\n\nArquivo salvo: ${result.filename}`, 'Sucesso', 'check-circle');
@@ -3707,15 +3718,15 @@ export class ConfiguracaoManager {
             console.error('Erro ao importar backup:', error);
             Modals.alert('Erro ao importar backup: ' + error.message, 'Erro', 'alert-circle');
         }
-        
+
         document.getElementById('backup-upload-input').value = '';
     }
-    
+
     async saveBackupSettings() {
         const enabled = document.getElementById('backup-auto-enabled')?.checked || false;
         const interval = document.getElementById('backup-interval')?.value || 'daily';
         const maxBackups = parseInt(document.getElementById('backup-max-count')?.value) || 10;
-        
+
         try {
             const response = await fetch('/api/backup/settings', {
                 method: 'POST',
@@ -3726,11 +3737,11 @@ export class ConfiguracaoManager {
                     max_backups: maxBackups
                 })
             });
-            
+
             const result = await response.json();
-            
+
             if (response.ok && result.success) {
-                logAction('edit', 'configuracao', null, { 
+                logAction('edit', 'configuracao', null, {
                     tipo: 'backup_automatico',
                     habilitado: enabled,
                     intervalo: interval,
@@ -3745,9 +3756,9 @@ export class ConfiguracaoManager {
             Modals.alert('Erro ao salvar configurações: ' + error.message, 'Erro', 'alert-circle');
         }
     }
-    
+
     // ==================== DESKTOP BACKUP MANAGEMENT ====================
-    
+
     async loadDesktopBackupManagement(container) {
         // In desktop mode, backups are stored in dados/database/backups/
         try {
@@ -3757,7 +3768,7 @@ export class ConfiguracaoManager {
                 this.renderDesktopBackupManagement(container, []);
                 return;
             }
-            
+
             // Use Electron IPC to list backup files
             const backups = await window.electronAPI.listBackups();
             this.renderDesktopBackupManagement(container, backups || []);
@@ -3766,21 +3777,21 @@ export class ConfiguracaoManager {
             this.renderDesktopBackupManagement(container, []);
         }
     }
-    
+
     renderDesktopBackupManagement(container, backups) {
         const canBackupGerenciar = Auth.hasPermission('configuracao', 'backupGerenciar');
-        
+
         const backupsList = backups && backups.length > 0 ? backups.map(backup => {
             const dateValue = backup.created_at || backup.timestamp;
             let formattedDate = 'Data desconhecida';
-            
+
             if (dateValue) {
                 const date = new Date(dateValue);
                 if (!isNaN(date.getTime())) {
                     formattedDate = date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
                 }
             }
-            
+
             return `
                 <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -3813,7 +3824,7 @@ export class ConfiguracaoManager {
                 <p class="text-sm">Nenhum backup disponível</p>
             </div>
         `;
-        
+
         container.innerHTML = `
             <div class="space-y-6">
                 <!-- Ações de Backup -->
@@ -3878,16 +3889,16 @@ export class ConfiguracaoManager {
                 ` : ''}
             </div>
         `;
-        
+
         if (window.lucide) lucide.createIcons();
-        
+
         // Load backup settings
         this.loadDesktopBackupSettings();
-        
+
         // Add event listeners
         this.attachDesktopBackupEventListeners();
     }
-    
+
     renderDesktopBackupError(container) {
         container.innerHTML = `
             <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 p-4 rounded-lg">
@@ -3902,27 +3913,27 @@ export class ConfiguracaoManager {
         `;
         if (window.lucide) lucide.createIcons();
     }
-    
+
     async loadDesktopBackupSettings() {
         if (!window.electronAPI || typeof window.electronAPI.loadBackupSettings !== 'function') {
             return;
         }
-        
+
         try {
             const settings = await window.electronAPI.loadBackupSettings();
-            
+
             const enabledCheckbox = document.getElementById('desktop-backup-auto-enabled');
             const intervalSelect = document.getElementById('desktop-backup-interval');
             const maxCountInput = document.getElementById('desktop-backup-max-count');
-            
+
             if (enabledCheckbox) {
                 enabledCheckbox.checked = settings.enabled || false;
             }
-            
+
             if (intervalSelect) {
                 intervalSelect.value = settings.interval || 'daily';
             }
-            
+
             if (maxCountInput) {
                 maxCountInput.value = settings.max_backups || ConfiguracaoManager.BACKUP_MAX_COUNT_DEFAULT;
             }
@@ -3930,71 +3941,71 @@ export class ConfiguracaoManager {
             console.error('Erro ao carregar configurações de backup:', error);
         }
     }
-    
+
     attachDesktopBackupEventListeners() {
         const self = this;
-        
+
         // Create backup button
         const createBtn = document.getElementById('desktop-create-backup-btn');
         if (createBtn) {
             createBtn.addEventListener('click', () => this.handleDesktopCreateBackup());
         }
-        
+
         // Import backup button
         const uploadInput = document.getElementById('desktop-backup-upload-input');
         if (uploadInput) {
             uploadInput.addEventListener('change', (e) => this.handleDesktopImportBackup(e));
         }
-        
+
         // Save settings button
         const saveSettingsBtn = document.getElementById('desktop-save-backup-settings-btn');
         if (saveSettingsBtn) {
             saveSettingsBtn.addEventListener('click', () => this.handleDesktopSaveBackupSettings());
         }
-        
+
         // Restore buttons
         document.querySelectorAll('.desktop-backup-restore-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 const filename = this.getAttribute('data-filename');
                 self.handleDesktopRestoreBackup(filename);
             });
         });
-        
+
         // Download buttons
         document.querySelectorAll('.desktop-backup-download-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 const filename = this.getAttribute('data-filename');
                 self.handleDesktopDownloadBackup(filename);
             });
         });
-        
+
         // Delete buttons
         document.querySelectorAll('.desktop-backup-delete-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 const filename = this.getAttribute('data-filename');
                 self.handleDesktopDeleteBackup(filename);
             });
         });
     }
-    
+
     async handleDesktopCreateBackup() {
         if (!window.electronAPI || typeof window.electronAPI.createBackup !== 'function') {
             Modals.alert('Funcionalidade de criar backup não disponível', 'Erro');
             return;
         }
-        
+
         const btn = document.getElementById('desktop-create-backup-btn');
         const originalContent = btn ? btn.innerHTML : null;
-        
+
         if (btn) {
             btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Criando...';
             btn.disabled = true;
             if (window.lucide) lucide.createIcons();
         }
-        
+
         try {
             const result = await window.electronAPI.createBackup();
-            
+
             if (result.success) {
                 Modals.alert(`Backup criado com sucesso: ${result.filename}`, 'Sucesso');
                 // Reload backup list
@@ -4016,31 +4027,31 @@ export class ConfiguracaoManager {
             }
         }
     }
-    
+
     async handleDesktopRestoreBackup(filename) {
         if (!window.electronAPI || typeof window.electronAPI.restoreBackup !== 'function') {
             Modals.alert('Funcionalidade de restaurar backup não disponível', 'Erro');
             return;
         }
-        
+
         const confirmed = await Modals.showConfirm(
             `Tem certeza que deseja restaurar o backup "${filename}"?\n\nEsta ação irá substituir todos os dados atuais!`
         );
-        
+
         if (!confirmed) return;
-        
+
         try {
             const result = await window.electronAPI.restoreBackup(filename);
-            
+
             if (result.success) {
                 const message = `Backup restaurado com sucesso!\n\n` +
                     `Clientes: ${result.stats.clients}\n` +
                     `Registros: ${result.stats.registros}\n` +
                     `Categorias: ${result.stats.categorias}\n\n` +
                     `A página será recarregada.`;
-                
+
                 Modals.alert(message, 'Sucesso');
-                
+
                 // Reload page after a short delay
                 setTimeout(() => {
                     window.location.reload();
@@ -4053,16 +4064,16 @@ export class ConfiguracaoManager {
             Modals.alert(`Erro ao restaurar backup: ${error.message}`, 'Erro');
         }
     }
-    
+
     async handleDesktopDownloadBackup(filename) {
         if (!window.electronAPI || typeof window.electronAPI.downloadBackup !== 'function') {
             Modals.alert('Funcionalidade de download de backup não disponível', 'Erro');
             return;
         }
-        
+
         try {
             const result = await window.electronAPI.downloadBackup(filename);
-            
+
             if (result.success) {
                 // Create a download link
                 const blob = new Blob([result.data], { type: 'application/json' });
@@ -4071,13 +4082,13 @@ export class ConfiguracaoManager {
                 link.href = url;
                 link.download = filename;
                 link.style.display = 'none';
-                
+
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                
+
                 URL.revokeObjectURL(url);
-                
+
                 Modals.alert(`Backup baixado com sucesso: ${filename}`, 'Sucesso');
             } else {
                 Modals.alert(`Erro ao baixar backup: ${result.error}`, 'Erro');
@@ -4087,22 +4098,22 @@ export class ConfiguracaoManager {
             Modals.alert(`Erro ao baixar backup: ${error.message}`, 'Erro');
         }
     }
-    
+
     async handleDesktopDeleteBackup(filename) {
         if (!window.electronAPI || typeof window.electronAPI.deleteBackup !== 'function') {
             Modals.alert('Funcionalidade de excluir backup não disponível', 'Erro');
             return;
         }
-        
+
         const confirmed = await Modals.showConfirm(
             `Tem certeza que deseja excluir o backup "${filename}"?\n\nEsta ação não pode ser desfeita!`
         );
-        
+
         if (!confirmed) return;
-        
+
         try {
             const result = await window.electronAPI.deleteBackup(filename);
-            
+
             if (result.success) {
                 Modals.alert(`Backup excluído com sucesso: ${filename}`, 'Sucesso');
                 // Reload backup list
@@ -4118,24 +4129,24 @@ export class ConfiguracaoManager {
             Modals.alert(`Erro ao excluir backup: ${error.message}`, 'Erro');
         }
     }
-    
+
     async handleDesktopImportBackup(event) {
         if (!window.electronAPI || typeof window.electronAPI.importBackup !== 'function') {
             Modals.alert('Funcionalidade de importar backup não disponível', 'Erro');
             return;
         }
-        
+
         const file = event.target.files[0];
         if (!file) return;
-        
+
         try {
             const reader = new FileReader();
-            
+
             reader.onload = async (e) => {
                 try {
                     const backupData = e.target.result;
                     const result = await window.electronAPI.importBackup(backupData);
-                    
+
                     if (result.success) {
                         Modals.alert(`Backup importado com sucesso: ${result.filename}`, 'Sucesso');
                         // Reload backup list
@@ -4150,34 +4161,34 @@ export class ConfiguracaoManager {
                     console.error('Erro ao processar arquivo de backup:', error);
                     Modals.alert(`Erro ao processar arquivo: ${error.message}`, 'Erro');
                 }
-                
+
                 // Clear file input
                 event.target.value = '';
             };
-            
+
             reader.onerror = () => {
                 Modals.alert('Erro ao ler arquivo de backup', 'Erro');
                 event.target.value = '';
             };
-            
+
             reader.readAsText(file);
         } catch (error) {
             console.error('Erro ao importar backup:', error);
             Modals.alert(`Erro ao importar backup: ${error.message}`, 'Erro');
         }
     }
-    
+
     async handleDesktopSaveBackupSettings() {
         if (!window.electronAPI || typeof window.electronAPI.saveBackupSettings !== 'function') {
             Modals.alert('Funcionalidade de salvar configurações não disponível', 'Erro');
             return;
         }
-        
+
         try {
             const enabledCheckbox = document.getElementById('desktop-backup-auto-enabled');
             const intervalSelect = document.getElementById('desktop-backup-interval');
             const maxCountInput = document.getElementById('desktop-backup-max-count');
-            
+
             // Parse and validate max_backups value
             let maxBackups = ConfiguracaoManager.BACKUP_MAX_COUNT_DEFAULT;
             if (maxCountInput && maxCountInput.value) {
@@ -4186,15 +4197,15 @@ export class ConfiguracaoManager {
                     maxBackups = parsed;
                 }
             }
-            
+
             const settings = {
                 enabled: enabledCheckbox ? enabledCheckbox.checked : false,
                 interval: intervalSelect ? intervalSelect.value : 'daily',
                 max_backups: maxBackups
             };
-            
+
             const result = await window.electronAPI.saveBackupSettings(settings);
-            
+
             if (result.success) {
                 Modals.alert('Configurações de backup salvas com sucesso!', 'Sucesso');
             } else {

@@ -15,7 +15,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteBackup: (filename) => ipcRenderer.invoke('delete-backup', filename),
   importBackup: (backupData) => ipcRenderer.invoke('import-backup', backupData),
   loadBackupSettings: () => ipcRenderer.invoke('load-backup-settings'),
-  saveBackupSettings: (settings) => ipcRenderer.invoke('save-backup-settings', settings)
+  saveBackupSettings: (settings) => ipcRenderer.invoke('save-backup-settings', settings),
+  saveImage: (base64Data) => ipcRenderer.invoke('save-image', base64Data)
 });
 
 // Legacy support for old code
@@ -26,5 +27,6 @@ contextBridge.exposeInMainWorld('electron', {
   saveRegistros: (registros) => ipcRenderer.invoke('save-registros', registros),
   loadCategorias: () => ipcRenderer.invoke('load-categorias'),
   saveCategorias: (categorias) => ipcRenderer.invoke('save-categorias', categorias),
-  getStoragePath: () => ipcRenderer.invoke('get-storage-path')
+  getStoragePath: () => ipcRenderer.invoke('get-storage-path'),
+  saveImage: (base64Data) => ipcRenderer.invoke('save-image', base64Data)
 });

@@ -8,7 +8,7 @@ let storage;
 function createWindow() {
   const iconPath = path.join(__dirname, 'icon.png');
   const fs = require('fs');
-  
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -35,7 +35,7 @@ function createWindow() {
     let prefix = '[LOG]';
     if (level === 2) prefix = '[AVISO]';
     if (level === 3) prefix = '[ERRO]';
-    
+
     // Silencia avisos de segurança do Electron e do Tailwind CDN que poluem o console
     if (message.includes('Electron Security Warning') || message.includes('cdn.tailwindcss.com')) {
       return;
@@ -208,6 +208,10 @@ function setupIPCHandlers() {
 
   ipcMain.handle('save-backup-settings', (event, settings) => {
     return storage.saveBackupSettings(settings);
+  });
+
+  ipcMain.handle('save-image', (event, base64Data) => {
+    return storage.saveImage(base64Data);
   });
 }
 
