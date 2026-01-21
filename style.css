@@ -38,13 +38,16 @@ html.dark .modal-backdrop {
     width: 8px;
     height: 8px;
 }
+
 ::-webkit-scrollbar-track {
     background: #f1f5f9;
 }
+
 ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
@@ -53,10 +56,12 @@ html.dark .modal-backdrop {
 html.dark ::-webkit-scrollbar-track {
     background: #0f172a;
 }
+
 html.dark ::-webkit-scrollbar-thumb {
     background: #334155;
     border-radius: 10px;
 }
+
 html.dark ::-webkit-scrollbar-thumb:hover {
     background: #475569;
 }
@@ -100,24 +105,24 @@ html.dark ::-webkit-scrollbar-thumb:hover {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
     background-color: #3b82f6;
 }
 
-.toggle-switch input:focus + .toggle-slider {
+.toggle-switch input:focus+.toggle-slider {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
-.toggle-switch input:focus-visible + .toggle-slider {
+.toggle-switch input:focus-visible+.toggle-slider {
     outline: 2px solid #3b82f6;
     outline-offset: 2px;
 }
 
-.toggle-switch input:checked + .toggle-slider:before {
+.toggle-switch input:checked+.toggle-slider:before {
     transform: translateX(20px);
 }
 
-.toggle-switch input:disabled + .toggle-slider {
+.toggle-switch input:disabled+.toggle-slider {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -131,7 +136,7 @@ html.dark .toggle-slider:before {
     background-color: #f1f5f9;
 }
 
-html.dark .toggle-switch input:checked + .toggle-slider {
+html.dark .toggle-switch input:checked+.toggle-slider {
     background-color: #60a5fa;
 }
 
@@ -140,6 +145,10 @@ html.dark .toggle-switch input:checked + .toggle-slider {
     cursor: pointer;
     font-weight: 500;
     letter-spacing: 0.3px;
+    background-color: white;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
 }
 
 .modern-select option {
@@ -149,9 +158,16 @@ html.dark .toggle-switch input:checked + .toggle-slider {
     font-weight: 500;
 }
 
+html.dark .modern-select {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+    border-color: #475569 !important;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%2260a5fa%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>') !important;
+}
+
 html.dark .modern-select option {
-    background-color: #334155;
-    color: #f1f5f9;
+    background-color: #1e293b !important;
+    color: #f1f5f9 !important;
 }
 
 .modern-select:hover {
@@ -160,8 +176,8 @@ html.dark .modern-select option {
 }
 
 html.dark .modern-select:hover {
-    border-color: #60a5fa;
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+    border-color: #60a5fa !important;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15) !important;
 }
 
 .modern-select:focus {
@@ -171,11 +187,6 @@ html.dark .modern-select:hover {
 
 html.dark .modern-select:focus {
     box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25) !important;
-}
-
-/* Adjust dark mode SVG color */
-html.dark .modern-select {
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%2260a5fa%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>') !important;
 }
 
 /* Custom Dropdown Styles - Site Theme */
@@ -205,9 +216,9 @@ html.dark .modern-select {
 }
 
 html.dark .dropdown-button {
-    background-color: #1e293b;
-    border-color: #475569;
-    color: #e2e8f0;
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+    color: #e2e8f0 !important;
 }
 
 .dropdown-button:hover {
@@ -215,7 +226,7 @@ html.dark .dropdown-button {
 }
 
 html.dark .dropdown-button:hover {
-    border-color: #64748b;
+    border-color: #64748b !important;
 }
 
 .dropdown-button:focus {
@@ -231,8 +242,8 @@ html.dark .dropdown-button:hover {
 }
 
 html.dark .dropdown-button.active {
-    border-color: #60a5fa;
-    box-shadow: 0 0 0 1px #60a5fa;
+    border-color: #60a5fa !important;
+    box-shadow: 0 0 0 1px #60a5fa !important;
 }
 
 .dropdown-text {
@@ -251,7 +262,7 @@ html.dark .dropdown-button.active {
 }
 
 html.dark .dropdown-arrow {
-    color: #94a3b8;
+    color: #94a3b8 !important;
 }
 
 .dropdown-button.active .dropdown-arrow {
@@ -260,7 +271,7 @@ html.dark .dropdown-arrow {
 }
 
 html.dark .dropdown-button.active .dropdown-arrow {
-    color: #60a5fa;
+    color: #60a5fa !important;
 }
 
 .dropdown-menu {
@@ -281,8 +292,8 @@ html.dark .dropdown-button.active .dropdown-arrow {
 }
 
 html.dark .dropdown-menu {
-    background-color: #1e293b;
-    border-color: #475569;
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
@@ -291,6 +302,7 @@ html.dark .dropdown-menu {
         opacity: 0;
         transform: translateY(-4px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -316,8 +328,8 @@ html.dark .dropdown-menu {
 }
 
 html.dark .dropdown-option {
-    color: #cbd5e1;
-    border-bottom-color: #334155;
+    color: #cbd5e1 !important;
+    border-bottom-color: #334155 !important;
 }
 
 .dropdown-option:last-child {
@@ -330,8 +342,8 @@ html.dark .dropdown-option {
 }
 
 html.dark .dropdown-option:hover {
-    background-color: #334155;
-    color: #f1f5f9;
+    background-color: #334155 !important;
+    color: #f1f5f9 !important;
 }
 
 .dropdown-option-icon {
@@ -350,9 +362,9 @@ html.dark .dropdown-option:hover {
 }
 
 html.dark .dropdown-option.selected {
-    background-color: #1e3a8a;
-    color: #93c5fd;
-    border-left: 2px solid #60a5fa;
+    background-color: #1e3a8a !important;
+    color: #93c5fd !important;
+    border-left: 2px solid #60a5fa !important;
     padding-left: calc(0.75rem - 2px);
 }
 
@@ -361,23 +373,48 @@ html.dark .dropdown-option.selected {
 }
 
 html.dark .dropdown-option-icon.selected {
-    color: #60a5fa;
+    color: #60a5fa !important;
 }
 
 /* Color Overrides */
-.text-blue-600, .text-blue-500 { color: var(--color-primary) !important; }
-.bg-blue-600, .bg-blue-500 { background-color: var(--color-primary) !important; }
-.border-blue-600, .border-blue-500 { border-color: var(--color-primary) !important; }
-.hover\:bg-blue-700:hover, .hover\:bg-blue-600:hover { background-color: var(--color-secondary) !important; }
-.focus\:ring-blue-500:focus { --tw-ring-color: var(--color-primary) !important; }
-.dark .text-blue-400 { color: #60a5fa !important; }
-.dark .border-blue-400 { border-color: #60a5fa !important; }
+.text-blue-600,
+.text-blue-500 {
+    color: var(--color-primary) !important;
+}
+
+.bg-blue-600,
+.bg-blue-500 {
+    background-color: var(--color-primary) !important;
+}
+
+.border-blue-600,
+.border-blue-500 {
+    border-color: var(--color-primary) !important;
+}
+
+.hover\:bg-blue-700:hover,
+.hover\:bg-blue-600:hover {
+    background-color: var(--color-secondary) !important;
+}
+
+.focus\:ring-blue-500:focus {
+    --tw-ring-color: var(--color-primary) !important;
+}
+
+.dark .text-blue-400 {
+    color: #60a5fa !important;
+}
+
+.dark .border-blue-400 {
+    border-color: #60a5fa !important;
+}
 
 /* System Loading Screen Animations */
 @keyframes spin {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -392,21 +429,25 @@ html.dark .dropdown-option-icon.selected {
         opacity: 0;
         transform: scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
     }
 }
 
-#system-loading-screen > div {
+#system-loading-screen>div {
     animation: fadeIn 0.5s ease-out;
 }
 
 /* Pulse effect for loading icons */
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.5;
     }
@@ -427,6 +468,7 @@ html.dark .dropdown-option-icon.selected {
         opacity: 0;
         transform: translateX(100%);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -438,6 +480,7 @@ html.dark .dropdown-option-icon.selected {
         opacity: 1;
         transform: translateX(0);
     }
+
     to {
         opacity: 0;
         transform: translateX(100%);
@@ -456,7 +499,159 @@ html.dark .dropdown-option-icon.selected {
     pointer-events: auto;
 }
 
-#job-monitor-container > div {
+#job-monitor-container>div {
     min-width: 280px;
     backdrop-filter: blur(10px);
 }
+
+/* 
+   THEME CONSISTENCY PATCH
+   These rules strictly enforce Light Mode colors when the .dark class is missing from the HTML tag,
+   overriding any potential Tailwind media-query based dark mode defaults.
+*/
+
+/* Force Card Backgrounds to White/Light in Light Mode */
+html:not(.dark) .dark\:bg-slate-800 {
+    background-color: #ffffff !important;
+}
+
+/* Force Main Backgrounds to Slate-100 in Light Mode */
+html:not(.dark) .dark\:bg-slate-900 {
+    background-color: #f1f5f9 !important;
+    /* slate-100 */
+}
+
+/* Force Input Backgrounds to White/Light in Light Mode */
+html:not(.dark) .dark\:bg-slate-700 {
+    background-color: #f8fafc !important;
+    /* slate-50 */
+}
+
+/* Force Text to Dark Slate in Light Mode */
+html:not(.dark) .dark\:text-white {
+    color: #1e293b !important;
+    /* slate-800 */
+}
+
+html:not(.dark) .dark\:text-slate-50 {
+    color: #0f172a !important;
+    /* slate-900 */
+}
+
+html:not(.dark) .dark\:text-slate-100 {
+    color: #1e293b !important;
+    /* slate-800 */
+}
+
+html:not(.dark) .dark\:text-slate-200 {
+    color: #334155 !important;
+    /* slate-700 */
+}
+
+html:not(.dark) .dark\:text-slate-300 {
+    color: #475569 !important;
+    /* slate-600 */
+}
+
+html:not(.dark) .dark\:text-slate-400 {
+    color: #64748b !important;
+    /* slate-500 */
+}
+
+html:not(.dark) .dark\:text-slate-500 {
+    color: #94a3b8 !important;
+    /* slate-400 - keeping this mid-tone might be safer, or verify if it needs to be darker */
+}
+
+
+/* Force Start Border Colors */
+html:not(.dark) .dark\:border-slate-700 {
+    border-color: #e2e8f0 !important;
+    /* slate-200 */
+}
+
+html:not(.dark) .dark\:border-slate-600 {
+    border-color: #cbd5e1 !important;
+    /* slate-300 */
+}
+
+/* EXTENDED GRADIENT & COMPONENT FIXES */
+html:not(.dark) [class*="dark:bg-gradient-"] {
+    background-image: none !important;
+}
+
+/* Specific fix for "Apagar Dados" section wrapper to ensure white background */
+html:not(.dark) #section-apagar-dados>div {
+    background-image: none !important;
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* Fix text colors inside "Apagar Dados" when forced to light */
+html:not(.dark) #section-apagar-dados h2 {
+    color: #dc2626 !important;
+    /* red-600 */
+}
+
+html:not(.dark) #section-apagar-dados p {
+    color: #475569 !important;
+    /* slate-600 */
+}
+
+/* Header specific fix for opacity variants */
+html:not(.dark) header {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    border-bottom-color: rgba(241, 245, 249, 0.5) !important;
+    /* slate-100 */
+}
+
+html:not(.dark) header h1 {
+    color: #334155 !important;
+    /* slate-700 */
+}
+
+/* Ensure header icons and text are dark in light mode */
+html:not(.dark) header .lucide {
+    color: #475569 !important;
+    /* slate-600 */
+}
+
+html:not(.dark) header #user-info {
+    color: #334155 !important;
+    /* slate-700 */
+}
+
+/* Dono Dashboard Specific Overrides */
+/* Force icon backgrounds to light colors */
+html:not(.dark) .dark\:bg-blue-900\/30 {
+    background-color: #dbeafe !important;
+}
+
+/* blue-100 */
+html:not(.dark) .dark\:bg-purple-900\/30 {
+    background-color: #f3e8ff !important;
+}
+
+/* purple-100 */
+html:not(.dark) .dark\:bg-orange-900\/30 {
+    background-color: #ffedd5 !important;
+}
+
+/* orange-100 */
+html:not(.dark) .dark\:bg-emerald-900\/30 {
+    background-color: #d1fae5 !important;
+}
+
+/* emerald-100 */
+html:not(.dark) .dark\:bg-green-900\/30 {
+    background-color: #dcfce7 !important;
+}
+
+/* green-100 */
+
+/* Force badge text colors */
+html:not(.dark) .dark\:text-slate-300 {
+    color: #475569 !important;
+}
+
+/* slate-600 */
