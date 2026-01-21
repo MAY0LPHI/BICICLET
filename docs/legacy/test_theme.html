@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste Tema</title>
+    <script>
+        tailwind = { config: { darkMode: 'class' } }
+    </script>
+    <script src="libs/tailwind.min.js"></script>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen p-8">
+    <h1 class="text-2xl font-bold mb-4">Teste de Tema</h1>
+    <p class="mb-4">Se você ver fundo escuro, o dark mode está ativo.</p>
+    <button onclick="toggleDark()" class="bg-blue-600 text-white px-4 py-2 rounded">
+        Alternar Tema
+    </button>
+    <script>
+        function toggleDark() {
+            document.documentElement.classList.toggle('dark');
+            console.log('Classes:', document.documentElement.className);
+        }
+    </script>
+</body>
+</html>
