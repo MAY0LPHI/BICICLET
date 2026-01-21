@@ -8,6 +8,7 @@ import socketserver
 import os
 import json
 import logging
+import base64
 from urllib.parse import urlparse
 
 logging.basicConfig(
@@ -22,6 +23,7 @@ DIRECTORY = "."
 STORAGE_DIR = "dados/navegador"
 CLIENTS_DIR = os.path.join(STORAGE_DIR, "clientes")
 REGISTROS_DIR = os.path.join(STORAGE_DIR, "registros")
+IMAGES_DIR = "dados/imagens"
 
 DB_MANAGER = None
 DB_AVAILABLE = False
@@ -61,11 +63,41 @@ def ensure_directories():
     try:
         os.makedirs(CLIENTS_DIR, exist_ok=True)
         os.makedirs(REGISTROS_DIR, exist_ok=True)
-        logger.info(f"Diretórios criados/verificados: {STORAGE_DIR}")
+        os.makedirs(IMAGES_DIR, exist_ok=True)
+        logger.info(f"Diretórios criados/verificados: {STORAGE_DIR}, {IMAGES_DIR}")
     except Exception as e:
         logger.error(f"Erro ao criar diretórios: {e}")
 
 ensure_directories()
+
+CONFIG_FILE = os.path.join(STORAGE_DIR, "config.json")
+
+def load_config():
+    """Carrega as configurações do sistema"""
+    default_config = {
+        "maxCapacity": 50,
+        "longStayHours": 24
+    }
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                saved_config = json.load(f)
+                default_config.update(saved_config)
+        except Exception as e:
+            logger.error(f"Erro ao carregar config: {e}")
+    return default_config
+
+def save_system_config(new_config):
+    """Salva as configurações do sistema"""
+    try:
+        current_config = load_config()
+        current_config.update(new_config)
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(current_config, f, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Erro ao salvar config: {e}")
+        return False
 
 
 class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
@@ -169,6 +201,21 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self._get_client_file(cpf)
             return
+
+        # Serve uploaded images
+        if path.startswith('/imagens/'):
+            image_filename = path.split('/')[-1]
+            image_path = os.path.join(IMAGES_DIR, image_filename)
+            if os.path.exists(image_path):
+                self.send_response(200)
+                self.send_header('Content-Type', 'image/jpeg') # Assuming JPEG for simplicity
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                with open(image_path, 'rb') as f:
+                    self.wfile.write(f.read())
+            else:
+                self.send_error(404, "Image Not Found")
+            return
         
         if path == '/api/registros':
             if use_sqlite_storage():
@@ -271,6 +318,12 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({
                     'clients': 0, 'registros': 0, 'usuarios': 0, 'categorias': 0
                 }).encode())
+            return
+        
+        if path == '/api/system-config':
+            config = load_config()
+            self._set_api_headers()
+            self.wfile.write(json.dumps(config).encode())
             return
         
         # ========== BACKUP ENDPOINTS ==========
@@ -488,6 +541,17 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self._set_api_headers()
                 self.wfile.write(json.dumps({"success": True}).encode())
             return
+
+        if self.path == '/api/system-config':
+            data = json.loads(post_data.decode('utf-8'))
+            success = save_system_config(data)
+            if success:
+                self._set_api_headers()
+                self.wfile.write(json.dumps({"success": True}).encode())
+            else:
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": "Failed to save config"}).encode())
+            return
         
         if self.path == '/api/clear/clients':
             if use_sqlite_storage():
@@ -657,6 +721,41 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "Database not available"}).encode())
             return
         
+        if self.path == '/api/upload-image':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                image_data = data.get('image') # Base64 string
+                
+                if not image_data:
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "No image data provided"}).encode())
+                    return
+
+                # Remove header if present (data:image/jpeg;base64,...)
+                if ',' in image_data:
+                    header, encoded = image_data.split(',', 1)
+                else:
+                    encoded = image_data
+
+                import uuid
+                filename = f"img_{uuid.uuid4().hex}.jpg"
+                filepath = os.path.join(IMAGES_DIR, filename)
+
+                with open(filepath, "wb") as f:
+                    f.write(base64.b64decode(encoded))
+
+                self._set_api_headers()
+                self.wfile.write(json.dumps({
+                    "success": True, 
+                    "url": f"/imagens/{filename}",
+                    "path": filename
+                }).encode())
+            except Exception as e:
+                logger.error(f"Error uploading image: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
         if self.path == '/api/backup/settings':
             data = json.loads(post_data.decode('utf-8'))
             if DB_AVAILABLE and DB_MANAGER is not None:
@@ -860,7 +959,7 @@ if __name__ == "__main__":
     try:
         socketserver.TCPServer.allow_reuse_address = True
         with socketserver.TCPServer(("0.0.0.0", PORT), CombinedHTTPHandler) as httpd:
-            logger.info(f"Servidor web rodando em http://0.0.0.0:{PORT}/")
+            logger.info(f"🚀 Servidor BICICLETÁRIO (v2.0 Config) rodando em http://0.0.0.0:{PORT}/")
             logger.info(f"API integrada em http://0.0.0.0:{PORT}/api/")
             logger.info(f"Diretório servido: {os.path.abspath(DIRECTORY)}")
             logger.info(f"Dados serão salvos em: {os.path.abspath('dados')}/")
