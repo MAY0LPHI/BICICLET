@@ -9,6 +9,13 @@ cryptography>=41.0.0
 bcrypt>=4.1.0
 argon2-cffi>=23.1.0
 
+# QR Code generation
+qrcode>=7.4.2
+Pillow>=10.0.0
+
+# JWT tokens
+PyJWT>=2.8.0
+
 # Backup e compressão
 # zipfile já vem incluso no Python 3.12
 

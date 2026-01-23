@@ -46,6 +46,7 @@ keystore.properties
 
 # Dados sensíveis - Sistema Offline
 dados/auth/.key
+dados/auth/.jwt_secret
 dados/auth/tokens.json
 dados/auth/users.json
 dados/database/*.db
@@ -57,6 +58,7 @@ dados/logs/*.txt
 dados/relatorios/*.csv
 dados/relatorios/*.txt
 dados/relatorios/*.pdf
+dados/qrcodes/*.png
 
 # Desktop data files (generated at runtime)
 dados/desktop/*.json
