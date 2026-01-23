@@ -41,7 +41,6 @@ export class RegistrosManager {
             dashboardModal: document.getElementById('dashboard-modal'),
         };
         this.conexoesQRManager = new ConexoesQRManager(app);
-        window.qrConnectionsManager = this.conexoesQRManager;
         this.setupEventListeners();
     }
 

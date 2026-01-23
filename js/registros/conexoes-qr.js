@@ -128,7 +128,7 @@ export class ConexoesQRManager {
                 <div class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-12 w-12 text-red-500 mx-auto mb-2"></i>
                     <p class="text-red-600 dark:text-red-400">${message}</p>
-                    <button onclick="window.qrConnectionsManager.loadSolicitacoes()" 
+                    <button id="retry-load-solicitacoes" 
                             class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                         Tentar Novamente
                     </button>
@@ -136,6 +136,12 @@ export class ConexoesQRManager {
             `;
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
+            }
+            
+            // Attach retry button handler
+            const retryBtn = this.elements.container.querySelector('#retry-load-solicitacoes');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => this.loadSolicitacoes());
             }
         }
     }
@@ -281,7 +287,7 @@ export class ConexoesQRManager {
         if (!solicitacao) return;
 
         const confirmed = await Modals.confirm(
-            `Deseja aprovar a solicitação de cadastro de ${solicitacao.nome}?`,
+            `Deseja aprovar a solicitação de cadastro de ${Utils.escapeHtml(solicitacao.nome)}?`,
             'Confirmar Aprovação'
         );
 
@@ -318,7 +324,16 @@ export class ConexoesQRManager {
         const solicitacao = this.solicitacoes.find(s => s.id === id);
         if (!solicitacao) return;
 
-        const observacoes = prompt(`Motivo da rejeição da solicitação de ${solicitacao.nome} (opcional):`);
+        // Use Modals.prompt if available, otherwise fall back to native prompt
+        let observacoes;
+        if (typeof Modals.prompt === 'function') {
+            observacoes = await Modals.prompt(
+                `Motivo da rejeição da solicitação de ${Utils.escapeHtml(solicitacao.nome)} (opcional):`,
+                'Rejeitar Solicitação'
+            );
+        } else {
+            observacoes = prompt(`Motivo da rejeição da solicitação de ${Utils.escapeHtml(solicitacao.nome)} (opcional):`);
+        }
         if (observacoes === null) return; // User cancelled
 
         try {
@@ -349,6 +364,3 @@ export class ConexoesQRManager {
         }
     }
 }
-
-// Make the manager globally accessible for inline event handlers
-window.qrConnectionsManager = null;
