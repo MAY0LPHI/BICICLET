@@ -51,6 +51,42 @@ except ImportError as e:
 except Exception as e:
     logger.warning(f"Erro ao inicializar sistema de jobs: {e}")
 
+# JWT and QR Code support
+JWT_MANAGER = None
+QR_GENERATOR = None
+AUTH_MANAGER = None
+
+try:
+    from jwt_manager import get_jwt_manager
+    JWT_MANAGER = get_jwt_manager()
+    logger.info("✅ JWT Manager carregado com sucesso")
+except ImportError as e:
+    logger.warning(f"JWT Manager não disponível: {e}")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar JWT Manager: {e}")
+
+try:
+    from qr_generator import get_qr_generator
+    # Get base URL from environment or use default
+    base_url = os.environ.get('REPL_SLUG', 'http://localhost:5000')
+    if not base_url.startswith('http'):
+        base_url = f'https://{base_url}.replit.dev'
+    QR_GENERATOR = get_qr_generator(base_url)
+    logger.info(f"✅ QR Generator carregado com sucesso (URL: {base_url})")
+except ImportError as e:
+    logger.warning(f"QR Generator não disponível: {e}")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar QR Generator: {e}")
+
+try:
+    from auth_manager import get_auth_manager
+    AUTH_MANAGER = get_auth_manager()
+    logger.info("✅ Auth Manager carregado com sucesso")
+except ImportError as e:
+    logger.warning(f"Auth Manager não disponível: {e}")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar Auth Manager: {e}")
+
 def use_sqlite_storage() -> bool:
     """Verifica se deve usar SQLite baseado na configuração atual"""
     if not DB_AVAILABLE or DB_MANAGER is None:
@@ -326,6 +362,52 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(config).encode())
             return
         
+        # ========== QR CODE ENDPOINTS ==========
+        if path == '/api/qr/generate':
+            """Gera QR code para estação"""
+            if QR_GENERATOR and JWT_MANAGER:
+                # Gera token para a estação
+                station_id = parsed_path.query.get('station', 'default') if hasattr(parsed_path, 'query') else 'default'
+                token = JWT_MANAGER.generate_qr_token(station_id)
+                qr_base64 = QR_GENERATOR.generate_qr_base64(station_id, token)
+                
+                if qr_base64:
+                    self._set_api_headers()
+                    self.wfile.write(json.dumps({
+                        "success": True,
+                        "qr_code": qr_base64,
+                        "station_id": station_id
+                    }).encode())
+                else:
+                    self._set_api_headers(500)
+                    self.wfile.write(json.dumps({"error": "Failed to generate QR code"}).encode())
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "QR Generator not available"}).encode())
+            return
+        
+        if path == '/api/qr/registros':
+            """Retorna registros QR"""
+            if DB_AVAILABLE and DB_MANAGER:
+                registros = DB_MANAGER.get_registros_qr()
+                self._set_api_headers()
+                self.wfile.write(json.dumps(registros, ensure_ascii=False).encode('utf-8'))
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
+            return
+        
+        if path == '/api/qr/solicitacoes':
+            """Retorna solicitações de cadastro pendentes"""
+            if DB_AVAILABLE and DB_MANAGER:
+                solicitacoes = DB_MANAGER.get_solicitacoes_pendentes()
+                self._set_api_headers()
+                self.wfile.write(json.dumps(solicitacoes, ensure_ascii=False).encode('utf-8'))
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
+            return
+        
         # ========== BACKUP ENDPOINTS ==========
         if path == '/api/backups':
             if DB_AVAILABLE and DB_MANAGER is not None:
@@ -540,6 +622,204 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self._set_api_headers()
                 self.wfile.write(json.dumps({"success": True}).encode())
+            return
+
+        # ========== QR CODE POST ENDPOINTS ==========
+        if self.path == '/api/auth/login':
+            """Autenticação de usuário"""
+            data = json.loads(post_data.decode('utf-8'))
+            username = data.get('username')
+            password = data.get('password')
+            
+            if AUTH_MANAGER:
+                user_data = AUTH_MANAGER.authenticate(username, password)
+                if user_data:
+                    # Gera JWT token
+                    if JWT_MANAGER:
+                        token = JWT_MANAGER.generate_token(user_data)
+                        user_data['token'] = token
+                    
+                    self._set_api_headers()
+                    self.wfile.write(json.dumps({
+                        "success": True,
+                        "user": user_data
+                    }, ensure_ascii=False).encode('utf-8'))
+                else:
+                    self._set_api_headers(401)
+                    self.wfile.write(json.dumps({"error": "Credenciais inválidas"}).encode())
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "Auth system not available"}).encode())
+            return
+        
+        if self.path == '/api/auth/register':
+            """Registro de novo usuário (cria solicitação pendente)"""
+            data = json.loads(post_data.decode('utf-8'))
+            
+            if DB_AVAILABLE and DB_MANAGER and AUTH_MANAGER:
+                import uuid
+                # Hash da senha
+                senha_hash = AUTH_MANAGER._hash_password(data.get('senha'))
+                
+                solicitacao = {
+                    'id': str(uuid.uuid4()),
+                    'nome': data.get('nome'),
+                    'email': data.get('email'),
+                    'cpf': data.get('cpf'),
+                    'telefone': data.get('telefone', ''),
+                    'senha_hash': senha_hash,
+                    'status': 'pendente',
+                    'station_id': data.get('station_id', 'default')
+                }
+                
+                success = DB_MANAGER.save_solicitacao_cadastro(solicitacao)
+                if success:
+                    self._set_api_headers()
+                    self.wfile.write(json.dumps({
+                        "success": True,
+                        "message": "Solicitação de cadastro enviada. Aguarde aprovação do administrador."
+                    }).encode())
+                else:
+                    self._set_api_headers(500)
+                    self.wfile.write(json.dumps({"error": "Erro ao criar solicitação"}).encode())
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "System not available"}).encode())
+            return
+        
+        if self.path == '/api/qr/checkin':
+            """Registro de entrada via QR"""
+            data = json.loads(post_data.decode('utf-8'))
+            
+            if DB_AVAILABLE and DB_MANAGER:
+                import uuid
+                from datetime import datetime
+                
+                # Valida token se fornecido
+                token = data.get('token')
+                if token and JWT_MANAGER:
+                    user_data = JWT_MANAGER.validate_token(token)
+                    if not user_data:
+                        self._set_api_headers(401)
+                        self.wfile.write(json.dumps({"error": "Token inválido ou expirado"}).encode())
+                        return
+                
+                registro = {
+                    'id': str(uuid.uuid4()),
+                    'cliente_id': data.get('cliente_id'),
+                    'tipo': 'entrada',
+                    'data_hora': datetime.now().isoformat(),
+                    'station_id': data.get('station_id', 'default'),
+                    'status': 'ativo',
+                    'bicicleta_descricao': data.get('bicicleta_descricao', ''),
+                    'observacoes': data.get('observacoes', '')
+                }
+                
+                success = DB_MANAGER.save_registro_qr(registro)
+                if success:
+                    self._set_api_headers()
+                    self.wfile.write(json.dumps({
+                        "success": True,
+                        "id": registro['id'],
+                        "message": "Entrada registrada com sucesso"
+                    }).encode())
+                else:
+                    self._set_api_headers(500)
+                    self.wfile.write(json.dumps({"error": "Erro ao registrar entrada"}).encode())
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
+            return
+        
+        if self.path == '/api/qr/checkout':
+            """Registro de saída via QR"""
+            data = json.loads(post_data.decode('utf-8'))
+            
+            if DB_AVAILABLE and DB_MANAGER:
+                import uuid
+                from datetime import datetime
+                
+                # Valida token se fornecido
+                token = data.get('token')
+                if token and JWT_MANAGER:
+                    user_data = JWT_MANAGER.validate_token(token)
+                    if not user_data:
+                        self._set_api_headers(401)
+                        self.wfile.write(json.dumps({"error": "Token inválido ou expirado"}).encode())
+                        return
+                
+                registro = {
+                    'id': str(uuid.uuid4()),
+                    'cliente_id': data.get('cliente_id'),
+                    'tipo': 'saida',
+                    'data_hora': datetime.now().isoformat(),
+                    'station_id': data.get('station_id', 'default'),
+                    'status': 'ativo',
+                    'bicicleta_descricao': data.get('bicicleta_descricao', ''),
+                    'observacoes': data.get('observacoes', '')
+                }
+                
+                success = DB_MANAGER.save_registro_qr(registro)
+                if success:
+                    self._set_api_headers()
+                    self.wfile.write(json.dumps({
+                        "success": True,
+                        "id": registro['id'],
+                        "message": "Saída registrada com sucesso"
+                    }).encode())
+                else:
+                    self._set_api_headers(500)
+                    self.wfile.write(json.dumps({"error": "Erro ao registrar saída"}).encode())
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
+            return
+        
+        if self.path == '/api/qr/solicitacao/aprovar':
+            """Aprova uma solicitação de cadastro"""
+            data = json.loads(post_data.decode('utf-8'))
+            
+            if DB_AVAILABLE and DB_MANAGER:
+                solicitacao_id = data.get('id')
+                aprovado_por = data.get('aprovado_por', 'admin')
+                
+                success = DB_MANAGER.aprovar_solicitacao(solicitacao_id, aprovado_por)
+                if success:
+                    self._set_api_headers()
+                    self.wfile.write(json.dumps({
+                        "success": True,
+                        "message": "Solicitação aprovada com sucesso"
+                    }).encode())
+                else:
+                    self._set_api_headers(500)
+                    self.wfile.write(json.dumps({"error": "Erro ao aprovar solicitação"}).encode())
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
+            return
+        
+        if self.path == '/api/qr/solicitacao/rejeitar':
+            """Rejeita uma solicitação de cadastro"""
+            data = json.loads(post_data.decode('utf-8'))
+            
+            if DB_AVAILABLE and DB_MANAGER:
+                solicitacao_id = data.get('id')
+                aprovado_por = data.get('aprovado_por', 'admin')
+                observacoes = data.get('observacoes', '')
+                
+                success = DB_MANAGER.rejeitar_solicitacao(solicitacao_id, aprovado_por, observacoes)
+                if success:
+                    self._set_api_headers()
+                    self.wfile.write(json.dumps({
+                        "success": True,
+                        "message": "Solicitação rejeitada"
+                    }).encode())
+                else:
+                    self._set_api_headers(500)
+                    self.wfile.write(json.dumps({"error": "Erro ao rejeitar solicitação"}).encode())
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
             return
 
         if self.path == '/api/system-config':

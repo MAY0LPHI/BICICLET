@@ -165,6 +165,40 @@ class DatabaseManager:
                     )
                 """)
                 
+                # Tabela de solicitações de cadastro (pending registrations)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS solicitacoes_cadastro (
+                        id TEXT PRIMARY KEY,
+                        nome TEXT NOT NULL,
+                        email TEXT NOT NULL,
+                        cpf TEXT NOT NULL,
+                        telefone TEXT,
+                        senha_hash TEXT NOT NULL,
+                        status TEXT DEFAULT 'pendente',
+                        station_id TEXT,
+                        criado_em TEXT NOT NULL,
+                        aprovado_por TEXT,
+                        aprovado_em TEXT,
+                        observacoes TEXT
+                    )
+                """)
+                
+                # Tabela de registros QR (check-in/check-out via QR)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS registros_qr (
+                        id TEXT PRIMARY KEY,
+                        cliente_id TEXT,
+                        tipo TEXT NOT NULL,
+                        data_hora TEXT NOT NULL,
+                        station_id TEXT,
+                        status TEXT DEFAULT 'ativo',
+                        bicicleta_descricao TEXT,
+                        observacoes TEXT,
+                        criado_em TEXT NOT NULL,
+                        FOREIGN KEY (cliente_id) REFERENCES clientes (id)
+                    )
+                """)
+                
                 # Índices para melhor performance
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_clientes_cpf ON clientes(cpf)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_bicicletas_cliente ON bicicletas(cliente_id)")
@@ -1351,6 +1385,183 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Erro ao salvar usuário: {e}", exc_info=True)
             return False
+    
+    # ==================== SOLICITAÇÕES DE CADASTRO ====================
+    
+    def save_solicitacao_cadastro(self, solicitacao: Dict[str, Any]) -> bool:
+        """Salva uma solicitação de cadastro pendente"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                now = datetime.now().isoformat()
+                
+                cursor.execute("""
+                    INSERT INTO solicitacoes_cadastro 
+                    (id, nome, email, cpf, telefone, senha_hash, status, station_id, criado_em)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    solicitacao.get('id'),
+                    solicitacao.get('nome'),
+                    solicitacao.get('email'),
+                    solicitacao.get('cpf'),
+                    solicitacao.get('telefone'),
+                    solicitacao.get('senha_hash'),
+                    solicitacao.get('status', 'pendente'),
+                    solicitacao.get('station_id'),
+                    now
+                ))
+                
+                conn.commit()
+                logger.info(f"Solicitação de cadastro salva: {solicitacao.get('cpf')}")
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao salvar solicitação: {e}", exc_info=True)
+            return False
+    
+    def get_solicitacoes_pendentes(self) -> List[Dict[str, Any]]:
+        """Retorna todas as solicitações de cadastro pendentes"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT * FROM solicitacoes_cadastro 
+                    WHERE status = 'pendente'
+                    ORDER BY criado_em DESC
+                """)
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Erro ao buscar solicitações pendentes: {e}", exc_info=True)
+            return []
+    
+    def aprovar_solicitacao(self, solicitacao_id: str, aprovado_por: str) -> bool:
+        """Aprova uma solicitação de cadastro e cria o cliente"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                now = datetime.now().isoformat()
+                
+                # Busca a solicitação
+                cursor.execute("""
+                    SELECT * FROM solicitacoes_cadastro WHERE id = ?
+                """, (solicitacao_id,))
+                row = cursor.fetchone()
+                
+                if not row:
+                    return False
+                
+                solicitacao = dict(row)
+                
+                # Cria o cliente
+                import uuid
+                cliente_id = str(uuid.uuid4())
+                cursor.execute("""
+                    INSERT INTO clientes 
+                    (id, cpf, nome, telefone, categoria, comentarios, ativo, data_cadastro, criado_em, atualizado_em)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    cliente_id,
+                    solicitacao['cpf'],
+                    solicitacao['nome'],
+                    solicitacao.get('telefone', ''),
+                    'Geral',
+                    f"Cadastrado via QR code. Email: {solicitacao.get('email', '')}",
+                    1,
+                    now,
+                    now,
+                    now
+                ))
+                
+                # Atualiza status da solicitação
+                cursor.execute("""
+                    UPDATE solicitacoes_cadastro 
+                    SET status = 'aprovado', aprovado_por = ?, aprovado_em = ?
+                    WHERE id = ?
+                """, (aprovado_por, now, solicitacao_id))
+                
+                conn.commit()
+                logger.info(f"Solicitação aprovada: {solicitacao_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao aprovar solicitação: {e}", exc_info=True)
+            return False
+    
+    def rejeitar_solicitacao(self, solicitacao_id: str, aprovado_por: str, observacoes: str = "") -> bool:
+        """Rejeita uma solicitação de cadastro"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                now = datetime.now().isoformat()
+                
+                cursor.execute("""
+                    UPDATE solicitacoes_cadastro 
+                    SET status = 'rejeitado', aprovado_por = ?, aprovado_em = ?, observacoes = ?
+                    WHERE id = ?
+                """, (aprovado_por, now, observacoes, solicitacao_id))
+                
+                conn.commit()
+                logger.info(f"Solicitação rejeitada: {solicitacao_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao rejeitar solicitação: {e}", exc_info=True)
+            return False
+    
+    # ==================== REGISTROS QR ====================
+    
+    def save_registro_qr(self, registro: Dict[str, Any]) -> bool:
+        """Salva um registro de check-in/check-out via QR"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                now = datetime.now().isoformat()
+                
+                cursor.execute("""
+                    INSERT INTO registros_qr 
+                    (id, cliente_id, tipo, data_hora, station_id, status, bicicleta_descricao, observacoes, criado_em)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    registro.get('id'),
+                    registro.get('cliente_id'),
+                    registro.get('tipo'),  # 'entrada' ou 'saida'
+                    registro.get('data_hora', now),
+                    registro.get('station_id'),
+                    registro.get('status', 'ativo'),
+                    registro.get('bicicleta_descricao'),
+                    registro.get('observacoes'),
+                    now
+                ))
+                
+                conn.commit()
+                logger.info(f"Registro QR salvo: {registro.get('tipo')} - {registro.get('cliente_id')}")
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao salvar registro QR: {e}", exc_info=True)
+            return False
+    
+    def get_registros_qr(self, cliente_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Retorna registros QR, opcionalmente filtrados por cliente"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                
+                if cliente_id:
+                    cursor.execute("""
+                        SELECT * FROM registros_qr 
+                        WHERE cliente_id = ?
+                        ORDER BY data_hora DESC
+                    """, (cliente_id,))
+                else:
+                    cursor.execute("""
+                        SELECT * FROM registros_qr 
+                        ORDER BY data_hora DESC
+                        LIMIT 100
+                    """)
+                
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Erro ao buscar registros QR: {e}", exc_info=True)
+            return []
 
 
 # Singleton instance

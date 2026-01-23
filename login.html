@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Cadastro - BICICLET</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <script src="libs/tailwind.min.js"></script>
+    <script src="libs/lucide.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container max-w-md mx-auto p-4">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">🚲 BICICLET</h1>
+            <p class="text-white/80">Sistema de Gerenciamento de Bicicletário</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow-xl overflow-hidden">
+            <div class="flex border-b">
+                <button id="loginTab" class="flex-1 py-3 px-4 text-center font-medium border-b-2 border-blue-500 text-blue-500">
+                    Login
+                </button>
+                <button id="registerTab" class="flex-1 py-3 px-4 text-center font-medium text-gray-500 hover:text-gray-700">
+                    Cadastro
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm" class="p-6">
+                <h2 class="text-2xl font-bold mb-4">Entrar</h2>
+                <form id="formLogin">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="loginUsername">
+                            Usuário ou CPF
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                               id="loginUsername" type="text" placeholder="Seu usuário ou CPF" required>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="loginPassword">
+                            Senha
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" 
+                               id="loginPassword" type="password" placeholder="Sua senha" required>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full" 
+                                type="submit">
+                            Entrar
+                        </button>
+                    </div>
+                </form>
+                <div id="loginMessage" class="mt-4 hidden"></div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="registerForm" class="p-6 hidden">
+                <h2 class="text-2xl font-bold mb-4">Criar Conta</h2>
+                <p class="text-sm text-gray-600 mb-4">
+                    Sua solicitação será enviada para aprovação do administrador.
+                </p>
+                <form id="formRegister">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="registerNome">
+                            Nome Completo *
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                               id="registerNome" type="text" placeholder="Seu nome completo" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="registerEmail">
+                            E-mail *
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                               id="registerEmail" type="email" placeholder="seu@email.com" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="registerCPF">
+                            CPF *
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                               id="registerCPF" type="text" placeholder="000.000.000-00" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="registerTelefone">
+                            Telefone
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                               id="registerTelefone" type="tel" placeholder="(00) 00000-0000">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="registerSenha">
+                            Senha *
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" 
+                               id="registerSenha" type="password" placeholder="Mínimo 6 caracteres" required minlength="6">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full" 
+                                type="submit">
+                            Solicitar Cadastro
+                        </button>
+                    </div>
+                </form>
+                <div id="registerMessage" class="mt-4 hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const stationId = urlParams.get('station') || 'default';
+        const qrToken = urlParams.get('token');
+
+        // Tab switching
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        const loginFormDiv = document.getElementById('loginForm');
+        const registerFormDiv = document.getElementById('registerForm');
+
+        loginTab.addEventListener('click', () => {
+            loginTab.classList.add('border-blue-500', 'text-blue-500');
+            loginTab.classList.remove('text-gray-500');
+            registerTab.classList.remove('border-blue-500', 'text-blue-500');
+            registerTab.classList.add('text-gray-500');
+            loginFormDiv.classList.remove('hidden');
+            registerFormDiv.classList.add('hidden');
+        });
+
+        registerTab.addEventListener('click', () => {
+            registerTab.classList.add('border-blue-500', 'text-blue-500');
+            registerTab.classList.remove('text-gray-500');
+            loginTab.classList.remove('border-blue-500', 'text-blue-500');
+            loginTab.classList.add('text-gray-500');
+            registerFormDiv.classList.remove('hidden');
+            loginFormDiv.classList.add('hidden');
+        });
+
+        // Login form handler
+        document.getElementById('formLogin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const messageDiv = document.getElementById('loginMessage');
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Save user data and token
+                    localStorage.setItem('biciclet_user', JSON.stringify(data.user));
+                    localStorage.setItem('biciclet_token', data.user.token);
+                    
+                    messageDiv.className = 'mt-4 p-3 bg-green-100 text-green-700 rounded';
+                    messageDiv.textContent = 'Login realizado com sucesso! Redirecionando...';
+                    messageDiv.classList.remove('hidden');
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 1000);
+                } else {
+                    messageDiv.className = 'mt-4 p-3 bg-red-100 text-red-700 rounded';
+                    messageDiv.textContent = data.error || 'Erro ao fazer login';
+                    messageDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                messageDiv.className = 'mt-4 p-3 bg-red-100 text-red-700 rounded';
+                messageDiv.textContent = 'Erro de conexão. Tente novamente.';
+                messageDiv.classList.remove('hidden');
+            }
+        });
+
+        // Register form handler
+        document.getElementById('formRegister').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nome = document.getElementById('registerNome').value;
+            const email = document.getElementById('registerEmail').value;
+            const cpf = document.getElementById('registerCPF').value.replace(/\D/g, '');
+            const telefone = document.getElementById('registerTelefone').value;
+            const senha = document.getElementById('registerSenha').value;
+            const messageDiv = document.getElementById('registerMessage');
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nome,
+                        email,
+                        cpf,
+                        telefone,
+                        senha,
+                        station_id: stationId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    messageDiv.className = 'mt-4 p-3 bg-green-100 text-green-700 rounded';
+                    messageDiv.textContent = data.message || 'Solicitação enviada com sucesso!';
+                    messageDiv.classList.remove('hidden');
+                    
+                    // Reset form
+                    document.getElementById('formRegister').reset();
+                    
+                    // Switch to login tab after 2 seconds
+                    setTimeout(() => {
+                        loginTab.click();
+                    }, 2000);
+                } else {
+                    messageDiv.className = 'mt-4 p-3 bg-red-100 text-red-700 rounded';
+                    messageDiv.textContent = data.error || 'Erro ao criar solicitação';
+                    messageDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                messageDiv.className = 'mt-4 p-3 bg-red-100 text-red-700 rounded';
+                messageDiv.textContent = 'Erro de conexão. Tente novamente.';
+                messageDiv.classList.remove('hidden');
+            }
+        });
+
+        // CPF Mask
+        document.getElementById('registerCPF').addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            
+            if (value.length > 9) {
+                value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            } else if (value.length > 6) {
+                value = value.replace(/(\d{3})(\d{3})(\d{3})/, '$1.$2.$3');
+            } else if (value.length > 3) {
+                value = value.replace(/(\d{3})(\d{3})/, '$1.$2');
+            }
+            
+            e.target.value = value;
+        });
+
+        // Telefone Mask
+        document.getElementById('registerTelefone').addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            
+            if (value.length > 10) {
+                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            } else if (value.length > 6) {
+                value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+            } else if (value.length > 2) {
+                value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+            }
+            
+            e.target.value = value;
+        });
+    </script>
+</body>
+</html>
