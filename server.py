@@ -366,8 +366,12 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         if path == '/api/qr/generate':
             """Gera QR code para estação"""
             if QR_GENERATOR and JWT_MANAGER:
+                # Parse query parameters
+                from urllib.parse import parse_qs
+                query_params = parse_qs(parsed_path.query) if parsed_path.query else {}
+                station_id = query_params.get('station', ['default'])[0]
+                
                 # Gera token para a estação
-                station_id = parsed_path.query.get('station', 'default') if hasattr(parsed_path, 'query') else 'default'
                 token = JWT_MANAGER.generate_qr_token(station_id)
                 qr_base64 = QR_GENERATOR.generate_qr_base64(station_id, token)
                 

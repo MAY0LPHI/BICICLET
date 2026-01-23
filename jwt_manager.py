@@ -6,7 +6,7 @@ Fornece geração e validação de tokens JWT para autenticação segura
 import os
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 
 logging.basicConfig(
@@ -85,13 +85,13 @@ class JWTManager:
             return hashlib.sha256(token_str.encode()).hexdigest()
         
         # Cria payload do token
-        expiration = datetime.utcnow() + timedelta(hours=self.token_expiry_hours)
+        expiration = datetime.now(timezone.utc) + timedelta(hours=self.token_expiry_hours)
         payload = {
             'username': user_data.get('username'),
             'nome': user_data.get('nome'),
             'tipo': user_data.get('tipo'),
             'exp': expiration,
-            'iat': datetime.utcnow()
+            'iat': datetime.now(timezone.utc)
         }
         
         # Gera token
@@ -144,12 +144,12 @@ class JWTManager:
             return hashlib.sha256(token_data.encode()).hexdigest()[:16]
         
         # Token de longa duração para QR codes de estação
-        expiration = datetime.utcnow() + timedelta(days=365)
+        expiration = datetime.now(timezone.utc) + timedelta(days=365)
         payload = {
             'type': 'qr_station',
             'station_id': station_id,
             'exp': expiration,
-            'iat': datetime.utcnow()
+            'iat': datetime.now(timezone.utc)
         }
         
         token = jwt.encode(payload, self.secret_key, algorithm='HS256')
