@@ -4,6 +4,7 @@ import { Modals } from '../shared/modals.js';
 import { Auth } from '../shared/auth.js';
 import { logAction } from '../shared/audit-logger.js';
 import { notificationManager } from '../shared/notifications.js';
+import { ConexoesQRManager } from './conexoes-qr.js';
 
 export class RegistrosManager {
     constructor(app) {
@@ -39,6 +40,8 @@ export class RegistrosManager {
             openDashboardModalBtn: document.getElementById('open-dashboard-modal-btn'),
             dashboardModal: document.getElementById('dashboard-modal'),
         };
+        this.conexoesQRManager = new ConexoesQRManager(app);
+        window.qrConnectionsManager = this.conexoesQRManager;
         this.setupEventListeners();
     }
 
