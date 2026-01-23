@@ -94,6 +94,10 @@ class OfflineAuthManager:
             key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
             return base64.b64encode(salt + key).decode('utf-8')
     
+    def hash_password_public(self, password: str) -> str:
+        """Método público para hash de senha"""
+        return self._hash_password(password)
+    
     def _verify_password(self, password: str, hashed: str) -> bool:
         """Verifica a senha contra o hash"""
         try:

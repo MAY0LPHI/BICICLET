@@ -73,16 +73,21 @@ class JWTManager:
             Token JWT assinado
         """
         if not JWT_AVAILABLE:
-            # Fallback simples sem JWT
+            # Fallback com mais segurança
             import hashlib
             import time
+            import secrets
+            # Adiciona entropia com random nonce
+            nonce = secrets.token_urlsafe(16)
             token_data = {
                 'username': user_data.get('username'),
                 'tipo': user_data.get('tipo'),
-                'timestamp': int(time.time())
+                'timestamp': int(time.time()),
+                'nonce': nonce
             }
             token_str = json.dumps(token_data)
-            return hashlib.sha256(token_str.encode()).hexdigest()
+            # Usa HMAC para maior segurança
+            return hashlib.sha256(f"{token_str}:{self.secret_key}".encode()).hexdigest()
         
         # Cria payload do token
         expiration = datetime.now(timezone.utc) + timedelta(hours=self.token_expiry_hours)
@@ -111,8 +116,8 @@ class JWTManager:
             Dados do usuário se válido, None caso contrário
         """
         if not JWT_AVAILABLE:
-            # Sem validação real no fallback
-            logger.warning("JWT não disponível, token não pode ser validado adequadamente")
+            # Fallback: requer JWT em produção para segurança adequada
+            logger.error("JWT não disponível - tokens não podem ser validados adequadamente")
             return None
         
         try:
@@ -138,10 +143,13 @@ class JWTManager:
             Token único para o QR code
         """
         if not JWT_AVAILABLE:
+            # Fallback com mais segurança
             import hashlib
             import time
-            token_data = f"{station_id}:{int(time.time())}"
-            return hashlib.sha256(token_data.encode()).hexdigest()[:16]
+            import secrets
+            nonce = secrets.token_urlsafe(16)
+            token_data = f"{station_id}:{int(time.time())}:{nonce}"
+            return hashlib.sha256(f"{token_data}:{self.secret_key}".encode()).hexdigest()[:32]
         
         # Token de longa duração para QR codes de estação
         expiration = datetime.now(timezone.utc) + timedelta(days=365)

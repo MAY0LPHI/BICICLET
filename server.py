@@ -662,8 +662,8 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             
             if DB_AVAILABLE and DB_MANAGER and AUTH_MANAGER:
                 import uuid
-                # Hash da senha
-                senha_hash = AUTH_MANAGER._hash_password(data.get('senha'))
+                # Hash da senha usando método público
+                senha_hash = AUTH_MANAGER.hash_password_public(data.get('senha'))
                 
                 solicitacao = {
                     'id': str(uuid.uuid4()),
@@ -699,9 +699,14 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 import uuid
                 from datetime import datetime
                 
-                # Valida token se fornecido
+                # Valida token obrigatório
                 token = data.get('token')
-                if token and JWT_MANAGER:
+                if not token:
+                    self._set_api_headers(401)
+                    self.wfile.write(json.dumps({"error": "Token de autenticação é obrigatório"}).encode())
+                    return
+                
+                if JWT_MANAGER:
                     user_data = JWT_MANAGER.validate_token(token)
                     if not user_data:
                         self._set_api_headers(401)
@@ -743,9 +748,14 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 import uuid
                 from datetime import datetime
                 
-                # Valida token se fornecido
+                # Valida token obrigatório
                 token = data.get('token')
-                if token and JWT_MANAGER:
+                if not token:
+                    self._set_api_headers(401)
+                    self.wfile.write(json.dumps({"error": "Token de autenticação é obrigatório"}).encode())
+                    return
+                
+                if JWT_MANAGER:
                     user_data = JWT_MANAGER.validate_token(token)
                     if not user_data:
                         self._set_api_headers(401)
