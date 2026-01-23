@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - BICICLET</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <script src="libs/tailwind.min.js"></script>
+    <script src="libs/lucide.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container max-w-2xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-xl p-6 mb-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">🚲 BICICLET</h1>
+                    <p class="text-gray-600" id="userName">Bem-vindo!</p>
+                </div>
+                <button id="btnLogout" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                    Sair
+                </button>
+            </div>
+        </div>
+
+        <!-- Status Card -->
+        <div class="bg-white rounded-lg shadow-xl p-6 mb-4">
+            <h2 class="text-xl font-bold mb-4">Status Atual</h2>
+            <div id="statusDisplay" class="text-center py-8">
+                <div class="animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <button id="btnCheckin" class="bg-green-500 hover:bg-green-700 text-white font-bold py-8 px-4 rounded-lg shadow-xl transition transform hover:scale-105">
+                <div class="flex flex-col items-center">
+                    <i data-lucide="log-in" class="w-12 h-12 mb-2"></i>
+                    <span class="text-xl">Dar Entrada</span>
+                    <span class="text-sm opacity-75">Registrar chegada da bicicleta</span>
+                </div>
+            </button>
+            
+            <button id="btnCheckout" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-8 px-4 rounded-lg shadow-xl transition transform hover:scale-105">
+                <div class="flex flex-col items-center">
+                    <i data-lucide="log-out" class="w-12 h-12 mb-2"></i>
+                    <span class="text-xl">Finalizar Uso</span>
+                    <span class="text-sm opacity-75">Retirar bicicleta</span>
+                </div>
+            </button>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-lg shadow-xl p-6">
+            <h2 class="text-xl font-bold mb-4">Histórico Recente</h2>
+            <div id="activityList">
+                <div class="animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Checkin -->
+    <div id="modalCheckin" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 class="text-xl font-bold mb-4">Registrar Entrada</h3>
+            <form id="formCheckin">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="checkinBike">
+                        Descrição da Bicicleta
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                           id="checkinBike" type="text" placeholder="Ex: Caloi Mountain Bike Vermelha">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="checkinObs">
+                        Observações (opcional)
+                    </label>
+                    <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                              id="checkinObs" rows="3" placeholder="Observações adicionais"></textarea>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        Confirmar Entrada
+                    </button>
+                    <button type="button" id="btnCancelCheckin" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+            <div id="checkinMessage" class="mt-4 hidden"></div>
+        </div>
+    </div>
+
+    <!-- Modal for Checkout -->
+    <div id="modalCheckout" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 class="text-xl font-bold mb-4">Finalizar Uso</h3>
+            <form id="formCheckout">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="checkoutBike">
+                        Descrição da Bicicleta
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                           id="checkoutBike" type="text" placeholder="Ex: Caloi Mountain Bike Vermelha">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="checkoutObs">
+                        Observações (opcional)
+                    </label>
+                    <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                              id="checkoutObs" rows="3" placeholder="Observações adicionais"></textarea>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Confirmar Saída
+                    </button>
+                    <button type="button" id="btnCancelCheckout" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+            <div id="checkoutMessage" class="mt-4 hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        // Check if user is logged in
+        const userData = JSON.parse(localStorage.getItem('biciclet_user') || 'null');
+        const token = localStorage.getItem('biciclet_token');
+
+        if (!userData || !token) {
+            window.location.href = '/login.html';
+        }
+
+        // Display user name
+        document.getElementById('userName').textContent = `Bem-vindo, ${userData.nome || userData.username}!`;
+
+        // Load user status and activity
+        async function loadUserData() {
+            try {
+                // Get user's recent activity
+                const response = await fetch(`/api/qr/registros`);
+                const registros = await response.json();
+                
+                // Filter user's registros (would need cliente_id mapping)
+                displayActivity(registros.slice(0, 5));
+                updateStatus(registros);
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        function displayActivity(registros) {
+            const activityList = document.getElementById('activityList');
+            
+            if (!registros || registros.length === 0) {
+                activityList.innerHTML = '<p class="text-gray-500">Nenhuma atividade registrada.</p>';
+                return;
+            }
+
+            activityList.innerHTML = registros.map(r => `
+                <div class="border-b py-3 flex justify-between items-center">
+                    <div>
+                        <span class="font-semibold ${r.tipo === 'entrada' ? 'text-green-600' : 'text-blue-600'}">
+                            ${r.tipo === 'entrada' ? '📥 Entrada' : '📤 Saída'}
+                        </span>
+                        <p class="text-sm text-gray-600">${r.bicicleta_descricao || 'Sem descrição'}</p>
+                    </div>
+                    <span class="text-sm text-gray-500">
+                        ${new Date(r.data_hora).toLocaleString('pt-BR')}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function updateStatus(registros) {
+            const statusDisplay = document.getElementById('statusDisplay');
+            
+            // Find last entry without exit
+            const hasActiveEntry = registros.some(r => r.tipo === 'entrada' && r.status === 'ativo');
+            
+            if (hasActiveEntry) {
+                statusDisplay.innerHTML = `
+                    <div class="text-green-600">
+                        <i data-lucide="check-circle" class="w-16 h-16 mx-auto mb-2"></i>
+                        <p class="text-xl font-bold">Bicicleta Estacionada</p>
+                        <p class="text-sm">Sua bicicleta está no bicicletário</p>
+                    </div>
+                `;
+            } else {
+                statusDisplay.innerHTML = `
+                    <div class="text-gray-600">
+                        <i data-lucide="bike" class="w-16 h-16 mx-auto mb-2"></i>
+                        <p class="text-xl font-bold">Nenhuma Bicicleta Registrada</p>
+                        <p class="text-sm">Clique em "Dar Entrada" quando chegar</p>
+                    </div>
+                `;
+            }
+            
+            lucide.createIcons();
+        }
+
+        // Button handlers
+        document.getElementById('btnCheckin').addEventListener('click', () => {
+            document.getElementById('modalCheckin').classList.remove('hidden');
+            document.getElementById('modalCheckin').classList.add('flex');
+        });
+
+        document.getElementById('btnCheckout').addEventListener('click', () => {
+            document.getElementById('modalCheckout').classList.remove('hidden');
+            document.getElementById('modalCheckout').classList.add('flex');
+        });
+
+        document.getElementById('btnCancelCheckin').addEventListener('click', () => {
+            document.getElementById('modalCheckin').classList.add('hidden');
+            document.getElementById('formCheckin').reset();
+        });
+
+        document.getElementById('btnCancelCheckout').addEventListener('click', () => {
+            document.getElementById('modalCheckout').classList.add('hidden');
+            document.getElementById('formCheckout').reset();
+        });
+
+        document.getElementById('btnLogout').addEventListener('click', () => {
+            localStorage.removeItem('biciclet_user');
+            localStorage.removeItem('biciclet_token');
+            window.location.href = '/login.html';
+        });
+
+        // Checkin form handler
+        document.getElementById('formCheckin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bicicleta_descricao = document.getElementById('checkinBike').value;
+            const observacoes = document.getElementById('checkinObs').value;
+            const messageDiv = document.getElementById('checkinMessage');
+
+            try {
+                const response = await fetch('/api/qr/checkin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        cliente_id: userData.username,
+                        token: token,
+                        bicicleta_descricao,
+                        observacoes
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    messageDiv.className = 'mt-4 p-3 bg-green-100 text-green-700 rounded';
+                    messageDiv.textContent = data.message || 'Entrada registrada com sucesso!';
+                    messageDiv.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                        document.getElementById('modalCheckin').classList.add('hidden');
+                        document.getElementById('formCheckin').reset();
+                        loadUserData();
+                    }, 1500);
+                } else {
+                    messageDiv.className = 'mt-4 p-3 bg-red-100 text-red-700 rounded';
+                    messageDiv.textContent = data.error || 'Erro ao registrar entrada';
+                    messageDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                messageDiv.className = 'mt-4 p-3 bg-red-100 text-red-700 rounded';
+                messageDiv.textContent = 'Erro de conexão. Tente novamente.';
+                messageDiv.classList.remove('hidden');
+            }
+        });
+
+        // Checkout form handler
+        document.getElementById('formCheckout').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bicicleta_descricao = document.getElementById('checkoutBike').value;
+            const observacoes = document.getElementById('checkoutObs').value;
+            const messageDiv = document.getElementById('checkoutMessage');
+
+            try {
+                const response = await fetch('/api/qr/checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        cliente_id: userData.username,
+                        token: token,
+                        bicicleta_descricao,
+                        observacoes
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    messageDiv.className = 'mt-4 p-3 bg-green-100 text-green-700 rounded';
+                    messageDiv.textContent = data.message || 'Saída registrada com sucesso!';
+                    messageDiv.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                        document.getElementById('modalCheckout').classList.add('hidden');
+                        document.getElementById('formCheckout').reset();
+                        loadUserData();
+                    }, 1500);
+                } else {
+                    messageDiv.className = 'mt-4 p-3 bg-red-100 text-red-700 rounded';
+                    messageDiv.textContent = data.error || 'Erro ao registrar saída';
+                    messageDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                messageDiv.className = 'mt-4 p-3 bg-red-100 text-red-700 rounded';
+                messageDiv.textContent = 'Erro de conexão. Tente novamente.';
+                messageDiv.classList.remove('hidden');
+            }
+        });
+
+        // Load initial data
+        loadUserData();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
