@@ -8,12 +8,17 @@ O sistema agora salva **todos os dados em arquivos JSON** organizados em pastas 
 
 ### Windows
 
-Todos os dados são salvos em:
+### Windows
+
+Todos os dados são salvos na pasta `dados/` na raiz do projeto (versão Portable) ou em:
 ```
-C:\Users\<SeuUsuário>\AppData\Roaming\bicicletario-desktop\dados\
+%APPDATA%\bicicletario-desktop\dados\
 ```
 
-### Organização
+### Estrutura (Versão 3.1)
+
+O sistema utiliza arquivos **JSON** para armazenamento, garantindo compatibilidade e facilidade de backup.
+
 
 ```
 📁 dados/
@@ -213,24 +218,19 @@ Quando você abrir a versão desktop pela primeira vez:
 2. Não misture os dois sem exportar/importar
 3. Faça backup antes de trocar de versão
 
-## 📝 Notas Técnicas
+## 🔄 Migração e Backup
 
-### Nomes de Arquivo
-- CPF sem pontuação (apenas números)
-- Datas com zero à esquerda (01, 02, ..., 31)
-- Formato JSON com indentação (legível)
+### Backup Automático
+- O sistema realiza backups automáticos da pasta `dados/` ao iniciar.
+- Local: `dados/backups/`.
 
-### Codificação
-- UTF-8 para suportar acentos e caracteres especiais
-- Compatível com Excel e editores de texto
-
-### Sincronização
-- **Não há** sincronização automática entre dispositivos
-- Cada instalação tem seus próprios arquivos
-- Use exportação/importação para transferir dados
+### Migração
+- Para migrar de Web para Desktop:
+  1. No Web, vá em Configuração > Exportar Sistema (JSON).
+  2. No Desktop, vá em Configuração > Importar Restauração.
 
 ---
 
-**Versão**: 2.1.0  
-**Sistema de Arquivos**: Electron + Node.js  
-**Formato**: JSON (UTF-8)
+**Versão**: 3.1.0  
+**Sistema de Arquivos**: JSON Estruturado  
+**Status**: Estável

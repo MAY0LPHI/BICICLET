@@ -74,3 +74,23 @@ dados/
 1. **Cache do Navegador**: Se mudanças não aparecerem, limpe o cache (Ctrl+Shift+R)
 2. **Dados Salvos**: Agora são salvos em arquivos, não apenas no navegador
 3. **Backup**: Sempre faça backup da pasta `dados/` regularmente
+
+---
+
+## 🎮 Jogos e Passatempos
+
+O sistema agora inclui um menu de **Jogos** para momentos de pausa:
+1. Clique na aba **"Jogos"** (ícone de controle)
+2. Escolha entre diversos jogos (Snake, Doom, Termo, etc)
+3. Sua pontuação é salva no **Ranking Local**
+4. Desbloqueie **Conquistas** jogando frequentemente
+
+## 🌐 Modo Offline
+
+O sistema funciona **sem internet**:
+- Pode fechar e abrir o navegador normalmente
+- Os dados sincronizam automaticamente quando voltar online (se usar servidor remoto)
+- Para uso local, **nenhuma configuração extra é necessária**
+
+---
+**Versão 3.1 - Atualizado em 23/01/2026**

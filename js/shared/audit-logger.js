@@ -15,7 +15,7 @@ export class AuditLogger {
 
     static log(action, entity, entityId, details = {}, metadata = {}) {
         const session = Auth.getCurrentSession();
-        
+
         if (!session) {
             console.warn('Tentativa de log sem sessão ativa');
             return;
@@ -46,9 +46,9 @@ export class AuditLogger {
         }
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-        
+
         console.log(`[AUDIT] ${action} - ${entity}`, logEntry);
-        
+
         return logEntry;
     }
 
@@ -93,9 +93,9 @@ export class AuditLogger {
         cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
         const filtered = logs.filter(log => new Date(log.timestamp) >= cutoffDate);
-        
+
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-        
+
         return {
             removed: logs.length - filtered.length,
             remaining: filtered.length
@@ -149,30 +149,75 @@ export class AuditLogger {
 
     static formatLogDetails(log) {
         const details = [];
-        
-        if (log.details.nome) {
-            details.push(`Nome: ${log.details.nome}`);
+        const d = log.details || {};
+
+        // --- Dados / Backup ---
+        if (d.tipo) details.push(`Tipo: ${d.tipo}`);
+        if (d.tipos && Array.isArray(d.tipos)) details.push(`Tipos: ${d.tipos.join(', ')}`);
+        if (d.quantidade !== undefined) details.push(`Qtd: ${d.quantidade}`);
+        if (d.formato) details.push(`Formato: ${d.formato}`);
+        if (d.resultado) details.push(`Resultado: ${d.resultado}`);
+        if (d.periodo) {
+            const inicio = d.periodo.inicio ? new Date(d.periodo.inicio).toLocaleDateString('pt-BR') : 'Início';
+            const fim = d.periodo.fim ? new Date(d.periodo.fim).toLocaleDateString('pt-BR') : 'Hoje';
+            details.push(`Período: ${inicio} até ${fim}`);
         }
-        if (log.details.cpf) {
-            details.push(`CPF: ${log.details.cpf}`);
+
+        // --- Clientes / Pessoas ---
+        if (d.nome) details.push(`Nome: ${d.nome}`);
+        if (d.cpf) details.push(`CPF: ${d.cpf}`);
+        if (d.telefone) details.push(`Tel: ${d.telefone}`);
+        if (d.email) details.push(`Email: ${d.email}`);
+
+        // --- Bicicletas ---
+        if (d.modelo) details.push(`Modelo: ${d.modelo}`);
+        if (d.marca) details.push(`Marca: ${d.marca}`);
+        if (d.cor) details.push(`Cor: ${d.cor}`);
+
+        // --- Registros / Movimentação ---
+        if (d.cliente) details.push(`Cliente: ${d.cliente}`); // Nome do cliente no registro
+        if (d.clienteCpf) details.push(`CPF: ${d.clienteCpf}`);
+        if (d.dataHoraEntrada) details.push(`Entrada: ${new Date(d.dataHoraEntrada).toLocaleString('pt-BR')}`);
+        if (d.dataHoraSaida) details.push(`Saída: ${new Date(d.dataHoraSaida).toLocaleString('pt-BR')}`);
+        if (d.acao) details.push(`Ação: ${d.acao}`); // Ex: 'saida', 'remocao_acesso'
+        if (d.from && d.to) details.push(`De: ${d.from} → Para: ${d.to}`);
+
+        // --- Usuários ---
+        if (d.username) details.push(`Usuário: ${d.username}`);
+        if (d.userTipo || (d.tipo && log.entity === 'usuario')) details.push(`Função: ${d.userTipo || d.tipo}`);
+
+        // --- Comentários ---
+        if (d.comentario) details.push(`Comentário: "${d.comentario}"`);
+        if (d.commentId) details.push(`ID Comentário: ${d.commentId}`);
+
+        // --- Alterações Genéricas (Changes) ---
+        if (d.changes) {
+            const changesList = [];
+            const before = d.changes.before || {};
+            const after = d.changes.after || {};
+
+            // Tenta listar apenas o que mudou
+            for (const key in after) {
+                if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+                    let valBefore = before[key];
+                    let valAfter = after[key];
+
+                    // Tratamento simples para objetos/arrays
+                    if (typeof valBefore === 'object') valBefore = JSON.stringify(valBefore);
+                    if (typeof valAfter === 'object') valAfter = JSON.stringify(valAfter);
+
+                    changesList.push(`${key}: ${valBefore} -> ${valAfter}`);
+                }
+            }
+            if (changesList.length > 0) {
+                details.push(`Alterações: [${changesList.join(', ')}]`);
+            }
         }
-        if (log.details.modelo) {
-            details.push(`Modelo: ${log.details.modelo}`);
-        }
-        if (log.details.marca) {
-            details.push(`Marca: ${log.details.marca}`);
-        }
-        if (log.details.from && log.details.to) {
-            details.push(`De: ${log.details.from} → Para: ${log.details.to}`);
-        }
-        if (log.details.count !== undefined) {
-            details.push(`Quantidade: ${log.details.count}`);
-        }
-        if (log.details.format) {
-            details.push(`Formato: ${log.details.format}`);
-        }
-        
-        return details.join(', ') || 'Sem detalhes';
+
+        // Fallback para outros campos não mapeados especificamente, se sobrarem
+        // (Opcional: listar chaves restantes se não forem as acima)
+
+        return details.join(' | ') || 'Sem detalhes';
     }
 
     static getLogStats(logs = null) {
@@ -192,7 +237,7 @@ export class AuditLogger {
             stats.byUser[log.username] = (stats.byUser[log.username] || 0) + 1;
             stats.byAction[log.action] = (stats.byAction[log.action] || 0) + 1;
             stats.byEntity[log.entity] = (stats.byEntity[log.entity] || 0) + 1;
-            
+
             const day = log.timestamp.split('T')[0];
             stats.byDay[day] = (stats.byDay[day] || 0) + 1;
         });

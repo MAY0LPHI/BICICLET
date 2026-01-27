@@ -7,6 +7,8 @@ class StorageBackend {
     this.backupsPath = path.join(__dirname, '..', 'dados', 'database', 'backups');
     this.clientesFile = path.join(this.basePath, 'clientes.json');
     this.registrosFile = path.join(this.basePath, 'registros.json');
+    this.categoriasFile = path.join(this.basePath, 'categorias.json');
+    this.backupSettingsFile = path.join(this.basePath, 'backup-settings.json');
     this.imagesDir = path.join(this.basePath, 'imagens');
 
     this.ensureDirectories();
@@ -396,7 +398,7 @@ class StorageBackend {
 
   loadBackupSettings() {
     try {
-      const settingsFile = path.join(this.basePath, 'backup-settings.json');
+      const settingsFile = this.backupSettingsFile;
 
       if (fs.existsSync(settingsFile)) {
         const data = fs.readFileSync(settingsFile, 'utf8');
@@ -428,7 +430,7 @@ class StorageBackend {
 
   saveBackupSettings(settings) {
     try {
-      const settingsFile = path.join(this.basePath, 'backup-settings.json');
+      const settingsFile = this.backupSettingsFile;
       fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2), 'utf8');
       console.log('\x1b[32m%s\x1b[0m', '💾 [BACKUP] Configurações de backup salvas');
       return { success: true };

@@ -8,65 +8,30 @@
 OPÇÃO 1: USANDO O ARQUIVO .BAT (RECOMENDADO)
 ═════════════════════════════════════════════
 
-Windows (Simples):
-  → Duplo clique em: iniciar-desktop-simples.bat
-  
-Windows (Detalhado com verificações):
-  → Duplo clique em: iniciar-desktop.bat
-  → Ou abra "Prompt de Comando" (cmd) aqui e execute: iniciar-desktop.bat
+Windows:
+   → Duplo clique em: scripts\INICIAR-NAVEGADOR.bat
+   → Isso iniciará o servidor e abrirá o navegador automaticamente.
 
-
-OPÇÃO 2: USANDO POWERSHELL
-════════════════════════════
-
-Windows 10 ou superior:
-  → Clique com botão direito em: iniciar-desktop.ps1
-  → Selecione: "Run with PowerShell"
-  
-Ou abra PowerShell e execute:
-  → Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-  → .\iniciar-desktop.ps1
-
-
-OPÇÃO 3: MANUAL (Prompt de Comando)
+OPÇÃO 2: MANUAL (Prompt de Comando)
 ════════════════════════════════════
 
 Abra "Prompt de Comando" (cmd) na pasta do projeto e execute:
 
-  1. Primeira execução:
-     npm install
-     npm start
+  python server.py
 
-  2. Próximas execuções:
-     npm start
-
-
-PRÉ-REQUISITOS
-═══════════════
-
-✓ Node.js instalado (versão 14 ou superior)
-  → Baixe em: https://nodejs.org/
-  → Recomendamos a versão LTS (Long Term Support)
-
-✓ npm (incluído com Node.js)
-
-Para verificar se estão instalados, abra Prompt de Comando e execute:
-  node --version
-  npm --version
+Isso iniciará o servidor na porta 5000.
+Acesse http://localhost:5000 no seu navegador.
 
 
 DADOS DA APLICAÇÃO
 ════════════════════
 
 Os dados são salvos em:
-  → dados/desktop/
+  → dados/navegador/ (Web/Offline)
 
-Arquivos criados:
-  • clientes.json ........... Lista de clientes
-  • registros.json .......... Registros de entrada/saída
-  • usuarios.json ........... Usuários do sistema
-  • auditoria.json .......... Log de auditoria
-  • categorias.json ......... Categorias
+A estrutura de dados é:
+  • clientes/ ............... Arquivos JSON por cliente
+  • registros/ .............. Arquivos JSON por registro
 
 
 CREDENCIAIS PADRÃO
@@ -84,64 +49,28 @@ Dono (Owner):
 RESOLUÇÃO DE PROBLEMAS
 ══════════════════════
 
-❌ "npm: comando não encontrado"
-   → Node.js não está instalado ou não está no PATH
-   → Reinstale Node.js de: https://nodejs.org/
+❌ "Python não encontrado"
+   → Instale Python 3.12+ e marque "Add to PATH"
 
-❌ "Cannot find module 'electron'"
-   → Execute: npm install
-   → Aguarde até terminar (pode levar alguns minutos)
+❌ "Porta 5000 em uso"
+   → Verifique se já não tem outra instância rodando
+   → Feche o terminal e tente novamente
 
 ❌ Aplicação não abre
-   → Execute em PowerShell como Administrador
-   → Verifique antivírus (pode estar bloqueando)
+   → Tente executar como Administrador
 
 ❌ Dados não estão sendo salvos
-   → Verifique permissões da pasta
-   → Certifique-se de que a pasta "dados" existe e é gravável
-
-
-PARA DESINSTALAR DEPENDÊNCIAS
-══════════════════════════════
-
-Se tiver problemas, pode remover e reinstalar:
-
-  1. Delete a pasta: node_modules
-  2. Delete o arquivo: package-lock.json
-  3. Execute: npm install
-
-
-CONSTRUIR INSTALADOR WINDOWS
-══════════════════════════════
-
-Para gerar um arquivo .exe instalável:
-
-  npm run build
-
-O arquivo será criado em: dist/
-
-Requisitos:
-  • Windows 10 ou superior
-  • 200 MB de espaço livre
-  • Permissões de administrador
+   → Verifique permissões da pasta "dados"
 
 
 SUPORTE E MAIS INFORMAÇÕES
 ════════════════════════════
 
-Versão: 2.2.0
+Versão: 3.1.0 (Offline + Jogos)
 Desenvolvido para: Bicicletário Shop - Boulevard V.V.
 
-Para problemas, verifique:
-  • Que o Node.js está atualizado
-  • Que tem permissão de escrita na pasta
-  • Que não há antivírus bloqueando
-  • Que o Windows está atualizado
-
+Para mais detalhes, consulte a pasta docs/.
 
 ════════════════════════════════════════════════════════════════════
 
-Dúvidas? Abra Prompt de Comando na pasta e execute:
-  npm start
-
-Pressione Ctrl+C para parar a aplicação.
+Dúvidas? Entre em contato com o suporte.

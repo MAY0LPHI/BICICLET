@@ -12,10 +12,10 @@ export class Usuarios {
     static init() {
         const usersTab = document.getElementById('usuarios-tab-content');
         if (!usersTab) return;
-        
+
         this.renderUserList();
         this.setupEventListeners();
-        
+
         if (document.getElementById('audit-logs-list')) {
             this.initAuditReport();
         }
@@ -110,20 +110,18 @@ export class Usuarios {
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <span class="px-3 py-1 text-xs font-medium rounded-full ${
-                            user.tipo === 'dono' 
-                                ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
-                                : user.tipo === 'admin' 
-                                ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' 
-                                : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                        }">
+                        <span class="px-3 py-1 text-xs font-medium rounded-full ${user.tipo === 'dono'
+                ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
+                : user.tipo === 'admin'
+                    ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                    : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+            }">
                             ${user.tipo === 'dono' ? 'Dono' : user.tipo === 'admin' ? 'Administrador' : 'Funcionário'}
                         </span>
-                        <span class="px-3 py-1 text-xs font-medium rounded-full ${
-                            user.ativo 
-                                ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' 
-                                : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
-                        }">
+                        <span class="px-3 py-1 text-xs font-medium rounded-full ${user.ativo
+                ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+            }">
                             ${user.ativo ? 'Ativo' : 'Inativo'}
                         </span>
                     </div>
@@ -161,11 +159,10 @@ export class Usuarios {
                         <i data-lucide="edit" class="w-4 h-4 inline mr-1"></i>
                         Editar
                     </button>
-                    <button onclick="Usuarios.toggleUserStatus('${user.id}')" class="flex-1 px-3 py-2 text-sm ${
-                        user.ativo 
-                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50' 
-                            : 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50'
-                    } rounded-lg transition-colors">
+                    <button onclick="Usuarios.toggleUserStatus('${user.id}')" class="flex-1 px-3 py-2 text-sm ${user.ativo
+                ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50'
+                : 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50'
+            } rounded-lg transition-colors">
                         <i data-lucide="${user.ativo ? 'user-x' : 'user-check'}" class="w-4 h-4 inline mr-1"></i>
                         ${user.ativo ? 'Desativar' : 'Ativar'}
                     </button>
@@ -271,6 +268,11 @@ export class Usuarios {
                                     <input type="checkbox" id="perm-registros-excluir" class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     <span>Excluir</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="perm-registros-solicitacoes" class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <i data-lucide="bell" class="w-4 h-4"></i>
+                                    <span>Solicitações</span>
                                 </label>
                             </div>
                         </div>
@@ -427,7 +429,8 @@ export class Usuarios {
                     ver: document.getElementById('perm-registros-ver').checked,
                     adicionar: document.getElementById('perm-registros-adicionar').checked,
                     editar: document.getElementById('perm-registros-editar').checked,
-                    excluir: document.getElementById('perm-registros-excluir').checked
+                    excluir: document.getElementById('perm-registros-excluir').checked,
+                    solicitacoes: document.getElementById('perm-registros-solicitacoes')?.checked || false
                 },
                 dados: {
                     ver: document.getElementById('perm-dados-ver').checked,
@@ -457,10 +460,10 @@ export class Usuarios {
         try {
             const result = Auth.addUser(userData);
             if (result.success) {
-                logAction('create', 'usuario', result.user.id, { 
-                    username: userData.username, 
-                    nome: userData.nome, 
-                    tipo: userData.tipo 
+                logAction('create', 'usuario', result.user.id, {
+                    username: userData.username,
+                    nome: userData.nome,
+                    tipo: userData.tipo
                 });
                 Modals.close();
                 this.renderUserList();
@@ -560,6 +563,11 @@ export class Usuarios {
                                     <input type="checkbox" id="edit-perm-registros-excluir" ${user.permissoes.registros.excluir ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     <span>Excluir</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-registros-solicitacoes" ${user.permissoes.registros.solicitacoes ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <i data-lucide="bell" class="w-4 h-4"></i>
+                                    <span>Solicitações</span>
                                 </label>
                             </div>
                         </div>
@@ -716,7 +724,8 @@ export class Usuarios {
                     ver: document.getElementById('edit-perm-registros-ver').checked,
                     adicionar: document.getElementById('edit-perm-registros-adicionar').checked,
                     editar: document.getElementById('edit-perm-registros-editar').checked,
-                    excluir: document.getElementById('edit-perm-registros-excluir').checked
+                    excluir: document.getElementById('edit-perm-registros-excluir').checked,
+                    solicitacoes: document.getElementById('edit-perm-registros-solicitacoes')?.checked || false
                 },
                 dados: {
                     ver: document.getElementById('edit-perm-dados-ver').checked,
@@ -751,10 +760,10 @@ export class Usuarios {
         try {
             const result = Auth.updateUser(userId, userData);
             if (result.success) {
-                logAction('edit', 'usuario', userId, { 
-                    username: userData.username, 
-                    nome: userData.nome, 
-                    tipo: userData.tipo 
+                logAction('edit', 'usuario', userId, {
+                    username: userData.username,
+                    nome: userData.nome,
+                    tipo: userData.tipo
                 });
                 Modals.close();
                 this.renderUserList();
@@ -774,7 +783,7 @@ export class Usuarios {
         try {
             const result = Auth.deleteUser(userId);
             if (result.success) {
-                logAction('delete', 'usuario', userId, { 
+                logAction('delete', 'usuario', userId, {
                     username: result.user?.username || 'desconhecido'
                 });
                 this.renderUserList();
@@ -796,8 +805,8 @@ export class Usuarios {
         try {
             const result = Auth.toggleUserStatus(userId);
             if (result.success) {
-                logAction(result.user.ativo ? 'activate' : 'deactivate', 'usuario', userId, { 
-                    username: result.user.username 
+                logAction(result.user.ativo ? 'activate' : 'deactivate', 'usuario', userId, {
+                    username: result.user.username
                 });
                 this.renderUserList();
                 Modals.alert(`Usuário ${action === 'desativar' ? 'desativado' : 'ativado'} com sucesso!`);
@@ -840,11 +849,11 @@ export class Usuarios {
         const startDate = document.getElementById('audit-start-date');
         const endDate = document.getElementById('audit-end-date');
         const userFilter = document.getElementById('audit-user-filter');
-        
+
         if (startDate) startDate.value = '';
         if (endDate) endDate.value = '';
         if (userFilter) userFilter.value = 'todos';
-        
+
         this.renderAuditLogs();
     }
 
@@ -886,16 +895,16 @@ export class Usuarios {
                 </thead>
                 <tbody>
                     ${logs.map(log => {
-                        const date = new Date(log.timestamp);
-                        const dateStr = date.toLocaleDateString('pt-BR');
-                        const timeStr = date.toLocaleTimeString('pt-BR');
-                        
-                        const actionIcon = this.getActionIcon(log.action);
-                        const actionLabel = AuditLogger.getActionLabel(log.action);
-                        const entityLabel = AuditLogger.getEntityLabel(log.entity);
-                        const details = AuditLogger.formatLogDetails(log);
+            const date = new Date(log.timestamp);
+            const dateStr = date.toLocaleDateString('pt-BR');
+            const timeStr = date.toLocaleTimeString('pt-BR');
 
-                        return `
+            const actionIcon = this.getActionIcon(log.action);
+            const actionLabel = AuditLogger.getActionLabel(log.action);
+            const entityLabel = AuditLogger.getEntityLabel(log.entity);
+            const details = AuditLogger.formatLogDetails(log);
+
+            return `
                             <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                 <td class="p-3 align-top">
                                     <div class="text-slate-800 dark:text-slate-100">${dateStr}</div>
@@ -915,7 +924,7 @@ export class Usuarios {
                                 <td class="p-3 align-top text-sm text-slate-600 dark:text-slate-400">${details}</td>
                             </tr>
                         `;
-                    }).join('')}
+        }).join('')}
                 </tbody>
             </table>
         `;
@@ -992,7 +1001,7 @@ export class Usuarios {
 
         const data = [headers, ...rows];
         const ws = XLSX.utils.aoa_to_sheet(data);
-        
+
         ws['!cols'] = [
             { wch: 12 },
             { wch: 10 },
@@ -1002,12 +1011,12 @@ export class Usuarios {
             { wch: 15 },
             { wch: 40 }
         ];
-        
+
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Auditoria');
-        
+
         XLSX.writeFile(wb, `relatorio_auditoria_${new Date().toISOString().split('T')[0]}.xlsx`);
-        
+
         Modals.alert('Relatório exportado com sucesso!', 'Sucesso');
     }
 
@@ -1078,7 +1087,7 @@ export class Usuarios {
         const reportTitle = 'Relatório de Auditoria';
         const reportDate = new Date().toLocaleDateString('pt-BR');
         const reportTime = new Date().toLocaleTimeString('pt-BR');
-        
+
         const actionStats = {};
         logs.forEach(log => {
             const action = AuditLogger.getActionLabel(log.action);
@@ -1086,7 +1095,7 @@ export class Usuarios {
         });
         const topActions = Object.entries(actionStats).sort((a, b) => b[1] - a[1]).slice(0, 5);
         const maxActionCount = topActions.length > 0 ? topActions[0][1] : 1;
-        
+
         let htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -1238,12 +1247,12 @@ export class Usuarios {
                             </thead>
                             <tbody>
                                 ${logs.map(log => {
-                                    const date = new Date(log.timestamp);
-                                    const tipoClass = log.userTipo === 'dono' ? 'badge-owner' : log.userTipo === 'admin' ? 'badge-admin' : 'badge-employee';
-                                    return `
+            const date = new Date(log.timestamp);
+            const tipoClass = log.userTipo === 'dono' ? 'badge-owner' : log.userTipo === 'admin' ? 'badge-admin' : 'badge-employee';
+            return `
                                         <tr>
                                             <td>${date.toLocaleDateString('pt-BR')}</td>
-                                            <td>${date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
+                                            <td>${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
                                             <td><strong>${log.username}</strong></td>
                                             <td><span class="badge ${tipoClass}">${log.userTipo}</span></td>
                                             <td><span class="badge badge-action">${AuditLogger.getActionLabel(log.action)}</span></td>
@@ -1251,7 +1260,7 @@ export class Usuarios {
                                             <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${AuditLogger.formatLogDetails(log)}</td>
                                         </tr>
                                     `;
-                                }).join('')}
+        }).join('')}
                             </tbody>
                         </table>
                     </div>
@@ -1268,7 +1277,7 @@ export class Usuarios {
         const printWindow = window.open('', '_blank');
         printWindow.document.write(htmlContent);
         printWindow.document.close();
-        
+
         setTimeout(() => {
             printWindow.print();
         }, 250);

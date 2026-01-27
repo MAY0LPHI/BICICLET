@@ -333,6 +333,16 @@ export class Auth {
 
             const isFullAccess = user.tipo === 'admin' || user.tipo === 'dono';
 
+            if (!user.permissoes.registros) {
+                user.permissoes.registros = this.getDefaultPermissions(user.tipo).registros;
+                needsSave = true;
+            } else {
+                if (user.permissoes.registros.solicitacoes === undefined) {
+                    user.permissoes.registros.solicitacoes = isFullAccess;
+                    needsSave = true;
+                }
+            }
+
             if (!user.permissoes.dados) {
                 user.permissoes.dados = this.getDefaultPermissions(user.tipo).dados;
                 needsSave = true;
@@ -658,7 +668,7 @@ export class Auth {
     static getDefaultPermissions() {
         return {
             clientes: { ver: true, adicionar: true, editar: false, excluir: false },
-            registros: { ver: true, adicionar: true, editar: false, excluir: false },
+            registros: { ver: true, adicionar: true, editar: false, excluir: false, solicitacoes: false },
             dados: {
                 ver: false,
                 exportar: false,
