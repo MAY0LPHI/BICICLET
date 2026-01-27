@@ -3834,6 +3834,12 @@
                                 <i data-lucide="bike" class="w-6 h-6"></i>
                                 <span class="font-semibold">BICICLETARIO SHOP. BOULEVARD V.V.</span>
                             </div>
+                            <!-- Mobile Access / QR Code Link -->
+                            <a href="/mobile-access.html" target="_blank" id="mobile-access-btn"
+                                class="hidden md:flex items-center px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors mx-2">
+                                <i data-lucide="qr-code" class="w-5 h-5 mr-2"></i>
+                                <span class="text-sm font-medium">Acesso Celular</span>
+                            </a>
                             <div
                                 class="flex items-center space-x-3 pl-4 border-l border-slate-300 dark:border-slate-600">
                                 <div class="text-right">
@@ -4073,10 +4079,15 @@
                                     <i data-lucide="bar-chart-2" class="w-4 h-4 mr-2"></i>
                                     Gráficos
                                 </button>
-                                <button id="open-qr-connections-modal-btn"
-                                    class="flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 rounded-lg transition-colors border border-blue-200 dark:border-blue-800">
-                                    <i data-lucide="qr-code" class="w-4 h-4 mr-2"></i>
-                                    Conexões QR
+                                <button id="open-solicitacoes-modal-btn"
+                                    class="flex items-center px-3 py-1.5 text-sm font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 dark:text-amber-400 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 rounded-lg transition-colors border border-amber-200 dark:border-amber-800 relative">
+                                    <i data-lucide="bell" class="w-4 h-4 mr-2"></i>
+                                    Solicitações
+                                    <span id="solicitacoes-badge" class="hidden absolute -top-1 -right-1 flex h-3 w-3">
+                                        <span
+                                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                    </span>
                                 </button>
                             </div>
                             <div class="flex items-center gap-2 w-full md:w-auto">
@@ -4124,6 +4135,12 @@
                                 </div>
                             </div>
                         </div>
+
+
+
+
+                        <!-- Content: Registros -->
+
                         <div id="daily-records-list" class="overflow-x-auto">
                             <table class="w-full text-sm">
                                 <thead class="text-left bg-slate-50 dark:bg-slate-700/40">
@@ -5632,42 +5649,6 @@
                 </div>
             </div>
 
-            <!-- QR Connections Modal -->
-            <div id="qr-connections-modal"
-                class="fixed inset-0 z-[10005] flex items-center justify-center p-4 hidden modal-backdrop font-sans">
-                <div
-                    class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-6xl modal-content transform scale-95 flex flex-col max-h-[90vh]">
-                    <div
-                        class="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800 rounded-t-lg sticky top-0 z-10">
-                        <div>
-                            <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Conexões QR Code</h3>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Gerenciar solicitações de conexão via QR</p>
-                        </div>
-                        <button type="button"
-                            class="close-qr-connections-modal text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                            <i data-lucide="x" class="h-6 w-6"></i>
-                        </button>
-                    </div>
-                    <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-slate-900/50 flex-1">
-                        <div class="mb-4">
-                            <div class="relative">
-                                <label for="qr-connections-search" class="sr-only">Pesquisar Conexões QR</label>
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i data-lucide="search" class="h-4 w-4 text-slate-400"></i>
-                                </div>
-                                <input type="search" id="qr-connections-search"
-                                    placeholder="Pesquisar por nome, CPF ou ID..."
-                                    class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md leading-5 bg-white dark:bg-slate-700 text-sm placeholder-slate-400 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                    spellcheck="false">
-                            </div>
-                        </div>
-                        <div id="qr-connections-container">
-                            <!-- QR connections content will be rendered here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <script>
                 // Modal functionality for Dashboard
                 document.addEventListener('DOMContentLoaded', () => {
@@ -5675,13 +5656,6 @@
                     document.querySelectorAll('.close-dashboard-modal').forEach(btn => {
                         btn.addEventListener('click', () => {
                             document.getElementById('dashboard-modal').classList.add('hidden');
-                        });
-                    });
-
-                    // Close buttons for QR Connections modal
-                    document.querySelectorAll('.close-qr-connections-modal').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            document.getElementById('qr-connections-modal').classList.add('hidden');
                         });
                     });
 
@@ -5701,6 +5675,36 @@
                     }
                 });
             </script>
+            <!-- Solicitacoes Modal -->
+            <div id="solicitacoes-modal"
+                class="fixed inset-0 z-[10005] flex items-center justify-center p-4 hidden modal-backdrop font-sans">
+                <div
+                    class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl modal-content transform scale-95 flex flex-col max-h-[90vh]">
+                    <div
+                        class="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800 rounded-t-lg sticky top-0 z-10">
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100"
+                                id="solicitacoes-modal-title">
+                                Solicitações Pendentes
+                            </h3>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Gerencie as solicitações de acesso via
+                                mobile</p>
+                        </div>
+                        <button type="button" id="close-solicitacoes-modal-btn"
+                            class="text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none">
+                            <i data-lucide="x" class="h-6 w-6"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-slate-900/50 flex-1">
+                        <div id="solicitacoes-modal-list">
+                            <div class="text-center py-8 text-slate-500 dark:text-slate-400">
+                                <i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto mb-2"></i>
+                                Carregando...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 </body><editor-card style="position:absolute;top:0px;left:0px;z-index:auto;display: block !important">
     <div dir="ltr" style="all: initial;">
         <div

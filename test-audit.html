@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Audit Log Formatting</title>
+</head>
+
+<body>
+    <h1>Audit Log Test</h1>
+    <pre id="output"></pre>
+    <script type="module">
+        import { AuditLogger } from './js/shared/audit-logger.js';
+
+        const logs = [
+            {
+                action: 'export',
+                entity: 'dados',
+                details: { tipo: 'clientes', formato: 'xlsx', quantidade: 15, periodo: { inicio: '2025-01-01', fim: '2025-01-31' } }
+            },
+            {
+                action: 'create',
+                entity: 'cliente',
+                details: { nome: 'João Silva', cpf: '123.456.789-00', telefone: '(11) 99999-9999', categoria: 'MENSALISTA' }
+            },
+            {
+                action: 'edit',
+                entity: 'cliente',
+                details: {
+                    nome: 'João Silva Editado',
+                    changes: {
+                        before: { nome: 'João Silva', telefone: '000' },
+                        after: { nome: 'João Silva Editado', telefone: '111' }
+                    }
+                }
+            },
+            {
+                action: 'register_entry',
+                entity: 'registro',
+                details: { cliente: 'Maria', modelo: 'Caloi', marca: 'Elite', dataHoraEntrada: new Date().toISOString() }
+            },
+            {
+                action: 'delete',
+                entity: 'dados',
+                details: { tipos: ['Clientes', 'Registros'], resultado: '10 clientes, 50 registros' }
+            }
+        ];
+
+        const output = document.getElementById('output');
+        let result = '';
+
+        logs.forEach(log => {
+            const formatted = AuditLogger.formatLogDetails(log);
+            result += `[${log.action} - ${log.entity}]\nOriginal: ${JSON.stringify(log.details)}\nFormatted: ${formatted}\n\n`;
+        });
+
+        output.textContent = result;
+        console.log(result);
+    </script>
+</body>
+
+</html>

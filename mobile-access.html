@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bicicletário - Acesso Cliente</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <script>
+        window.tailwind = {
+            config: {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            brand: {
+                                50: '#eff6ff',
+                                100: '#dbeafe',
+                                500: '#3b82f6',
+                                600: '#2563eb',
+                                700: '#1d4ed8',
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="libs/tailwind.min.js"></script>
+    <script src="libs/lucide.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body
+    class="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-200">
+
+    <!-- Theme Toggle -->
+    <button id="theme-toggle"
+        class="absolute top-4 right-4 p-2 rounded-full bg-white dark:bg-gray-800 shadow-md text-gray-600 dark:text-gray-300">
+        <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
+        <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+    </button>
+
+    <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+
+        <!-- Header -->
+        <div class="bg-brand-600 p-6 text-center">
+            <div
+                class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4 backdrop-blur-sm">
+                <i data-lucide="bike" class="w-10 h-10 text-white"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white mb-1">Acesso Bicicletário</h1>
+            <p class="text-brand-100 text-sm">Escaneie & Solicite</p>
+        </div>
+
+        <!-- Content Area -->
+        <div class="p-6">
+
+            <!-- Login Step -->
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="cpf-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seu
+                        CPF</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-lucide="user" class="h-5 w-5 text-gray-400"></i>
+                        </div>
+                        <input type="tel" id="cpf-input" placeholder="000.000.000-00"
+                            class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-brand-500 focus:border-brand-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 transition-colors"
+                            autocomplete="off">
+                    </div>
+                    <p id="login-error" class="mt-2 text-sm text-red-600 hidden"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" id="btn-identificar"
+                        class="flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
+                        Identificar
+                    </button>
+                    <button type="button" id="btn-cadastrar-init"
+                        class="flex justify-center py-3 px-4 border border-brand-200 dark:border-brand-700 rounded-lg shadow-sm text-sm font-medium text-brand-700 dark:text-brand-300 bg-white dark:bg-gray-700 hover:bg-brand-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
+                        Cadastrar-se
+                    </button>
+                </div>
+            </form>
+
+            <!-- Client Registration Step -->
+            <div id="step-register-client" class="hidden space-y-6">
+                <div class="text-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Cadastrar Novo Cliente</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Dados Pessoais</p>
+                </div>
+
+                <form id="register-client-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Completo</label>
+                        <input type="text" id="reg-nome" required
+                            class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-gray-700 dark:text-white sm:text-sm uppercase"
+                            style="text-transform: uppercase;">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF</label>
+                        <input type="tel" id="reg-cpf" required placeholder="000.000.000-00"
+                            class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-gray-700 dark:text-white sm:text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone</label>
+                        <input type="tel" id="reg-telefone" required placeholder="(00) 00000-0000"
+                            class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-gray-700 dark:text-white sm:text-sm">
+                    </div>
+
+                    <div class="pt-2 flex gap-3">
+                        <button type="button" id="btn-cancel-client-register"
+                            class="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
+                            Continuar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Bike Registration Step -->
+            <div id="step-register-bike" class="hidden space-y-6">
+                <div class="text-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Cadastrar Bicicleta</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Dados do Veículo</p>
+                </div>
+
+                <form id="register-bike-form" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400">Marca</label>
+                            <input type="text" id="reg-bike-marca" required
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-gray-700 dark:text-white sm:text-sm uppercase"
+                                style="text-transform: uppercase;">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400">Modelo</label>
+                            <input type="text" id="reg-bike-modelo" required
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-gray-700 dark:text-white sm:text-sm uppercase"
+                                style="text-transform: uppercase;">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400">Cor</label>
+                        <input type="text" id="reg-bike-cor" required
+                            class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-gray-700 dark:text-white sm:text-sm uppercase"
+                            style="text-transform: uppercase;">
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Foto da
+                            Bicicleta</label>
+                        <div class="flex items-center justify-center w-full">
+                            <label for="reg-bike-photo"
+                                class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6"
+                                    id="photo-preview-container">
+                                    <i data-lucide="camera" class="w-8 h-8 mb-2 text-gray-500 dark:text-gray-400"></i>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Toque para fotografar</p>
+                                </div>
+                                <img id="photo-preview" class="hidden w-full h-full object-cover rounded-lg" />
+                                <input id="reg-bike-photo" type="file" accept="image/*" capture="environment"
+                                    class="hidden" />
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex gap-3">
+                        <button type="button" id="btn-cancel-bike-register"
+                            class="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none transition-colors">
+                            Voltar
+                        </button>
+                        <button type="submit"
+                            class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
+                            Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Action Step (Hidden initially) -->
+            <div id="step-actions" class="hidden space-y-6">
+                <div class="text-center mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Olá, <span id="client-name"
+                            class="text-brand-600">Cliente</span>!</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">O que você deseja fazer?</p>
+                </div>
+
+                <!-- Bike Selection -->
+                <div id="bike-selection-container" class="hidden mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selecione a
+                        Bicicleta</label>
+                    <select id="bike-select"
+                        class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2">
+                    </select>
+                    <button id="btn-add-another-bike"
+                        class="w-full justify-center text-xs text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 font-medium flex items-center mb-4 py-2 border border-dashed border-brand-200 dark:border-brand-800 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors">
+                        <i data-lucide="plus-circle" class="w-4 h-4 mr-1"></i>
+                        Cadastrar outra bicicleta
+                    </button>
+                    <div id="action-buttons" class="flex gap-4">
+                        <button id="btn-entrada"
+                            class="flex-1 flex flex-col items-center justify-center p-4 border-2 border-green-100 dark:border-green-900/30 bg-green-50 dark:bg-green-900/20 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors group">
+                            <div
+                                class="p-3 bg-green-100 dark:bg-green-800 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                <i data-lucide="log-in" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <span class="font-medium text-green-900 dark:text-green-100">Entrada</span>
+                        </button>
+
+                        <button id="btn-saida"
+                            class="flex-1 flex flex-col items-center justify-center p-4 border-2 border-amber-100 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/20 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors group">
+                            <div
+                                class="p-3 bg-amber-100 dark:bg-amber-800 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                <i data-lucide="log-out" class="w-6 h-6 text-amber-600 dark:text-amber-400"></i>
+                            </div>
+                            <span class="font-medium text-amber-900 dark:text-amber-100">Saída</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- No Bikes / Add Bike State -->
+                <div id="no-bike-container"
+                    class="hidden text-center py-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div class="mb-3 inline-flex p-3 bg-gray-100 dark:bg-gray-600 rounded-full">
+                        <i data-lucide="bike" class="w-6 h-6 text-gray-500 dark:text-gray-300"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Nenhuma bicicleta cadastrada.</p>
+                    <button id="btn-new-bike"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700 focus:outline-none transition-colors">
+                        <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                        Cadastrar Bicicleta
+                    </button>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <button id="btn-voltar"
+                        class="w-full py-2 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        Sair / Voltar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Success Step (Hidden initially) -->
+            <div id="step-success" class="hidden text-center py-8">
+                <div
+                    class="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full mb-6 animate-bounce">
+                    <i data-lucide="check" class="w-10 h-10 text-green-600 dark:text-green-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Solicitação Enviada!</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-8">Aguarde a liberação na portaria.</p>
+                <button id="btn-reset"
+                    class="px-6 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                    Voltar ao início
+                </button>
+            </div>
+
+            <!-- Loading Spinner (Hidden initially) -->
+            <div id="loading-overlay"
+                class="hidden absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-2xl">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-600"></div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 text-center border-t border-gray-100 dark:border-gray-700">
+            <p class="text-xs text-gray-500 dark:text-gray-400">© 2024 Bicicletário da Prefeitura</p>
+        </div>
+    </div>
+
+    <script type="module" src="js/mobile-access.js"></script>
+    <script>
+        // Init Lucide icons
+        lucide.createIcons();
+
+        // Simple theme toggle logic for standalone page
+        const themeBtn = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+
+        // Load saved theme
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+        } else {
+            html.classList.remove('dark');
+        }
+
+        themeBtn.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+        });
+    </script>
+</body>
+
+</html>
