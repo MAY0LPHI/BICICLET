@@ -7,8 +7,11 @@ import http.server
 import socketserver
 import os
 import json
+import threading
+import time
 import logging
 import base64
+from datetime import datetime
 from urllib.parse import urlparse
 
 logging.basicConfig(
@@ -23,6 +26,7 @@ DIRECTORY = "."
 STORAGE_DIR = "dados/navegador"
 CLIENTS_DIR = os.path.join(STORAGE_DIR, "clientes")
 REGISTROS_DIR = os.path.join(STORAGE_DIR, "registros")
+SOLICITACOES_FILE = os.path.join(STORAGE_DIR, "solicitacoes.json")
 IMAGES_DIR = "dados/imagens"
 
 DB_MANAGER = None
@@ -50,42 +54,6 @@ except ImportError as e:
     logger.warning(f"Sistema de jobs não disponível: {e}")
 except Exception as e:
     logger.warning(f"Erro ao inicializar sistema de jobs: {e}")
-
-# JWT and QR Code support
-JWT_MANAGER = None
-QR_GENERATOR = None
-AUTH_MANAGER = None
-
-try:
-    from jwt_manager import get_jwt_manager
-    JWT_MANAGER = get_jwt_manager()
-    logger.info("✅ JWT Manager carregado com sucesso")
-except ImportError as e:
-    logger.warning(f"JWT Manager não disponível: {e}")
-except Exception as e:
-    logger.warning(f"Erro ao inicializar JWT Manager: {e}")
-
-try:
-    from qr_generator import get_qr_generator
-    # Get base URL from environment or use default
-    base_url = os.environ.get('REPL_SLUG', 'http://localhost:5000')
-    if not base_url.startswith('http'):
-        base_url = f'https://{base_url}.replit.dev'
-    QR_GENERATOR = get_qr_generator(base_url)
-    logger.info(f"✅ QR Generator carregado com sucesso (URL: {base_url})")
-except ImportError as e:
-    logger.warning(f"QR Generator não disponível: {e}")
-except Exception as e:
-    logger.warning(f"Erro ao inicializar QR Generator: {e}")
-
-try:
-    from auth_manager import get_auth_manager
-    AUTH_MANAGER = get_auth_manager()
-    logger.info("✅ Auth Manager carregado com sucesso")
-except ImportError as e:
-    logger.warning(f"Auth Manager não disponível: {e}")
-except Exception as e:
-    logger.warning(f"Erro ao inicializar Auth Manager: {e}")
 
 def use_sqlite_storage() -> bool:
     """Verifica se deve usar SQLite baseado na configuração atual"""
@@ -144,6 +112,25 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
     
+    def _load_solicitacoes(self):
+        if os.path.exists(SOLICITACOES_FILE):
+            try:
+                with open(SOLICITACOES_FILE, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Erro ao carregar solicitações: {e}")
+                return []
+        return []
+
+    def _save_solicitacoes(self, solicitacoes):
+        try:
+            with open(SOLICITACOES_FILE, 'w', encoding='utf-8') as f:
+                json.dump(solicitacoes, f, indent=2)
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao salvar solicitações: {e}")
+            return False
+
     def _set_api_headers(self, status=200, content_type='application/json'):
         self.send_response(status)
         self.send_header('Content-type', content_type)
@@ -212,6 +199,12 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 "storage_available": True
             }
             self.wfile.write(json.dumps(health_status).encode())
+            return
+
+        if path == '/api/solicitacoes':
+            solicitacoes = self._load_solicitacoes()
+            self._set_api_headers()
+            self.wfile.write(json.dumps(solicitacoes).encode())
             return
         
         if path == '/api/clients':
@@ -362,56 +355,22 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(config).encode())
             return
         
-        # ========== QR CODE ENDPOINTS ==========
-        if path == '/api/qr/generate':
-            """Gera QR code para estação"""
-            if QR_GENERATOR and JWT_MANAGER:
-                # Parse query parameters
-                from urllib.parse import parse_qs
-                query_params = parse_qs(parsed_path.query) if parsed_path.query else {}
-                station_id = query_params.get('station', ['default'])[0]
-                
-                # Gera token para a estação
-                token = JWT_MANAGER.generate_qr_token(station_id)
-                qr_base64 = QR_GENERATOR.generate_qr_base64(station_id, token)
-                
-                if qr_base64:
+        if path == '/api/solicitacoes':
+            if os.path.exists(SOLICITACOES_FILE):
+                try:
+                    with open(SOLICITACOES_FILE, 'r', encoding='utf-8') as f:
+                        solicitacoes = json.load(f)
                     self._set_api_headers()
-                    self.wfile.write(json.dumps({
-                        "success": True,
-                        "qr_code": qr_base64,
-                        "station_id": station_id
-                    }).encode())
-                else:
+                    self.wfile.write(json.dumps(solicitacoes, ensure_ascii=False).encode('utf-8'))
+                except Exception as e:
+                    logger.error(f"Erro ao ler solicitacoes: {e}")
                     self._set_api_headers(500)
-                    self.wfile.write(json.dumps({"error": "Failed to generate QR code"}).encode())
+                    self.wfile.write(json.dumps({"error": "Failed to read solicitacoes"}).encode())
             else:
-                self._set_api_headers(503)
-                self.wfile.write(json.dumps({"error": "QR Generator not available"}).encode())
-            return
-        
-        if path == '/api/qr/registros':
-            """Retorna registros QR"""
-            if DB_AVAILABLE and DB_MANAGER:
-                registros = DB_MANAGER.get_registros_qr()
                 self._set_api_headers()
-                self.wfile.write(json.dumps(registros, ensure_ascii=False).encode('utf-8'))
-            else:
-                self._set_api_headers(503)
-                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
+                self.wfile.write(json.dumps([]).encode())
             return
-        
-        if path == '/api/qr/solicitacoes':
-            """Retorna solicitações de cadastro pendentes"""
-            if DB_AVAILABLE and DB_MANAGER:
-                solicitacoes = DB_MANAGER.get_solicitacoes_pendentes()
-                self._set_api_headers()
-                self.wfile.write(json.dumps(solicitacoes, ensure_ascii=False).encode('utf-8'))
-            else:
-                self._set_api_headers(503)
-                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
-            return
-        
+
         # ========== BACKUP ENDPOINTS ==========
         if path == '/api/backups':
             if DB_AVAILABLE and DB_MANAGER is not None:
@@ -626,214 +585,6 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self._set_api_headers()
                 self.wfile.write(json.dumps({"success": True}).encode())
-            return
-
-        # ========== QR CODE POST ENDPOINTS ==========
-        if self.path == '/api/auth/login':
-            """Autenticação de usuário"""
-            data = json.loads(post_data.decode('utf-8'))
-            username = data.get('username')
-            password = data.get('password')
-            
-            if AUTH_MANAGER:
-                user_data = AUTH_MANAGER.authenticate(username, password)
-                if user_data:
-                    # Gera JWT token
-                    if JWT_MANAGER:
-                        token = JWT_MANAGER.generate_token(user_data)
-                        user_data['token'] = token
-                    
-                    self._set_api_headers()
-                    self.wfile.write(json.dumps({
-                        "success": True,
-                        "user": user_data
-                    }, ensure_ascii=False).encode('utf-8'))
-                else:
-                    self._set_api_headers(401)
-                    self.wfile.write(json.dumps({"error": "Credenciais inválidas"}).encode())
-            else:
-                self._set_api_headers(503)
-                self.wfile.write(json.dumps({"error": "Auth system not available"}).encode())
-            return
-        
-        if self.path == '/api/auth/register':
-            """Registro de novo usuário (cria solicitação pendente)"""
-            data = json.loads(post_data.decode('utf-8'))
-            
-            if DB_AVAILABLE and DB_MANAGER and AUTH_MANAGER:
-                import uuid
-                # Hash da senha usando método público
-                senha_hash = AUTH_MANAGER.hash_password_public(data.get('senha'))
-                
-                solicitacao = {
-                    'id': str(uuid.uuid4()),
-                    'nome': data.get('nome'),
-                    'email': data.get('email'),
-                    'cpf': data.get('cpf'),
-                    'telefone': data.get('telefone', ''),
-                    'senha_hash': senha_hash,
-                    'status': 'pendente',
-                    'station_id': data.get('station_id', 'default')
-                }
-                
-                success = DB_MANAGER.save_solicitacao_cadastro(solicitacao)
-                if success:
-                    self._set_api_headers()
-                    self.wfile.write(json.dumps({
-                        "success": True,
-                        "message": "Solicitação de cadastro enviada. Aguarde aprovação do administrador."
-                    }).encode())
-                else:
-                    self._set_api_headers(500)
-                    self.wfile.write(json.dumps({"error": "Erro ao criar solicitação"}).encode())
-            else:
-                self._set_api_headers(503)
-                self.wfile.write(json.dumps({"error": "System not available"}).encode())
-            return
-        
-        if self.path == '/api/qr/checkin':
-            """Registro de entrada via QR"""
-            data = json.loads(post_data.decode('utf-8'))
-            
-            if DB_AVAILABLE and DB_MANAGER:
-                import uuid
-                from datetime import datetime
-                
-                # Valida token obrigatório
-                token = data.get('token')
-                if not token:
-                    self._set_api_headers(401)
-                    self.wfile.write(json.dumps({"error": "Token de autenticação é obrigatório"}).encode())
-                    return
-                
-                if JWT_MANAGER:
-                    user_data = JWT_MANAGER.validate_token(token)
-                    if not user_data:
-                        self._set_api_headers(401)
-                        self.wfile.write(json.dumps({"error": "Token inválido ou expirado"}).encode())
-                        return
-                
-                registro = {
-                    'id': str(uuid.uuid4()),
-                    'cliente_id': data.get('cliente_id'),
-                    'tipo': 'entrada',
-                    'data_hora': datetime.now().isoformat(),
-                    'station_id': data.get('station_id', 'default'),
-                    'status': 'ativo',
-                    'bicicleta_descricao': data.get('bicicleta_descricao', ''),
-                    'observacoes': data.get('observacoes', '')
-                }
-                
-                success = DB_MANAGER.save_registro_qr(registro)
-                if success:
-                    self._set_api_headers()
-                    self.wfile.write(json.dumps({
-                        "success": True,
-                        "id": registro['id'],
-                        "message": "Entrada registrada com sucesso"
-                    }).encode())
-                else:
-                    self._set_api_headers(500)
-                    self.wfile.write(json.dumps({"error": "Erro ao registrar entrada"}).encode())
-            else:
-                self._set_api_headers(503)
-                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
-            return
-        
-        if self.path == '/api/qr/checkout':
-            """Registro de saída via QR"""
-            data = json.loads(post_data.decode('utf-8'))
-            
-            if DB_AVAILABLE and DB_MANAGER:
-                import uuid
-                from datetime import datetime
-                
-                # Valida token obrigatório
-                token = data.get('token')
-                if not token:
-                    self._set_api_headers(401)
-                    self.wfile.write(json.dumps({"error": "Token de autenticação é obrigatório"}).encode())
-                    return
-                
-                if JWT_MANAGER:
-                    user_data = JWT_MANAGER.validate_token(token)
-                    if not user_data:
-                        self._set_api_headers(401)
-                        self.wfile.write(json.dumps({"error": "Token inválido ou expirado"}).encode())
-                        return
-                
-                registro = {
-                    'id': str(uuid.uuid4()),
-                    'cliente_id': data.get('cliente_id'),
-                    'tipo': 'saida',
-                    'data_hora': datetime.now().isoformat(),
-                    'station_id': data.get('station_id', 'default'),
-                    'status': 'ativo',
-                    'bicicleta_descricao': data.get('bicicleta_descricao', ''),
-                    'observacoes': data.get('observacoes', '')
-                }
-                
-                success = DB_MANAGER.save_registro_qr(registro)
-                if success:
-                    self._set_api_headers()
-                    self.wfile.write(json.dumps({
-                        "success": True,
-                        "id": registro['id'],
-                        "message": "Saída registrada com sucesso"
-                    }).encode())
-                else:
-                    self._set_api_headers(500)
-                    self.wfile.write(json.dumps({"error": "Erro ao registrar saída"}).encode())
-            else:
-                self._set_api_headers(503)
-                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
-            return
-        
-        if self.path == '/api/qr/solicitacao/aprovar':
-            """Aprova uma solicitação de cadastro"""
-            data = json.loads(post_data.decode('utf-8'))
-            
-            if DB_AVAILABLE and DB_MANAGER:
-                solicitacao_id = data.get('id')
-                aprovado_por = data.get('aprovado_por', 'admin')
-                
-                success = DB_MANAGER.aprovar_solicitacao(solicitacao_id, aprovado_por)
-                if success:
-                    self._set_api_headers()
-                    self.wfile.write(json.dumps({
-                        "success": True,
-                        "message": "Solicitação aprovada com sucesso"
-                    }).encode())
-                else:
-                    self._set_api_headers(500)
-                    self.wfile.write(json.dumps({"error": "Erro ao aprovar solicitação"}).encode())
-            else:
-                self._set_api_headers(503)
-                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
-            return
-        
-        if self.path == '/api/qr/solicitacao/rejeitar':
-            """Rejeita uma solicitação de cadastro"""
-            data = json.loads(post_data.decode('utf-8'))
-            
-            if DB_AVAILABLE and DB_MANAGER:
-                solicitacao_id = data.get('id')
-                aprovado_por = data.get('aprovado_por', 'admin')
-                observacoes = data.get('observacoes', '')
-                
-                success = DB_MANAGER.rejeitar_solicitacao(solicitacao_id, aprovado_por, observacoes)
-                if success:
-                    self._set_api_headers()
-                    self.wfile.write(json.dumps({
-                        "success": True,
-                        "message": "Solicitação rejeitada"
-                    }).encode())
-                else:
-                    self._set_api_headers(500)
-                    self.wfile.write(json.dumps({"error": "Erro ao rejeitar solicitação"}).encode())
-            else:
-                self._set_api_headers(503)
-                self.wfile.write(json.dumps({"error": "Database not available"}).encode())
             return
 
         if self.path == '/api/system-config':
@@ -1065,6 +816,284 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "Database not available"}).encode())
             return
         
+            return
+
+        if self.path == '/api/solicitacoes':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                
+                # Basic validation
+                if not data.get('clientId') or not data.get('bikeId'):
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "Missing required fields"}).encode())
+                    return
+
+                solicitacoes = self._load_solicitacoes()
+                
+                # Add ID and timestamp if missing
+                import uuid
+                new_solicitacao = {
+                    "id": str(uuid.uuid4()),
+                    "clientId": data.get('clientId'),
+                    "bikeId": data.get('bikeId'),
+                    "tipo": data.get('tipo', 'entrada'),
+                    "timestamp": data.get('timestamp') or datetime.now().isoformat()
+                }
+                
+                solicitacoes.append(new_solicitacao)
+                self._save_solicitacoes(solicitacoes)
+
+                self._set_api_headers(201)
+                self.wfile.write(json.dumps({"success": True, "id": new_solicitacao["id"]}).encode())
+                
+            except Exception as e:
+                logger.error(f"Error creating solicitacao: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
+            return
+
+        if self.path == '/api/mobile/register-client':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                
+                # Check if client exists
+                cpf = data.get('cpf')
+                
+                # Manual file check to be safe
+                cpf_clean = cpf.replace('.', '').replace('-', '')
+                filepath = os.path.join(CLIENTS_DIR, f"{cpf_clean}.json")
+                if os.path.exists(filepath):
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "CPF já cadastrado"}).encode())
+                    return
+
+                # Create Client Object
+                import uuid
+                new_client = {
+                    "id": str(uuid.uuid4()),
+                    "nome": data.get('nome').upper(), # Ensure uppercase backend side too
+                    "cpf": cpf,
+                    "telefone": data.get('telefone', ''),
+                    "bicicletas": [],
+                    "ativo": True,
+                    "dataCadastro": datetime.now().isoformat()
+                }
+
+                # Save to file manually
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    json.dump(new_client, f, ensure_ascii=False, indent=2)
+                
+                if JOB_MANAGER:
+                    JOB_MANAGER.notify_change('clients')
+
+                self._set_api_headers(201)
+                self.wfile.write(json.dumps({"success": True, "client": new_client}).encode())
+
+            except Exception as e:
+                logger.error(f"Error registering client: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
+        if self.path == '/api/mobile/bike/add':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                client_id = data.get('clientId')
+                bike_data = data.get('bike')
+
+                if not client_id or not bike_data:
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "Dados incompletos"}).encode())
+                    return
+
+                # Find Client (Need to search all files if we don't have the filename/cpf)
+                # But typically we can optimize. For now, scan dir since we don't have DB_MANAGER active for sure.
+                # Actually, iterate and find by ID.
+                
+                target_file = None
+                client = None
+
+                if os.path.exists(CLIENTS_DIR):
+                    for filename in os.listdir(CLIENTS_DIR):
+                        if filename.endswith('.json'):
+                            try:
+                                fp = os.path.join(CLIENTS_DIR, filename)
+                                with open(fp, 'r', encoding='utf-8') as f:
+                                    c = json.load(f)
+                                    if c.get('id') == client_id:
+                                        client = c
+                                        target_file = fp
+                                        break
+                            except:
+                                continue
+                
+                if not client:
+                    self._set_api_headers(404)
+                    self.wfile.write(json.dumps({"error": "Cliente não encontrado"}).encode())
+                    return
+
+                # Handle Photo
+                photo_data = bike_data.get('photo')
+                photo_url = ''
+                if photo_data:
+                    if ',' in photo_data:
+                        _, encoded = photo_data.split(',', 1)
+                    else:
+                        encoded = photo_data
+                    
+                    import uuid
+                    filename = f"bike_{uuid.uuid4().hex}.jpg"
+                    img_path = os.path.join(IMAGES_DIR, filename)
+                    with open(img_path, "wb") as f:
+                        f.write(base64.b64decode(encoded))
+                    photo_url = f"/imagens/{filename}"
+
+                # Add Bike
+                import uuid
+                new_bike = {
+                    "id": str(uuid.uuid4()),
+                    "marca": bike_data.get('marca').upper(),
+                    "modelo": bike_data.get('modelo').upper(),
+                    "cor": bike_data.get('cor').upper(),
+                    "foto": photo_url
+                }
+                
+                if 'bicicletas' not in client:
+                    client['bicicletas'] = []
+                
+                client['bicicletas'].append(new_bike)
+
+                # Save updated client
+                with open(target_file, 'w', encoding='utf-8') as f:
+                    json.dump(client, f, ensure_ascii=False, indent=2)
+
+                if JOB_MANAGER:
+                    JOB_MANAGER.notify_change('clients')
+
+                self._set_api_headers(200)
+                self.wfile.write(json.dumps({"success": True, "client": client}).encode())
+
+            except Exception as e:
+                logger.error(f"Error adding bike: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
+        if self.path == '/api/solicitacoes/process':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                solicitacao_id = data.get('id')
+                action = data.get('action') # 'approve' or 'reject'
+
+                solicitacoes = self._load_solicitacoes()
+                
+                # Remove from list regardless of action (approve handles logic on frontend/backend, reject just removes)
+                # In a real app, backend would do the create record logic too if approved to be safe.
+                # For now, frontend calls create_registro, backend just removes request.
+                # Wait, the JS 'approve' calls createRegistroInternal? No, handleSolicitacaoAction does.
+                # Actually, JS 'approve' calls internal create then calls this endpoint to remove.
+                # So here we just remove.
+                
+                new_solicitacoes = [s for s in solicitacoes if s['id'] != solicitacao_id]
+                self._save_solicitacoes(new_solicitacoes)
+
+                self._set_api_headers()
+                self.wfile.write(json.dumps({"success": True}).encode())
+                
+            except Exception as e:
+                logger.error(f"Error processing solicitacao: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+        
+        if self.path == '/api/mobile/identify':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                cpf = data.get('cpf')
+                
+                # Always reload from disk in this debug context to ensure we see the new bike
+                files_found = []
+                if os.path.exists(CLIENTS_DIR):
+                    for filename in os.listdir(CLIENTS_DIR):
+                        if filename.endswith('.json'):
+                            try:
+                                with open(os.path.join(CLIENTS_DIR, filename), 'r', encoding='utf-8') as f:
+                                    client = json.load(f)
+                                    if client.get('cpf') == cpf:
+                                        found_client = client
+                                        break
+                            except:
+                                continue
+                
+                # Fallback to DB_MANAGER if not found via direct file (e.g. if using SQLite)
+                if not found_client and use_sqlite_storage():
+                     clients = DB_MANAGER.get_all_clientes()
+                     found_client = next((c for c in clients if c['cpf'] == cpf), None)
+                
+                if found_client:
+                    self._set_api_headers()
+                    self.wfile.write(json.dumps({"success": True, "client": found_client}, ensure_ascii=False).encode('utf-8'))
+                else:
+                    self._set_api_headers() # Return 200 OK so frontend parses the error message
+                    self.wfile.write(json.dumps({"success": False, "error": "Client not found"}).encode())
+            except Exception as e:
+                logger.error(f"Error in identify: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
+        if self.path == '/api/solicitacoes':
+            solicitacao = json.loads(post_data.decode('utf-8'))
+            if not solicitacao.get('id'):
+                import uuid
+                solicitacao['id'] = str(uuid.uuid4())
+            
+            try:
+                solicitacoes = []
+                if os.path.exists(SOLICITACOES_FILE):
+                    with open(SOLICITACOES_FILE, 'r', encoding='utf-8') as f:
+                        solicitacoes = json.load(f)
+                
+                solicitacoes.append(solicitacao)
+                
+                with open(SOLICITACOES_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(solicitacoes, f, ensure_ascii=False, indent=2)
+                
+                self._set_api_headers()
+                self.wfile.write(json.dumps({"success": True}).encode())
+            except Exception as e:
+                logger.error(f"Erro ao salvar solicitacao: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+            
+        if self.path == '/api/solicitacoes/process':
+            data = json.loads(post_data.decode('utf-8'))
+            solicitacao_id = data.get('id')
+            action = data.get('action') # 'approve' or 'reject'
+            
+            try:
+                solicitacoes = []
+                if os.path.exists(SOLICITACOES_FILE):
+                    with open(SOLICITACOES_FILE, 'r', encoding='utf-8') as f:
+                        solicitacoes = json.load(f)
+                
+                # Filter out the processed solicitation
+                new_solicitacoes = [s for s in solicitacoes if s['id'] != solicitacao_id]
+                
+                with open(SOLICITACOES_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(new_solicitacoes, f, ensure_ascii=False, indent=2)
+                
+                self._set_api_headers()
+                self.wfile.write(json.dumps({"success": True}).encode())
+            except Exception as e:
+                logger.error(f"Erro ao processar solicitacao: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
         self._set_api_headers(404)
         self.wfile.write(json.dumps({"error": "Not found"}).encode())
     
@@ -1248,6 +1277,16 @@ def check_automatic_backup():
         except Exception as e:
             logger.error(f"Erro ao verificar backup automático: {e}")
 
+def run_scheduler():
+    """Executa verificações periódicas em segundo plano"""
+    logger.info("⏰ Agendador de tarefas iniciado (Verificação a cada 10 min)")
+    while True:
+        time.sleep(600)  # 10 minutos
+        try:
+            check_automatic_backup()
+        except Exception as e:
+            logger.error(f"Erro no agendador: {e}")
+
 
 if __name__ == "__main__":
     try:
@@ -1261,6 +1300,10 @@ if __name__ == "__main__":
                 logger.info("✅ Usando banco de dados SQLite para armazenamento")
                 # Verificar backup automático na inicialização
                 check_automatic_backup()
+                
+                # Iniciar agendador em segundo plano
+                scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+                scheduler_thread.start()
             else:
                 logger.info("📁 Usando sistema de arquivos para armazenamento")
             logger.info("Pressione Ctrl+C para parar o servidor")

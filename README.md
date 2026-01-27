@@ -1,6 +1,6 @@
 # 🚲 Sistema de Gerenciamento de Bicicletário
 
-**Sistema completo para gestão de estacionamento de bicicletas** | Versão 3.0
+**Sistema completo para gestão de estacionamento de bicicletas** | Versão 3.1 (Offline + Jogos)
 
 [![Replit](https://img.shields.io/badge/Executar-Replit-blue)](https://replit.com)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -13,45 +13,26 @@ Sistema web profissional para gerenciamento de bicicletários, desenvolvido para
 
 ### ✨ Principais Funcionalidades
 
-- ✅ **Gerenciamento de Clientes** - Cadastro completo com validação de CPF e categorização
-- ✅ **Controle de Bicicletas** - Registro detalhado com múltiplas bikes por cliente
-- ✅ **Registros de Entrada/Saída** - Sistema de controle de acesso com histórico
-- ✅ **Sistema de Permissões** - Perfis hierárquicos (Dono, Admin, Funcionário)
-- ✅ **Auditoria Completa** - Rastreamento de todas as ações do sistema
-- ✅ **Exportação/Importação** - Backup completo em CSV/Excel/JSON
-- ✅ **Tema Claro/Escuro** - Interface responsiva e moderna
-- ✅ **Categorias Personalizadas** - Organize clientes por tipo de serviço
-- ✅ **Sistema de Pernoite** - Controle especial para bikes que ficam durante a noite
-- ✅ **🌐 Modo Offline Completo** - Funciona 100% sem internet com sincronização automática
-- ✅ **🔒 Autenticação Segura Offline** - Bcrypt/SHA-256 + criptografia AES
-- ✅ **💾 SQLite Local** - Banco de dados robusto com backup automático
-- ✅ **📊 Relatórios Offline** - Exportação de logs e relatórios em CSV/TXT
+- ✅ **Gerenciamento de Clientes** - Cadastro completo com validação de CPF e categorização.
+- ✅ **Controle de Bicicletas** - Registro detalhado com múltiplas bikes por cliente.
+- ✅ **Registros de Entrada/Saída** - Sistema de controle de acesso com histórico.
+- ✅ **Sistema de Permissões** - Perfis hierárquicos (Dono, Admin, Funcionário).
+- ✅ **Auditoria Completa** - Rastreamento de todas as ações do sistema.
+- ✅ **Exportação/Importação** - Backup completo em CSV/Excel/JSON.
+- ✅ **Temas e Personalização** - Temas Claro/Escuro e Cores Personalizadas.
+- ✅ **Categorias Personalizadas** - Organize clientes por tipo de serviço com ícones.
+- ✅ **Sistema de Pernoite** - Controle especial para bikes que ficam durante a noite.
+- ✅ **🎮 Módulo de Jogos** - Sistema de entretenimento com Ranking e Conquistas.
+- ✅ **🌐 Modo Offline Completo** - Funciona 100% sem internet com sincronização automática.
+- ✅ **💾 SQLite Local** - Banco de dados robusto com backup automático.
 
 ---
 
 ## 🚀 Início Rápido
 
-### Executando no Replit
-
-1. **Clone ou importe o projeto** no Replit
-2. **Clique em "Run"** - o servidor inicia automaticamente
-3. **Acesse a aplicação** através do webview do Replit
-4. **Faça login** com as credenciais padrão:
-   - 👤 **Admin**: `admin` / `admin123`
-   - 👑 **Dono**: `CELO123` / `CELO123`
-
 ### Executando Localmente
 
-#### Opção 1: Servidor Web Python (Recomendado)
-
-```bash
-# Inicie o servidor (porta 5000)
-python3 server.py
-```
-
-Acesse: `http://localhost:5000`
-
-#### Opção 2: Scripts de Inicialização
+#### Opção 1: Scripts de Inicialização (Recomendado)
 
 ```bash
 # Windows
@@ -61,18 +42,30 @@ scripts/INICIAR-NAVEGADOR.bat
 bash scripts/INICIAR-NAVEGADOR.sh
 ```
 
-#### Opção 3: Aplicação Desktop (Electron)
+#### Opção 2: Servidor Web Python
 
 ```bash
-# Instalar dependências
-npm install
-
-# Executar versão desktop
-npm start
-
-# Compilar executável Windows
-npm run build
+# Inicie o servidor (porta 5000)
+python3 server.py
 ```
+Acesse: `http://localhost:5000`
+
+---
+
+## 📚 Documentação e Manuais
+
+### 🆕 Manuais Detalhados
+- **[MANUAL_JOGOS.md](docs/MANUAL_JOGOS.md)** - Guia dos jogos, ranking e conquistas.
+- **[MANUAL_CONFIGURACAO.md](docs/MANUAL_CONFIGURACAO.md)** - Guia de temas, categorias e backups.
+
+### 🎯 Guias Básicos
+- **[README-PRINCIPAL.md](docs/legacy/README-PRINCIPAL.md)** - Guia completo de uso (Legacy).
+- **[GUIA-MODO-OFFLINE.md](docs/legacy/GUIA-MODO-OFFLINE.md)** - Guia completo sobre o funcionamento offline.
+- **[INSTRUCOES-USO.md](docs/legacy/INSTRUCOES-USO.md)** - Instruções detalhadas de operação.
+
+### 🔧 Documentação Técnica
+- **[ESTRUTURA.md](docs/legacy/ESTRUTURA.md)** - Organização modular do código.
+- **[SISTEMA-ARQUIVOS.md](docs/legacy/SISTEMA-ARQUIVOS.md)** - Estrutura de armazenamento.
 
 ---
 
@@ -83,245 +76,41 @@ bicicletario/
 ├── 📂 js/                          # Código JavaScript modular
 │   ├── cadastros/                  # Módulos de cadastro
 │   ├── registros/                  # Controle de entrada/saída
-│   ├── usuarios/                   # Gerenciamento de usuários
+│   ├── jogos/                      # Módulo de jogos e ranking
 │   ├── configuracao/               # Configurações do sistema
 │   └── shared/                     # Utilitários compartilhados
-├── 📂 docs/                        # Documentação completa
-│   └── legacy/                     # Documentação antiga (movida)
+├── 📂 docs/                        # Manuais atuais
+│   └── legacy/                     # Documentação antiga
 ├── 📂 scripts/                     # Scripts de inicialização
 ├── 📂 electron/                    # Aplicação desktop
-├── 📂 libs/                        # Bibliotecas externas
 ├── 📄 index.html                   # Página principal
 ├── 📄 server.py                    # Servidor web Python
-├── 📄 storage_api.py               # API de armazenamento
-├── 📄 package.json                 # Configuração Node/Electron
-└── 📄 replit.md                    # Documentação técnica do Replit
+└── 📄 package.json                 # Configuração Node/Electron
 ```
-
----
-
-## 📚 Documentação Completa
-
-### 🎯 Começar por Aqui
-
-- **[README-PRINCIPAL.md](docs/README-PRINCIPAL.md)** - Guia completo de uso
-- **[GUIA-MODO-OFFLINE.md](docs/GUIA-MODO-OFFLINE.md)** - 📴 **NOVO!** Guia completo offline
-- **[FUNCIONAMENTO-OFFLINE.md](docs/FUNCIONAMENTO-OFFLINE.md)** - 🌐 Arquitetura offline
-- **[MUDANCAS-SISTEMA-PERMISSOES.md](docs/MUDANCAS-SISTEMA-PERMISSOES.md)** - Sistema de permissões
-- **[INSTRUCOES-USO.md](docs/INSTRUCOES-USO.md)** - Instruções detalhadas
-
-### 🔧 Documentação Técnica
-
-- **[replit.md](replit.md)** - Arquitetura e configuração Replit
-- **[ESTRUTURA.md](docs/ESTRUTURA.md)** - Organização modular do código
-- **[SISTEMA-ARQUIVOS.md](docs/SISTEMA-ARQUIVOS.md)** - Estrutura de armazenamento
-
-### 🎨 Funcionalidades
-
-- **[DROPDOWN-ACOES.md](docs/DROPDOWN-ACOES.md)** - Sistema de ações em registros
-- **[FUNCIONALIDADE-PERNOITE.md](docs/FUNCIONALIDADE-PERNOITE.md)** - Sistema de pernoite
-- **[EXPORTACAO-IMPORTACAO-DADOS.md](docs/EXPORTACAO-IMPORTACAO-DADOS.md)** - Backup de dados
-- **[ORGANIZACAO.md](docs/ORGANIZACAO.md)** - Reorganização da interface
-
-### 💻 Versão Desktop
-
-- **[DESKTOP-APP.md](docs/DESKTOP-APP.md)** - Aplicação Electron
-- **[BUILD-WINDOWS.md](docs/BUILD-WINDOWS.md)** - Compilar para Windows
-- **[DESKTOP-TROUBLESHOOTING.md](docs/DESKTOP-TROUBLESHOOTING.md)** - Soluções de problemas
-
-### 🗄️ Armazenamento de Dados
-
-O sistema possui **múltiplas estratégias de armazenamento offline**:
-
-1. **Versão Web (Navegador)**:
-   - **SQLite** (porta 5001) - Banco de dados local robusto
-   - **IndexedDB** - Cache persistente no navegador (50MB+)
-   - **LocalStorage** - Fallback universal (~5-10MB)
-   - Sincronização automática quando online
-
-2. **Versão Desktop (Electron)**:
-   - Armazena em `dados/desktop/` (arquivos JSON locais)
-   - Backup automático integrado
-
-3. **Segurança Offline**:
-   - Autenticação com **bcrypt** ou **SHA-256**
-   - Criptografia **AES** para dados sensíveis (opcional)
-   - Tokens de sessão seguros
-   - Backups automáticos em **.zip** e **.json**
-
-### 📊 Recursos Offline
-
-- ✅ **Funciona 100% sem internet**
-- ✅ **Sincronização automática** quando conexão retorna
-- ✅ **Fila de operações** - nenhuma ação perdida
-- ✅ **Indicadores visuais** de status online/offline
-- ✅ **Exportação de logs** em CSV e TXT
-- ✅ **Relatórios offline** completos
-- ✅ **Backup automático** do banco de dados
-
-Para mais detalhes, consulte [GUIA-MODO-OFFLINE.md](docs/GUIA-MODO-OFFLINE.md)
-
----
-
-## 🛠️ Tecnologias Utilizadas
-
-### Frontend
-- **HTML5, CSS3, JavaScript ES6+** (Vanilla)
-- **Tailwind CSS** - Estilização responsiva
-- **Lucide Icons** - Ícones modernos
-- **SheetJS (xlsx)** - Exportação Excel
-- **IndexedDB** - Armazenamento offline estruturado
-
-### Backend
-- **Python 3.12** - Servidor HTTP e APIs
-- **SQLite** - Banco de dados local
-- **bcrypt** - Hash seguro de senhas (opcional)
-- **cryptography** - Criptografia AES (opcional)
-- **Flask-like REST API** - Endpoints locais
-
-### Desktop
-- **Electron** - Aplicação desktop nativa
-- **Electron Builder** - Compilação de executáveis
-
-### Armazenamento
-- **SQLite** - Banco de dados relacional
-- **IndexedDB** - Cache do navegador
-- **LocalStorage** - Fallback universal
-- **File System** - Arquivos JSON e backups
-
----
-
-## 👥 Sistema de Permissões
-
-### Perfis de Usuário
-
-| Perfil | Permissões |
-|--------|-----------|
-| 👑 **Dono** | Acesso total + gerenciamento de usuários + auditoria |
-| 👤 **Admin** | Cadastros + registros + configurações |
-| 👷 **Funcionário** | Apenas registros de entrada/saída |
-
----
-
-## 📊 Funcionalidades Detalhadas
-
-### 1. Cadastro de Clientes
-- Validação automática de CPF
-- Categorização customizável
-- Sistema de comentários
-- Histórico completo de acessos
-
-### 2. Gerenciamento de Bicicletas
-- Múltiplas bikes por cliente
-- Descrição detalhada (marca, modelo, cor, aro)
-- Snapshot automático no registro
-
-### 3. Controle de Acesso
-- Registro de entrada com data/hora
-- Registro de saída com cálculo de permanência
-- Sistema de pernoite
-- Edição de registros (com auditoria)
-
-### 4. Relatórios e Exportação
-- Exportar para CSV, Excel e PDF
-- Filtros por data, categoria e status
-- Estatísticas por categoria
-- Backup completo do sistema
-
-### 5. Sistema de Auditoria
-- Log de todas as ações
-- Identificação do usuário responsável
-- Filtros avançados
-- Exportação de relatórios
-
----
-
-## 🔐 Segurança
-
-- ✅ Autenticação por usuário e senha
-- ✅ **Autenticação offline segura** com bcrypt/SHA-256
-- ✅ **Criptografia AES** para dados sensíveis (opcional)
-- ✅ **Tokens de sessão** seguros e persistentes
-- ✅ Validação de permissões em tempo real
-- ✅ Auditoria completa de ações
-- ✅ Proteção contra duplicação de CPF
-- ✅ Validação de dados em formulários
-- ✅ **Sanitização de inputs (proteção XSS)**
-- ✅ **Headers de segurança HTTP**
-- ✅ **Sistema centralizado de logging**
-- ✅ **Validação robusta de dados**
-- ✅ **Backups automáticos criptografados**
-
-Para mais informações sobre segurança, consulte [SECURITY.md](docs/SECURITY.md)
-
----
-
-## 🌐 Deploy e Produção
-
-### Replit (Recomendado)
-O projeto está configurado para **autoscale deployment** no Replit:
-- Servidor otimizado para produção
-- Cache control configurado
-- Ambiente isolado e seguro
-
-### Servidor Próprio
-```bash
-# Configurar para produção
-python3 server.py
-```
-
----
-
-## 🤝 Contribuindo
-
-Para contribuir com o projeto:
-1. Fork o repositório
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
-
-**Importante:** Consulte [CONTRIBUTING.md](CONTRIBUTING.md) para diretrizes detalhadas, incluindo:
-- Padrões de código
-- Práticas de segurança
-- Processo de revisão
-- Guia de testes
-
----
-
-## 📝 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
-
----
-
-## 👨‍💻 Autor
-
-**Marcelo Jorge**
 
 ---
 
 ## 📅 Histórico de Versões
 
-- **v3.1** (03/01/2026) - 🌐 **Sistema Offline Completo** + SQLite + Criptografia
-  - SQLite com backup automático
-  - Autenticação offline com bcrypt/AES
-  - IndexedDB com sincronização
-  - Exportação de logs em CSV/TXT
-  - Fila de sincronização automática
-- **v3.0** (23/11/2025) - Sistema de Permissões + Exportação/Importação
-- **v2.2** (21/11/2025) - Melhorias Desktop + Categorias
-- **v2.0** (20/11/2025) - Sistema de Auditoria
-- **v1.0** (19/11/2025) - Versão Inicial
+- **v3.1** (23/01/2026) - 🎮 **Módulo de Jogos + Configuração Avançada**
+  - Jogos integrados: Snake, Doom, Termo, Memória, etc.
+  - Customização de Temas (Cores e Presets).
+  - Documentação atualizada (Manuais novos).
+- **v3.0** (03/01/2026) - 🌐 **Sistema Offline Completo**
+  - SQLite com backup automático.
+  - Autenticação offline segura.
+  - Sincronização automática.
+- **v2.2** - Categorias e Melhorias Desktop.
+- **v2.0** - Sistema de Auditoria.
+- **v1.0** - Versão Inicial.
 
 ---
 
 ## 💡 Suporte
 
 Para dúvidas ou problemas:
-- Consulte a [documentação completa](docs/)
-- Verifique o [troubleshooting](docs/DESKTOP-TROUBLESHOOTING.md)
-- Abra uma issue no repositório
+- Consulte a pasta `docs/`.
+- Verifique o [troubleshooting](docs/legacy/DESKTOP-TROUBLESHOOTING.md).
 
 ---
 
