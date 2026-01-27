@@ -3,6 +3,8 @@
   BICICLETARIO SHOP. BOULEVARD V.V.
 ==================================================
 
+VERSAO ATUAL: 3.1 (Offline + Jogos + Config. Avancada)
+
 COMO EXECUTAR NO SEU COMPUTADOR:
 
 1. INSTALE O PYTHON 3
@@ -19,7 +21,16 @@ COMO EXECUTAR NO SEU COMPUTADOR:
    - Pasta do projeto/dados/navegador/clientes/
    - Pasta do projeto/dados/navegador/registros/
 
-4. PARA PARAR O SISTEMA
+4. FUNCIONALIDADES NOVAS
+   - MODO OFFLINE: O sistema funciona sem internet.
+   - JOGOS: Passatempos integrados (Snake, Doom, Termo, etc).
+   - CONFIGURACAO: Temas personalizados e categorias.
+
+5. DOCUMENTACAO COMPLETA
+   - Leia o arquivo README.md na pasta principal.
+   - Manuais detalhados na pasta 'docs/'.
+
+6. PARA PARAR O SISTEMA
    - Feche a janela preta que abriu
    - Ou pressione Ctrl+C na janela
 
@@ -55,5 +66,3 @@ BACKUP DOS DADOS:
 3. Para restaurar, substitua a pasta "dados"
 
 ==================================================
-
-Suporte: consulte COMO-USAR-ATALHOS.md para mais detalhes

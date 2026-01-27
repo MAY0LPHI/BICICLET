@@ -13,28 +13,28 @@ export class JobMonitor {
         this.container = null;
         this.isPolling = false;
         this.hasActiveJobs = false;
-        
+
         this.init();
     }
-    
+
     init() {
         this.createContainer();
         this.loadLastKnownChanges();
         this.startPolling();
     }
-    
+
     createContainer() {
         if (document.getElementById('job-monitor-container')) {
             this.container = document.getElementById('job-monitor-container');
             return;
         }
-        
+
         this.container = document.createElement('div');
         this.container.id = 'job-monitor-container';
         this.container.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm';
         document.body.appendChild(this.container);
     }
-    
+
     loadLastKnownChanges() {
         try {
             const saved = localStorage.getItem('lastKnownChanges');
@@ -45,7 +45,7 @@ export class JobMonitor {
             console.warn('Erro ao carregar lastKnownChanges:', e);
         }
     }
-    
+
     saveLastKnownChanges() {
         try {
             localStorage.setItem('lastKnownChanges', JSON.stringify(this.lastKnownChanges));
@@ -53,18 +53,18 @@ export class JobMonitor {
             console.warn('Erro ao salvar lastKnownChanges:', e);
         }
     }
-    
+
     startPolling() {
         if (this.isPolling) return;
         this.isPolling = true;
-        
+
         this.scheduleJobPolling();
-        this.changePollingInterval = setInterval(() => this.pollChanges(), 5000);
-        
+        this.changePollingInterval = setInterval(() => this.pollChanges(), 10000);
+
         this.pollJobs();
         this.pollChanges();
     }
-    
+
     scheduleJobPolling() {
         if (this.pollingInterval) {
             clearTimeout(this.pollingInterval);
@@ -75,7 +75,7 @@ export class JobMonitor {
             this.scheduleJobPolling();
         }, interval);
     }
-    
+
     stopPolling() {
         this.isPolling = false;
         if (this.pollingInterval) {
@@ -87,66 +87,66 @@ export class JobMonitor {
             this.changePollingInterval = null;
         }
     }
-    
+
     async pollJobs() {
         try {
             const response = await fetch('/api/jobs');
             if (!response.ok) return;
-            
+
             const data = await response.json();
             const activeJobs = data.active || [];
-            
+
             this.hasActiveJobs = activeJobs.length > 0;
-            
+
             activeJobs.forEach(job => {
                 this.updateJobCard(job);
             });
-            
+
             this.jobs.forEach((_, jobId) => {
                 const stillActive = activeJobs.find(j => j.id === jobId);
                 if (!stillActive) {
                     this.fetchAndUpdateJob(jobId);
                 }
             });
-            
+
         } catch (e) {
             console.warn('Erro ao buscar jobs:', e);
         }
     }
-    
+
     async fetchAndUpdateJob(jobId) {
         try {
             const response = await fetch(`/api/job/${jobId}`);
             if (!response.ok) return;
-            
+
             const job = await response.json();
             this.updateJobCard(job);
-            
+
         } catch (e) {
             console.warn('Erro ao buscar job:', e);
         }
     }
-    
+
     async pollChanges() {
         try {
             const response = await fetch('/api/changes');
             if (!response.ok) return;
-            
+
             const currentChanges = await response.json();
-            
+
             const hasChanges = {
                 clients: currentChanges.clients > this.lastKnownChanges.clients,
                 registros: currentChanges.registros > this.lastKnownChanges.registros,
                 usuarios: currentChanges.usuarios > this.lastKnownChanges.usuarios,
                 categorias: currentChanges.categorias > this.lastKnownChanges.categorias
             };
-            
+
             const anyChange = Object.values(hasChanges).some(v => v);
-            
+
             if (anyChange) {
                 this.lastKnownChanges = { ...currentChanges };
                 this.saveLastKnownChanges();
-                
+
                 this.changeCallbacks.forEach(callback => {
                     try {
                         callback(hasChanges);
@@ -155,40 +155,40 @@ export class JobMonitor {
                     }
                 });
             }
-            
+
         } catch (e) {
             console.warn('Erro ao verificar mudanças:', e);
         }
     }
-    
+
     onChanges(callback) {
         this.changeCallbacks.push(callback);
     }
-    
+
     removeChangeCallback(callback) {
         const index = this.changeCallbacks.indexOf(callback);
         if (index > -1) {
             this.changeCallbacks.splice(index, 1);
         }
     }
-    
+
     updateJobCard(job) {
         let card = document.getElementById(`job-card-${job.id}`);
-        
+
         if (!card) {
             card = this.createJobCard(job);
             this.jobs.set(job.id, card);
         }
-        
+
         this.updateCardContent(card, job);
-        
+
         if (job.status === 'completed' || job.status === 'failed') {
             setTimeout(() => {
                 this.removeJobCard(job.id);
             }, 5000);
         }
     }
-    
+
     createJobCard(job) {
         const card = document.createElement('div');
         card.id = `job-card-${job.id}`;
@@ -196,39 +196,39 @@ export class JobMonitor {
         this.container.appendChild(card);
         return card;
     }
-    
+
     updateCardContent(card, job) {
         const typeIcons = {
             'import_clients': 'users',
             'import_registros': 'file-text',
             'import_system_backup': 'database'
         };
-        
+
         const typeLabels = {
             'import_clients': 'Importando Clientes',
             'import_registros': 'Importando Registros',
             'import_system_backup': 'Importando Backup'
         };
-        
+
         const statusColors = {
             'pending': 'text-yellow-400',
             'running': 'text-blue-400',
             'completed': 'text-green-400',
             'failed': 'text-red-400'
         };
-        
+
         const progressColors = {
             'pending': 'bg-yellow-500',
             'running': 'bg-orange-500',
             'completed': 'bg-green-500',
             'failed': 'bg-red-500'
         };
-        
+
         const icon = typeIcons[job.type] || 'loader';
         const label = typeLabels[job.type] || 'Processando';
         const statusColor = statusColors[job.status] || 'text-slate-400';
         const progressColor = progressColors[job.status] || 'bg-blue-500';
-        
+
         card.innerHTML = `
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
@@ -247,12 +247,12 @@ export class JobMonitor {
                 <span class="text-slate-500 text-xs">${job.progress}%</span>
             </div>
         `;
-        
+
         if (typeof lucide !== 'undefined') {
             lucide.createIcons({ nodes: [card] });
         }
     }
-    
+
     removeJobCard(jobId) {
         const card = document.getElementById(`job-card-${jobId}`);
         if (card) {
@@ -263,7 +263,7 @@ export class JobMonitor {
             }, 300);
         }
     }
-    
+
     async startImportClients(clients) {
         try {
             const response = await fetch('/api/import/clients', {
@@ -271,18 +271,18 @@ export class JobMonitor {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ clients })
             });
-            
+
             if (!response.ok) throw new Error('Falha ao iniciar importação');
-            
+
             const data = await response.json();
             return data;
-            
+
         } catch (e) {
             console.error('Erro ao iniciar importação de clientes:', e);
             throw e;
         }
     }
-    
+
     async startImportRegistros(registros) {
         try {
             const response = await fetch('/api/import/registros', {
@@ -290,18 +290,18 @@ export class JobMonitor {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ registros })
             });
-            
+
             if (!response.ok) throw new Error('Falha ao iniciar importação');
-            
+
             const data = await response.json();
             return data;
-            
+
         } catch (e) {
             console.error('Erro ao iniciar importação de registros:', e);
             throw e;
         }
     }
-    
+
     async startImportBackup(backupData) {
         try {
             const response = await fetch('/api/import/backup', {
@@ -309,18 +309,18 @@ export class JobMonitor {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(backupData)
             });
-            
+
             if (!response.ok) throw new Error('Falha ao iniciar importação de backup');
-            
+
             const data = await response.json();
             return data;
-            
+
         } catch (e) {
             console.error('Erro ao iniciar importação de backup:', e);
             throw e;
         }
     }
-    
+
     async notifyChange(type) {
         try {
             await fetch('/api/notify-change', {
@@ -332,43 +332,42 @@ export class JobMonitor {
             console.warn('Erro ao notificar mudança:', e);
         }
     }
-    
+
     showToast(message, type = 'info') {
         const toast = document.createElement('div');
-        toast.className = `bg-slate-800 border rounded-lg shadow-lg p-3 animate-slide-in ${
-            type === 'success' ? 'border-green-500' :
-            type === 'error' ? 'border-red-500' :
-            type === 'warning' ? 'border-yellow-500' :
-            'border-blue-500'
-        }`;
-        
+        toast.className = `bg-slate-800 border rounded-lg shadow-lg p-3 animate-slide-in ${type === 'success' ? 'border-green-500' :
+                type === 'error' ? 'border-red-500' :
+                    type === 'warning' ? 'border-yellow-500' :
+                        'border-blue-500'
+            }`;
+
         const iconMap = {
             'success': 'check-circle',
             'error': 'x-circle',
             'warning': 'alert-triangle',
             'info': 'info'
         };
-        
+
         const colorMap = {
             'success': 'text-green-400',
             'error': 'text-red-400',
             'warning': 'text-yellow-400',
             'info': 'text-blue-400'
         };
-        
+
         toast.innerHTML = `
             <div class="flex items-center gap-2">
                 <i data-lucide="${iconMap[type]}" class="w-4 h-4 ${colorMap[type]}"></i>
                 <span class="text-white text-sm">${message}</span>
             </div>
         `;
-        
+
         this.container.appendChild(toast);
-        
+
         if (typeof lucide !== 'undefined') {
             lucide.createIcons({ nodes: [toast] });
         }
-        
+
         setTimeout(() => {
             toast.classList.add('animate-slide-out');
             setTimeout(() => toast.remove(), 300);

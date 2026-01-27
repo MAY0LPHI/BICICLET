@@ -214,7 +214,14 @@ class App {
             }
         }
 
-
+        const mobileAccessBtn = document.getElementById('mobile-access-btn');
+        if (mobileAccessBtn) {
+            if (Auth.hasPermission('registros', 'solicitacoes')) {
+                mobileAccessBtn.classList.add('md:flex');
+            } else {
+                mobileAccessBtn.classList.remove('md:flex');
+            }
+        }
 
         this.selectFirstVisibleTab();
 

@@ -4,12 +4,12 @@ import { Modals } from '../shared/modals.js';
 import { Auth } from '../shared/auth.js';
 import { logAction } from '../shared/audit-logger.js';
 import { notificationManager } from '../shared/notifications.js';
-import { ConexoesQRManager } from './conexoes-qr.js';
 
 export class RegistrosManager {
     constructor(app) {
         this.app = app;
         this.elements = {
+            // ... existing elements ...
             addRegistroModal: document.getElementById('add-registro-modal'),
             addRegistroForm: document.getElementById('add-registro-form'),
             cancelAddRegistroBtn: document.getElementById('cancel-add-registro'),
@@ -20,6 +20,14 @@ export class RegistrosManager {
             dailyRecordsDateInput: document.getElementById('daily-records-date'),
             dailyRecordsSearchInput: document.getElementById('daily-records-search'),
             dailyRecordsList: document.getElementById('daily-records-list'),
+            // Modal Solicitacoes Elements
+            solicitacoesModal: document.getElementById('solicitacoes-modal'),
+            solicitacoesModalList: document.getElementById('solicitacoes-modal-list'),
+            closeSolicitacoesBtn: document.getElementById('close-solicitacoes-modal-btn'),
+            openSolicitacoesModalBtn: document.getElementById('open-solicitacoes-modal-btn'),
+            solicitacoesCount: document.getElementById('solicitacoes-badge'),
+
+            // ... existing elements ...
             exportBtn: document.getElementById('export-btn'),
             exportOptions: document.getElementById('export-options'),
             exportCsvBtn: document.getElementById('export-csv'),
@@ -40,7 +48,6 @@ export class RegistrosManager {
             openDashboardModalBtn: document.getElementById('open-dashboard-modal-btn'),
             dashboardModal: document.getElementById('dashboard-modal'),
         };
-        this.conexoesQRManager = new ConexoesQRManager(app);
         this.setupEventListeners();
     }
 
@@ -48,6 +55,18 @@ export class RegistrosManager {
         this.elements.addRegistroForm.addEventListener('submit', this.handleAddRegistro.bind(this));
         this.elements.cancelAddRegistroBtn.addEventListener('click', () => this.app.toggleModal('add-registro-modal', false));
         this.elements.dailyRecordsDateInput.addEventListener('change', this.renderDailyRecords.bind(this));
+
+        // Modal Solicitacoes Listeners
+        if (this.elements.openSolicitacoesModalBtn) {
+            this.elements.openSolicitacoesModalBtn.addEventListener('click', this.openSolicitacoesModal.bind(this));
+        }
+        if (this.elements.closeSolicitacoesBtn) {
+            this.elements.closeSolicitacoesBtn.addEventListener('click', () => this.app.toggleModal('solicitacoes-modal', false));
+        }
+        if (this.elements.solicitacoesModalList) {
+            this.elements.solicitacoesModalList.addEventListener('click', this.handleRequestAction.bind(this));
+        }
+
         this.elements.dailyRecordsSearchInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
             this.renderDailyRecords();
@@ -73,6 +92,8 @@ export class RegistrosManager {
         this.elements.exportCsvBtn.addEventListener('click', () => this.exportToCSV());
         this.elements.exportPdfBtn.addEventListener('click', () => this.exportToPDF());
 
+
+
         if (this.elements.openDashboardModalBtn) {
             this.elements.openDashboardModalBtn.addEventListener('click', this.openDashboardModal.bind(this));
         }
@@ -88,7 +109,189 @@ export class RegistrosManager {
                 });
             }
         });
+
+        // Init check for requests
+        this.checkPendingRequests();
+        setInterval(() => this.checkPendingRequests(), 10000);
     }
+
+    checkPendingRequests() {
+        if (!Auth.hasPermission('registros', 'solicitacoes')) {
+            if (this.elements.openSolicitacoesModalBtn) {
+                this.elements.openSolicitacoesModalBtn.classList.add('hidden');
+            }
+            return;
+        }
+
+        const requests = JSON.parse(localStorage.getItem('bicicletario_requests') || '[]');
+        const pending = requests.filter(r => r.status === 'pendente');
+        const count = pending.length;
+
+        // Ensure button is always visible
+        if (this.elements.openSolicitacoesModalBtn) {
+            this.elements.openSolicitacoesModalBtn.classList.remove('hidden');
+
+            // Toggle badge based on count
+            if (this.elements.solicitacoesCount) {
+                if (count > 0) {
+                    this.elements.solicitacoesCount.classList.remove('hidden');
+                } else {
+                    this.elements.solicitacoesCount.classList.add('hidden');
+                }
+            }
+        }
+    }
+
+    openSolicitacoesModal() {
+        try {
+            Auth.requirePermission('registros', 'solicitacoes');
+        } catch (error) {
+            Modals.alert(error.message, 'Acesso Negado');
+            return;
+        }
+        this.renderRequestsInModal();
+        this.app.toggleModal('solicitacoes-modal', true);
+    }
+
+    renderRequestsInModal() {
+        const requests = JSON.parse(localStorage.getItem('bicicletario_requests') || '[]');
+        const pending = requests.filter(r => r.status === 'pendente').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        // Update badge and button visibility
+        this.checkPendingRequests();
+
+
+        if (pending.length === 0) {
+            this.elements.solicitacoesModalList.innerHTML = '<div class="text-center py-4 text-slate-500">Nenhuma solicitação pendente.</div>';
+            return;
+        }
+
+        this.elements.solicitacoesModalList.innerHTML = pending.map((req, index) => {
+            const client = this.app.data.clients.find(c => c.id === req.clientId);
+            const bike = client?.bicicletas.find(b => b.id === req.bikeId);
+            const requisicaoIndex = requests.indexOf(req); // Get original index for safer update
+
+            const time = new Date(req.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+            return `
+                <div class="bg-white dark:bg-slate-700/50 p-4 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.tipo === 'entrada' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}">
+                                ${req.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+                            </span>
+                            <span class="ml-2 text-xs text-slate-500 dark:text-slate-400">${time}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="font-medium text-slate-900 dark:text-slate-100">${client?.nome || 'Desconhecido'}</p>
+                        <p class="text-sm text-slate-600 dark:text-slate-300">
+                             <i data-lucide="bike" class="w-3 h-3 inline mr-1"></i>
+                             ${bike?.modelo || 'Bike'} - ${bike?.marca || ''} (${bike?.cor || ''})
+                        </p>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors request-action-btn"
+                                data-index="${requisicaoIndex}" data-action="approve">
+                            Aprovar
+                        </button>
+                        <button class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors request-action-btn"
+                                data-index="${requisicaoIndex}" data-action="reject">
+                            Rejeitar
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        lucide.createIcons();
+    }
+
+    // Override or update handleRequestAction to refresh modal
+    async handleRequestAction(e) {
+        if (!e.target.classList.contains('request-action-btn')) return;
+
+        const btn = e.target;
+        const reqIndex = parseInt(btn.dataset.index);
+        const action = btn.dataset.action;
+        const requests = JSON.parse(localStorage.getItem('bicicletario_requests') || '[]');
+        const request = requests[reqIndex];
+
+        if (!request) return;
+
+        // Permission check
+        const permission = request.tipo === 'entrada' ? 'adicionar' : 'editar'; // Exit counts as edit
+        try {
+            Auth.requirePermission('registros', permission);
+        } catch (error) {
+            Modals.alert(error.message, 'Permissão Negada');
+            return;
+        }
+
+        if (action === 'approve') {
+            try {
+                if (request.tipo === 'entrada') {
+                    await this.createEntryFromRequest(request);
+                } else {
+                    await this.createExitFromRequest(request);
+                }
+
+                request.status = 'aprovado';
+                Modals.showAlert('Solicitação aprovada com sucesso!', 'Sucesso');
+            } catch (error) {
+                console.error(error);
+                Modals.alert(error.message, 'Erro ao Aprovar');
+                return;
+            }
+        } else {
+            request.status = 'rejeitado';
+        }
+
+        requests[reqIndex] = request;
+        localStorage.setItem('bicicletario_requests', JSON.stringify(requests));
+
+        // Refresh!
+        this.renderRequestsInModal();
+        this.renderDailyRecords(); // Refresh main list if approved
+    }
+
+    async createEntryFromRequest(req) {
+        const bike = this.app.data.clients.find(c => c.id === req.clientId)?.bicicletas.find(b => b.id === req.bikeId);
+        if (!bike) throw new Error('Dados da bicicleta não encontrados.');
+
+        const newRegistro = {
+            id: Utils.generateUUID(),
+            dataHoraEntrada: new Date().toISOString(),
+            dataHoraSaida: null,
+            clientId: req.clientId,
+            bikeId: req.bikeId,
+            categoria: '',
+            bikeSnapshot: {
+                modelo: bike.modelo,
+                marca: bike.marca,
+                cor: bike.cor
+            },
+            origem: 'autoatendimento'
+        };
+
+        this.app.data.registros.push(newRegistro);
+        await Storage.saveRegistros(this.app.data.registros);
+    }
+
+    async createExitFromRequest(req) {
+        // Find open record for this bike
+        const openRecord = this.app.data.registros.find(r =>
+            r.clientId === req.clientId &&
+            r.bikeId === req.bikeId &&
+            !r.dataHoraSaida
+        );
+
+        if (!openRecord) throw new Error('Registro de entrada não encontrado para esta bicicleta.');
+
+        openRecord.dataHoraSaida = new Date().toISOString();
+        await Storage.saveRegistros(this.app.data.registros);
+    };
 
     handleViewComments(e) {
         if (e.target.closest('.view-comments-btn')) {
@@ -1583,4 +1786,38 @@ export class RegistrosManager {
             dropdown.style.display = hasAnyAction ? '' : 'none';
         });
     }
+
+    // Assuming this is part of an 'init' or 'constructor' method
+    // This block is inserted here based on the provided context.
+    initEventListeners() {
+        if (this.elements.exportPdfBtn) {
+            this.elements.exportPdfBtn.addEventListener('click', () => this.exportToPDF());
+        }
+
+        if (this.elements.openDashboardModalBtn) {
+            this.elements.openDashboardModalBtn.addEventListener('click', this.openDashboardModal.bind(this));
+        }
+
+        window.addEventListener('click', (e) => {
+            this.toggleExportMenu(false);
+            // Close all action dropdowns when clicking outside
+            if (!e.target.closest('.action-dropdown')) {
+                document.querySelectorAll('.action-dropdown .dropdown-menu').forEach(menu => {
+                    menu.classList.add('hidden');
+                    const button = menu.closest('.action-dropdown').querySelector('.dropdown-button');
+                    if (button) button.classList.remove('active');
+                });
+            }
+        });
+
+        // Check for requests periodically or on load to update button visibility
+        this.checkPendingRequests();
+        // Optional: Poll for new requests every few seconds
+        setInterval(() => this.checkPendingRequests(), 5000);
+    }
+
+
+
+
 }
+

@@ -19,6 +19,10 @@ Contém toda a lógica relacionada ao cadastro de clientes e bicicletas.
   - ✅ Visualizar detalhes das bicicletas
   - ✅ Exibir histórico de movimentação
 
+- **dashboard.js**
+  - ✅ Dashboard administrativo (Movido de dono/)
+  - ✅ Gráficos e estatísticas
+
 ### 📂 js/registros/ - MÓDULO DE REGISTROS
 
 Gerencia todos os registros diários de entrada e saída de bicicletas.
@@ -31,6 +35,20 @@ Gerencia todos os registros diários de entrada e saída de bicicletas.
   - ✅ Exportar para CSV
   - ✅ Exportar para PDF
 
+### 📂 js/jogos/ - MÓDULO DE JOGOS (NOVO)
+
+- **jogos.js**
+  - ✅ Sistema de jogos integrados
+  - ✅ Ranking e Conquistas
+  - ✅ Modo offline
+
+### 📂 js/configuracao/ - MÓDULO DE CONFIGURAÇÃO (NOVO)
+
+- **configuracao.js**
+  - ✅ Temas e personalização
+  - ✅ Categorias customizáveis
+  - ✅ Backup e Importação
+
 ### 📂 js/shared/ - UTILITÁRIOS COMPARTILHADOS
 
 Código reutilizável usado por todos os módulos.
@@ -42,11 +60,11 @@ Código reutilizável usado por todos os módulos.
   - ✅ Validar CPF
 
 - **storage.js**
-  - ✅ Salvar clientes no localStorage
-  - ✅ Carregar clientes do localStorage
-  - ✅ Salvar registros no localStorage
-  - ✅ Carregar registros do localStorage
-  - ✅ Migrar dados antigos
+  - ✅ Salvar clientes no localStorage/SQLite
+  - ✅ Carregar clientes do localStorage/SQLite
+  - ✅ Salvar registros no localStorage/SQLite
+  - ✅ Carregar registros do localStorage/SQLite
+  - ✅ Sincronização offline
 
 ### 📄 Arquivos Principais
 
@@ -96,8 +114,8 @@ Código reutilizável usado por todos os módulos.
 
 ## Próximas Melhorias Sugeridas
 
-- [ ] Adicionar testes unitários
-- [ ] Implementar sistema de backup automático
-- [ ] Criar relatórios estatísticos
-- [ ] Adicionar autenticação de usuários
-- [ ] Implementar sincronização em nuvem
+- [x] Adicionar testes unitários
+- [x] Implementar sistema de backup automático
+- [x] Criar relatórios estatísticos
+- [x] Adicionar autenticação de usuários
+- [x] Implementar sincronização em nuvem (via Replit)
