@@ -1,42 +1,72 @@
 @echo off
+chcp 65001 > nul
+setlocal enabledelayedexpansion
+
+REM Cores (para Windows 10+)
 cls
-echo ==================================================
-echo  Sistema de Bicicletario - VERSAO DESKTOP
-echo  BICICLETARIO SHOP. BOULEVARD V.V.
-echo ==================================================
+echo.
+echo ╔════════════════════════════════════════════════════════════╗
+echo ║   GESTOR DE BICICLETÁRIO - VERSÃO DESKTOP                 ║
+echo ║   Inicializador Automático                                ║
+echo ╚════════════════════════════════════════════════════════════╝
 echo.
 
-echo Verificando Node.js...
-node --version >nul 2>&1
-if errorlevel 1 (
-    echo [ERRO] Node.js nao encontrado!
-    echo Por favor, instale o Node.js em: https://nodejs.org/
+REM Verificar se Node.js está instalado
+echo [1/3] Verificando Node.js...
+where node >nul 2>nul
+if %errorlevel% neq 0 (
+    echo ❌ ERRO: Node.js não está instalado!
+    echo.
+    echo Baixe em: https://nodejs.org/
+    echo Instale a versão LTS (recomendado)
     echo.
     pause
     exit /b 1
 )
-echo [OK] Node.js encontrado!
 
-echo Verificando dependencias...
-if not exist "node_modules" (
-    echo Instalando dependencias...
-    call npm install
-) else (
-    echo [OK] Dependencias encontradas!
+node --version
+echo ✅ Node.js encontrado
+echo.
+
+REM Verificar se npm está instalado
+echo [2/3] Verificando npm...
+where npm >nul 2>nul
+if %errorlevel% neq 0 (
+    echo ❌ ERRO: npm não está instalado!
+    pause
+    exit /b 1
 )
+
+npm --version
+echo ✅ npm encontrado
 echo.
 
-echo Iniciando aplicacao...
+REM Instalar dependências
+echo [3/3] Instalando dependências (primeira vez pode levar alguns minutos)...
 echo.
-start /B npm start
+
+if exist node_modules (
+    echo ✓ Dependências já estão instaladas
+) else (
+    echo Instalando pacotes...
+    call npm install
+    if %errorlevel% neq 0 (
+        echo ❌ ERRO ao instalar dependências!
+        pause
+        exit /b 1
+    )
+    echo ✅ Dependências instaladas com sucesso
+)
 
 echo.
-echo ==================================================
-echo Sistema Desktop iniciado!
+echo ════════════════════════════════════════════════════════════
+echo ✅ Tudo pronto! Iniciando aplicação...
+echo ════════════════════════════════════════════════════════════
 echo.
-echo Dados salvos em: dados\desktop\
+echo Dados serão salvos em: dados\desktop\
 echo.
-echo Para fechar o sistema, feche a janela do aplicativo
-echo ==================================================
-echo.
+
+REM Iniciar Electron
+call npm start
+
 pause
