@@ -7,22 +7,6 @@
 const API_URL = '/api';
 
 export class FileStorage {
-    static getHeaders() {
-        const headers = { 'Content-Type': 'application/json' };
-        try {
-            const sessionData = localStorage.getItem('bicicletario_session');
-            if (sessionData) {
-                const session = JSON.parse(sessionData);
-                if (session.token) {
-                    headers['Authorization'] = `Bearer ${session.token}`;
-                }
-            }
-        } catch (e) {
-            console.warn('Erro ao ler token de sessão:', e);
-        }
-        return headers;
-    }
-
     static async isAvailable() {
         try {
             const response = await fetch(`${API_URL}/health`);
@@ -36,7 +20,7 @@ export class FileStorage {
     static async saveClient(client) {
         const response = await fetch(`${API_URL}/client`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(client)
         });
         return await response.json();
@@ -44,9 +28,7 @@ export class FileStorage {
 
     static async loadClient(cpf) {
         const cpfClean = cpf.replace(/\D/g, '');
-        const response = await fetch(`${API_URL}/client/${cpfClean}`, {
-            headers: this.getHeaders()
-        });
+        const response = await fetch(`${API_URL}/client/${cpfClean}`);
         if (response.ok) {
             return await response.json();
         }
@@ -54,17 +36,14 @@ export class FileStorage {
     }
 
     static async loadAllClients() {
-        const response = await fetch(`${API_URL}/clients`, {
-            headers: this.getHeaders()
-        });
+        const response = await fetch(`${API_URL}/clients`);
         return await response.json();
     }
 
     static async deleteClient(cpf) {
         const cpfClean = cpf.replace(/\D/g, '');
         const response = await fetch(`${API_URL}/client/${cpfClean}`, {
-            method: 'DELETE',
-            headers: this.getHeaders()
+            method: 'DELETE'
         });
         return await response.json();
     }
@@ -73,23 +52,20 @@ export class FileStorage {
     static async saveRegistro(registro) {
         const response = await fetch(`${API_URL}/registro`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(registro)
         });
         return await response.json();
     }
 
     static async loadAllRegistros() {
-        const response = await fetch(`${API_URL}/registros`, {
-            headers: this.getHeaders()
-        });
+        const response = await fetch(`${API_URL}/registros`);
         return await response.json();
     }
 
     static async deleteRegistro(registroId) {
         const response = await fetch(`${API_URL}/registro/${registroId}`, {
-            method: 'DELETE',
-            headers: this.getHeaders()
+            method: 'DELETE'
         });
         return await response.json();
     }
@@ -98,16 +74,14 @@ export class FileStorage {
     static async saveCategorias(categorias) {
         const response = await fetch(`${API_URL}/categorias`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(categorias)
         });
         return await response.json();
     }
 
     static async loadCategorias() {
-        const response = await fetch(`${API_URL}/categorias`, {
-            headers: this.getHeaders()
-        });
+        const response = await fetch(`${API_URL}/categorias`);
         if (response.ok) {
             return await response.json();
         }
@@ -119,7 +93,7 @@ export class FileStorage {
         try {
             const response = await fetch(`${API_URL}/upload-image`, {
                 method: 'POST',
-                headers: this.getHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image: base64Data })
             });
             return await response.json();

@@ -115,19 +115,11 @@ class MobileAccess {
         this.toggleLoading(true);
 
         try {
-            // Use Backend API instead of local storage
-            const response = await fetch('/api/mobile/identify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cpf })
-            });
+            const clients = await Storage.loadClients();
+            const client = clients.find(c => c.cpf.replace(/\D/g, '') === cpf.replace(/\D/g, ''));
 
-            if (!response.ok) throw new Error('Erro na comunicação com servidor');
-
-            const data = await response.json();
-
-            if (data.found && data.client) {
-                this.currentClient = data.client;
+            if (client) {
+                this.currentClient = client;
                 this.showActions();
             } else {
                 this.showError('CPF não encontrado. Faça seu cadastro.');
@@ -336,39 +328,37 @@ class MobileAccess {
 
         const bike = this.currentClient.bicicletas.find(b => b.id === bikeId);
 
-        // Create Request Object payload
-        const requestData = {
+        // Create Request Object
+        const request = {
+            id: Utils.generateUUID(),
+            tipo: type, // 'entrada' or 'saida'
             clientId: this.currentClient.id,
             clientName: this.currentClient.nome,
             bikeId: bike.id,
             bikeInfo: `${bike.modelo} - ${bike.cor}`,
-            type: type // 'entrada' or 'saida'
+            timestamp: new Date().toISOString(),
+            status: 'pendente' // pendente, aprovado, rejeitado
         };
 
         this.toggleLoading(true);
 
         try {
-            // Send to Backend API
-            const response = await fetch('/api/mobile/request', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestData)
-            });
+            // We need a specific storage for requests. 
+            // For now, let's append to a 'requests' list in localStorage.
+            // In a real backend, this would be a specific endpoint.
+            let requests = JSON.parse(localStorage.getItem('bicicletario_requests') || '[]');
+            requests.push(request);
+            localStorage.setItem('bicicletario_requests', JSON.stringify(requests));
 
-            if (!response.ok) throw new Error('Falha ao enviar solicitação');
+            // Trigger a custom event or letting the admin dashboard know via polling/storage event
+            // The admin dashboard (registros-diarios.js) needs to listen to this.
 
-            const result = await response.json();
-
-            if (result.success) {
-                this.showSuccess();
-            } else {
-                alert('Erro: ' + (result.error || 'Falha desconhecida'));
-            }
+            this.toggleLoading(false);
+            this.showSuccess();
 
         } catch (error) {
             console.error(error);
-            alert('Erro ao enviar solicitação. Verifique sua conexão.');
-        } finally {
+            alert('Erro ao enviar solicitação.');
             this.toggleLoading(false);
         }
     }
