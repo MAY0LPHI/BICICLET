@@ -14,3 +14,6 @@ argon2-cffi>=23.1.0
 
 # Servidor web (já instalado)
 # http.server já vem incluso no Python 3.12
+
+# Banco de dados Nuvem (Opcional - apenas se usar PostgreSQL)
+psycopg2-binary>=2.9.9

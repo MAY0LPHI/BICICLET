@@ -11,6 +11,15 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+import urllib.parse
+
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    PSYCOPG2_AVAILABLE = False
+
 
 # Configuração de logging
 logging.basicConfig(
@@ -22,7 +31,65 @@ logger = logging.getLogger(__name__)
 # Caminhos do banco de dados
 DB_DIR = "dados/database"
 DB_FILE = os.path.join(DB_DIR, "bicicletario.db")
+DB_FILE = os.path.join(DB_DIR, "bicicletario.db")
 BACKUP_DIR = os.path.join(DB_DIR, "backups")
+
+class PostgresCursorWrapper:
+    """Wrapper para emular o cursor do SQLite no PostgreSQL"""
+    def __init__(self, cursor):
+        self.cursor = cursor
+        self.rowcount = -1
+
+    def execute(self, query, params=None):
+        # Converte ? para %s
+        pg_query = query.replace('?', '%s')
+        
+        # Tratamento para AUTOINCREMENT vs SERIAL
+        if "AUTOINCREMENT" in pg_query:
+            pg_query = pg_query.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+            
+        try:
+            self.cursor.execute(pg_query, params)
+            self.rowcount = self.cursor.rowcount
+            return self
+        except Exception as e:
+            logger.error(f"Erro na query SQL: {e}")
+            raise e
+
+    def fetchone(self):
+        return self.cursor.fetchone()
+
+    def fetchall(self):
+        return self.cursor.fetchall()
+        
+    def close(self):
+        self.cursor.close()
+
+class PostgresConnectionWrapper:
+    """Wrapper para emular a conexão do SQLite no PostgreSQL"""
+    def __init__(self, dsn):
+        self.conn = psycopg2.connect(dsn, cursor_factory=RealDictCursor)
+
+    def cursor(self):
+        return PostgresCursorWrapper(self.conn.cursor())
+
+    def commit(self):
+        self.conn.commit()
+        
+    def close(self):
+        self.conn.close()
+        
+    def __enter__(self):
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.conn.rollback()
+        else:
+            self.conn.commit()
+        # Não fechamos a conexão no exit para manter compatibilidade com o padrão do código
+        # que espera gerenciar o fechamento manualmente ou via context manager do python
+        
 
 
 class DatabaseManager:
@@ -43,8 +110,16 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Erro ao criar diretórios: {e}")
     
-    def _get_connection(self) -> sqlite3.Connection:
+    def _get_connection(self):
         """Retorna uma conexão com o banco de dados"""
+        database_url = os.environ.get('DATABASE_URL')
+        
+        if database_url and PSYCOPG2_AVAILABLE:
+            try:
+                return PostgresConnectionWrapper(database_url)
+            except Exception as e:
+                logger.error(f"Falha ao conectar no PostgreSQL, usando SQLite: {e}")
+                
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row  # Permite acesso por nome de coluna
         return conn
