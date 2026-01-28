@@ -44,6 +44,7 @@ except Exception as e:
 
 JOB_MANAGER = None
 IMPORT_WORKER = None
+BACKGROUND_JOBS_AVAILABLE = True
 
 try:
     from background_jobs import get_job_manager, get_import_worker
@@ -51,12 +52,18 @@ try:
     IMPORT_WORKER = get_import_worker(DB_MANAGER, STORAGE_DIR)
     logger.info("✅ Sistema de jobs em segundo plano carregado")
 except ImportError as e:
+    BACKGROUND_JOBS_AVAILABLE = False
     logger.warning(f"Sistema de jobs não disponível: {e}")
 except Exception as e:
+    BACKGROUND_JOBS_AVAILABLE = False
     logger.warning(f"Erro ao inicializar sistema de jobs: {e}")
 
 def use_sqlite_storage() -> bool:
-    """Verifica se deve usar SQLite baseado na configuração atual"""
+    """Verifica se deve usar SQLite/Banco de Dados baseado na configuração atual"""
+    # Se configurado para nuvem (PostgreSQL), sempre usa banco de dados
+    if os.environ.get('DATABASE_URL'):
+        return True
+        
     if not DB_AVAILABLE or DB_MANAGER is None:
         return False
     current_mode = DB_MANAGER.get_storage_mode()
@@ -171,22 +178,56 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         parsed_path = urlparse(self.path)
         
         if parsed_path.path.startswith('/api/'):
+            if not self._check_auth(parsed_path.path):
+                return
             self._handle_api_get(parsed_path)
         else:
             super().do_GET()
     
     def do_POST(self):
         if self.path.startswith('/api/'):
+            if not self._check_auth(self.path):
+                return
             self._handle_api_post()
         else:
             self.send_error(404, "Not Found")
     
     def do_DELETE(self):
         if self.path.startswith('/api/'):
+            if not self._check_auth(self.path):
+                return
             self._handle_api_delete()
         else:
             self.send_error(404, "Not Found")
     
+    def _check_auth(self, path):
+        """Verifica se a requisição tem permissão para prosseguir"""
+        # Endpoints públicos (não precisam de token)
+        public_endpoints = ['/api/login', '/api/health']
+        if path in public_endpoints or path.startswith('/api/mobile/'):
+            return True
+            
+        # Se não tiver auth manager, permite tudo (modo inseguro/legado)
+        if not AUTH_AVAILABLE:
+            return True
+            
+        # Verifica header Authorization
+        auth_header = self.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            self._set_api_headers(401)
+            self.wfile.write(json.dumps({"error": "Token de autenticação ausente ou inválido"}).encode())
+            return False
+            
+        token = auth_header.split(' ')[1]
+        username = get_auth_manager().validate_token(token)
+        
+        if not username:
+            self._set_api_headers(401)
+            self.wfile.write(json.dumps({"error": "Token expirado ou inválido"}).encode())
+            return False
+            
+        return True
+
     def _handle_api_get(self, parsed_path):
         path = parsed_path.path
         
@@ -416,6 +457,123 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         content_length = int(self.headers.get('Content-Length', 0))
         post_data = self.rfile.read(content_length)
         
+        # Endpoint de Identificação Mobile (Público)
+        if self.path == '/api/mobile/identify':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                cpf = data.get('cpf', '').strip()
+                
+                if not cpf:
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "CPF obrigatório"}).encode())
+                    return
+
+                # Busca cliente (limita dados retornados por segurança)
+                if use_sqlite_storage():
+                    clients = DB_MANAGER.get_all_clientes()
+                else:
+                    clients = self._load_clients_from_files()
+
+                # Normaliza CPF para busca
+                cpf_clean = ''.join(filter(str.isdigit, cpf))
+                
+                client = None
+                for c in clients:
+                    c_cpf_clean = ''.join(filter(str.isdigit, c.get('cpf', '')))
+                    if c_cpf_clean == cpf_clean:
+                        client = c
+                        break
+                
+                if client:
+                    # Retorna apenas dados necessários
+                    safe_client = {
+                        'id': client['id'],
+                        'nome': client['nome'],
+                        'cpf': client['cpf'], # Retorna formatado como está no banco
+                        'bicicletas': client.get('bicicletas', []),
+                        'ativo': client.get('ativo', True)
+                    }
+                    self._set_api_headers(200)
+                    self.wfile.write(json.dumps({"found": True, "client": safe_client}, ensure_ascii=False).encode('utf-8'))
+                else:
+                    self._set_api_headers(200) # 200 OK mas found=False
+                    self.wfile.write(json.dumps({"found": False}).encode())
+            except Exception as e:
+                logger.error(f"Erro na identificação mobile: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
+        # Endpoint de Solicitação Mobile (Público)
+        if self.path == '/api/mobile/request':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                
+                # Validação básica
+                if not data.get('clientId') or not data.get('bikeId'):
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "Dados incompletos"}).encode())
+                    return
+
+                # Carrega solicitações existentes
+                solicitacoes = []
+                if os.path.exists(SOLICITACOES_FILE):
+                    try:
+                        with open(SOLICITACOES_FILE, 'r', encoding='utf-8') as f:
+                            solicitacoes = json.load(f)
+                    except:
+                        solicitacoes = []
+
+                # Adiciona nova solicitação
+                data['id'] = str(uuid.uuid4())
+                data['timestamp'] = datetime.now().isoformat()
+                data['status'] = 'pendente'
+                data['origem'] = 'mobile'
+                
+                solicitacoes.append(data)
+                
+                # Salva
+                with open(SOLICITACOES_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(solicitacoes, f, ensure_ascii=False, indent=2)
+                
+                self._set_api_headers(200)
+                self.wfile.write(json.dumps({"success": True, "id": data['id']}).encode())
+                
+            except Exception as e:
+                logger.error(f"Erro na solicitação mobile: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
+        # Endpoint de Login (Público, verificado no _check_auth)
+        if self.path == '/api/login':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                username = data.get('username')
+                password = data.get('password')
+                
+                if not username or not password:
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "Usuário e senha obrigatórios"}).encode())
+                    return
+
+                if AUTH_AVAILABLE:
+                    user_data = get_auth_manager().authenticate(username, password)
+                    if user_data:
+                        self._set_api_headers(200)
+                        self.wfile.write(json.dumps({"success": True, "user": user_data}).encode())
+                    else:
+                        self._set_api_headers(401)
+                        self.wfile.write(json.dumps({"success": False, "message": "Usuário ou senha incorretos"}).encode())
+                else:
+                    self._set_api_headers(500)
+                    self.wfile.write(json.dumps({"error": "Sistema de autenticação indisponível"}).encode())
+            except Exception as e:
+                logger.error(f"Erro no login: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
         if self.path == '/api/client':
             client = json.loads(post_data.decode('utf-8'))
             if use_sqlite_storage():
@@ -450,6 +608,50 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(json.dumps({"error": "Failed to save registro"}).encode())
             else:
                 self._save_registro_file(registro)
+            return
+        
+        # Endpoint para atualizar status de solicitação
+        if self.path == '/api/solicitacoes/update':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                req_id = data.get('id')
+                new_status = data.get('status')
+                
+                if not req_id or not new_status:
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "ID e Status obrigatórios"}).encode())
+                    return
+
+                if os.path.exists(SOLICITACOES_FILE):
+                    with open(SOLICITACOES_FILE, 'r', encoding='utf-8') as f:
+                        solicitacoes = json.load(f)
+                    
+                    updated = False
+                    for req in solicitacoes:
+                        if req.get('id') == req_id:
+                            req['status'] = new_status
+                            req['updated_at'] = datetime.now().isoformat()
+                            if 'processor' in data:
+                                req['processor'] = data['processor']
+                            updated = True
+                            break
+                    
+                    if updated:
+                        with open(SOLICITACOES_FILE, 'w', encoding='utf-8') as f:
+                            json.dump(solicitacoes, f, ensure_ascii=False, indent=2)
+                        
+                        self._set_api_headers(200)
+                        self.wfile.write(json.dumps({"success": True}).encode())
+                    else:
+                        self._set_api_headers(404)
+                        self.wfile.write(json.dumps({"error": "Solicitação não encontrada"}).encode())
+                else:
+                    self._set_api_headers(404)
+                    self.wfile.write(json.dumps({"error": "Arquivo de solicitações não encontrado"}).encode())
+            except Exception as e:
+                logger.error(f"Erro ao atualizar solicitação: {e}")
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
         
         if self.path == '/api/audit':

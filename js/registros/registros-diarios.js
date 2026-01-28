@@ -115,7 +115,7 @@ export class RegistrosManager {
         setInterval(() => this.checkPendingRequests(), 10000);
     }
 
-    checkPendingRequests() {
+    async checkPendingRequests() {
         if (!Auth.hasPermission('registros', 'solicitacoes')) {
             if (this.elements.openSolicitacoesModalBtn) {
                 this.elements.openSolicitacoesModalBtn.classList.add('hidden');
@@ -123,23 +123,43 @@ export class RegistrosManager {
             return;
         }
 
-        const requests = JSON.parse(localStorage.getItem('bicicletario_requests') || '[]');
-        const pending = requests.filter(r => r.status === 'pendente');
-        const count = pending.length;
+        try {
+            const response = await fetch('/api/solicitacoes', {
+                headers: this.getAuthHeaders()
+            });
 
-        // Ensure button is always visible
-        if (this.elements.openSolicitacoesModalBtn) {
-            this.elements.openSolicitacoesModalBtn.classList.remove('hidden');
+            if (!response.ok) return;
 
-            // Toggle badge based on count
-            if (this.elements.solicitacoesCount) {
-                if (count > 0) {
-                    this.elements.solicitacoesCount.classList.remove('hidden');
-                } else {
-                    this.elements.solicitacoesCount.classList.add('hidden');
+            const requests = await response.json();
+            const pending = requests.filter(r => r.status === 'pendente');
+            const count = pending.length;
+
+            // Ensure button is always visible
+            if (this.elements.openSolicitacoesModalBtn) {
+                this.elements.openSolicitacoesModalBtn.classList.remove('hidden');
+
+                // Toggle badge based on count
+                if (this.elements.solicitacoesCount) {
+                    if (count > 0) {
+                        this.elements.solicitacoesCount.classList.remove('hidden');
+                        this.elements.solicitacoesCount.textContent = count > 9 ? '9+' : count;
+                    } else {
+                        this.elements.solicitacoesCount.classList.add('hidden');
+                    }
                 }
             }
+        } catch (error) {
+            console.warn('Erro ao verificar solicitações:', error);
         }
+    }
+
+    getAuthHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        const session = Auth.getCurrentSession();
+        if (session && session.token) {
+            headers['Authorization'] = `Bearer ${session.token}`;
+        }
+        return headers;
     }
 
     openSolicitacoesModal() {
@@ -153,59 +173,76 @@ export class RegistrosManager {
         this.app.toggleModal('solicitacoes-modal', true);
     }
 
-    renderRequestsInModal() {
-        const requests = JSON.parse(localStorage.getItem('bicicletario_requests') || '[]');
-        const pending = requests.filter(r => r.status === 'pendente').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    async renderRequestsInModal() {
+        try {
+            this.elements.solicitacoesModalList.innerHTML = '<div class="text-center py-4"><div class="loading-spinner"></div> Carregando...</div>';
 
-        // Update badge and button visibility
-        this.checkPendingRequests();
+            const response = await fetch('/api/solicitacoes', {
+                headers: this.getAuthHeaders()
+            });
 
+            if (!response.ok) throw new Error('Falha ao carregar');
 
-        if (pending.length === 0) {
-            this.elements.solicitacoesModalList.innerHTML = '<div class="text-center py-4 text-slate-500">Nenhuma solicitação pendente.</div>';
-            return;
-        }
+            const requests = await response.json();
+            // Store requests in memory for action handlers
+            this.currentRequests = requests;
 
-        this.elements.solicitacoesModalList.innerHTML = pending.map((req, index) => {
-            const client = this.app.data.clients.find(c => c.id === req.clientId);
-            const bike = client?.bicicletas.find(b => b.id === req.bikeId);
-            const requisicaoIndex = requests.indexOf(req); // Get original index for safer update
+            const pending = requests.filter(r => r.status === 'pendente').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-            const time = new Date(req.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            // Update badge and button visibility
+            this.checkPendingRequests();
 
-            return `
-                <div class="bg-white dark:bg-slate-700/50 p-4 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.tipo === 'entrada' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}">
-                                ${req.tipo === 'entrada' ? 'Entrada' : 'Saída'}
-                            </span>
-                            <span class="ml-2 text-xs text-slate-500 dark:text-slate-400">${time}</span>
+            if (pending.length === 0) {
+                this.elements.solicitacoesModalList.innerHTML = '<div class="text-center py-4 text-slate-500">Nenhuma solicitação pendente.</div>';
+                return;
+            }
+
+            this.elements.solicitacoesModalList.innerHTML = pending.map((req, index) => {
+                const client = this.app.data.clients.find(c => c.id === req.clientId);
+                const bike = client?.bicicletas.find(b => b.id === req.bikeId);
+
+                // Use ID instead of index for safer referencing
+                const reqId = req.id;
+
+                const time = new Date(req.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                return `
+                    <div class="bg-white dark:bg-slate-700/50 p-4 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.tipo === 'entrada' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}">
+                                    ${req.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+                                </span>
+                                <span class="ml-2 text-xs text-slate-500 dark:text-slate-400">${time}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <p class="font-medium text-slate-900 dark:text-slate-100">${client?.nome || req.clientName || 'Desconhecido'}</p>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">
+                                 <i data-lucide="bike" class="w-3 h-3 inline mr-1"></i>
+                                 ${bike?.modelo || req.bikeInfo || 'Bike'} - ${bike?.marca || ''}
+                            </p>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors request-action-btn"
+                                    data-id="${reqId}" data-action="approve">
+                                Aprovar
+                            </button>
+                            <button class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors request-action-btn"
+                                    data-id="${reqId}" data-action="reject">
+                                Rejeitar
+                            </button>
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <p class="font-medium text-slate-900 dark:text-slate-100">${client?.nome || 'Desconhecido'}</p>
-                        <p class="text-sm text-slate-600 dark:text-slate-300">
-                             <i data-lucide="bike" class="w-3 h-3 inline mr-1"></i>
-                             ${bike?.modelo || 'Bike'} - ${bike?.marca || ''} (${bike?.cor || ''})
-                        </p>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors request-action-btn"
-                                data-index="${requisicaoIndex}" data-action="approve">
-                            Aprovar
-                        </button>
-                        <button class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors request-action-btn"
-                                data-index="${requisicaoIndex}" data-action="reject">
-                            Rejeitar
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        lucide.createIcons();
+                `;
+            }).join('');
+            lucide.createIcons();
+        } catch (error) {
+            console.error(error);
+            this.elements.solicitacoesModalList.innerHTML = '<div class="text-center py-4 text-red-500">Erro ao carregar solicitações.</div>';
+        }
     }
 
     // Override or update handleRequestAction to refresh modal
@@ -213,10 +250,12 @@ export class RegistrosManager {
         if (!e.target.classList.contains('request-action-btn')) return;
 
         const btn = e.target;
-        const reqIndex = parseInt(btn.dataset.index);
+        // Use ID from dataset
+        const reqId = btn.dataset.id;
         const action = btn.dataset.action;
-        const requests = JSON.parse(localStorage.getItem('bicicletario_requests') || '[]');
-        const request = requests[reqIndex];
+
+        // Find in current memory
+        const request = this.currentRequests?.find(r => r.id === reqId);
 
         if (!request) return;
 
@@ -229,6 +268,8 @@ export class RegistrosManager {
             return;
         }
 
+        this.app.toggleLoading(true);
+
         if (action === 'approve') {
             try {
                 if (request.tipo === 'entrada') {
@@ -237,23 +278,45 @@ export class RegistrosManager {
                     await this.createExitFromRequest(request);
                 }
 
-                request.status = 'aprovado';
+                // Update status on server
+                await this.updateRequestStatus(reqId, 'aprovado');
+
                 Modals.showAlert('Solicitação aprovada com sucesso!', 'Sucesso');
             } catch (error) {
                 console.error(error);
                 Modals.alert(error.message, 'Erro ao Aprovar');
+                this.app.toggleLoading(false);
                 return;
             }
         } else {
-            request.status = 'rejeitado';
+            // Update status on server
+            await this.updateRequestStatus(reqId, 'rejeitado');
         }
 
-        requests[reqIndex] = request;
-        localStorage.setItem('bicicletario_requests', JSON.stringify(requests));
+        this.app.toggleLoading(false);
 
         // Refresh!
         this.renderRequestsInModal();
         this.renderDailyRecords(); // Refresh main list if approved
+    }
+
+    async updateRequestStatus(reqId, status) {
+        try {
+            const response = await fetch('/api/solicitacoes/update', {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({
+                    id: reqId,
+                    status: status,
+                    processor: Auth.getCurrentSession()?.username || 'admin'
+                })
+            });
+
+            if (!response.ok) throw new Error('Falha ao atualizar status');
+        } catch (e) {
+            console.error("Erro ao atualizar status:", e);
+            throw e;
+        }
     }
 
     async createEntryFromRequest(req) {

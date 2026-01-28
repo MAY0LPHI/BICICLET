@@ -115,77 +115,11 @@ export class Auth {
     }
 
     static async init() {
-        const users = this.getAllUsers();
-        let needsSave = false;
-        if (users.length === 0) {
-            await this.createDefaultAdmin();
-            return;
-        }
-
-        // --- Ensure Funcionario exists and has correct password ---
-        const funcIndex = users.findIndex(u => u.username === 'Funcionario');
-        const funcPassHash = await this.hashPassword('1234');
-
-        if (funcIndex === -1) {
-            console.log('Criando usuário Funcionario padrão...');
-            const newFunc = {
-                id: this.generateId(),
-                username: 'Funcionario',
-                password: funcPassHash,
-                nome: 'Funcionário Temporario',
-                tipo: 'funcionario',
-                permissoes: {
-                    clientes: { ver: true, adicionar: true, editar: false, excluir: false },
-                    registros: { ver: true, adicionar: true, editar: false, excluir: false },
-                    dados: { ver: false, exportar: false, importar: false, exportarDados: false, importarDados: false, exportarSistema: false, importarSistema: false, limparDados: false },
-                    configuracao: { ver: false, gerenciarUsuarios: false, buscaAvancada: false, backupVer: false, backupGerenciar: false, storageVer: false, storageGerenciar: false },
-                    jogos: { ver: true }
-                },
-                ativo: true,
-                requirePasswordChange: false,
-                dataCriacao: new Date().toISOString()
-            };
-            users.push(newFunc);
-            needsSave = true;
-        } else {
-            // Force reset password for Funcionario to ensure access
-            if (users[funcIndex].password !== funcPassHash) {
-                users[funcIndex].password = funcPassHash;
-                needsSave = true;
-                console.log('Senha do Funcionario restaurada para padrão.');
-            }
-            this.resetLoginAttempts('Funcionario');
-        }
-
-        // Ensure CELO123 exists and has correct password
-        const celoIndex = users.findIndex(u => u.username === 'CELO123');
-        const celoPassHash = await this.hashPassword('CELO123');
-        if (celoIndex === -1) {
-            await this.createCeloUser(); // This saves inside
-            // Reload users after create
-            const newUsers = this.getAllUsers();
-            if (newUsers.length > users.length) needsSave = false; // Already saved (users ref outdated but acceptable context)
-        } else {
-            if (users[celoIndex].password !== celoPassHash) {
-                users[celoIndex].password = celoPassHash;
-                needsSave = true;
-            }
-            this.resetLoginAttempts('CELO123');
-        }
-
-        // Ensure admin exists
-        const adminIndex = users.findIndex(u => u.username === 'admin');
-        const adminPassHash = await this.hashPassword('admin123');
-        if (adminIndex !== -1) {
-            if (users[adminIndex].password !== adminPassHash) {
-                users[adminIndex].password = adminPassHash;
-                needsSave = true;
-            }
-        }
-
-        if (needsSave) {
-            this.saveUsers(users);
-            console.log('✅ Credenciais verificadas e restauradas.');
+        // No client-side initialization needed for server-based auth
+        // Check if we have a valid session
+        const session = this.getCurrentSession();
+        if (session) {
+            console.log('Sessão encontrada para:', session.username);
         }
     }
 
@@ -434,78 +368,41 @@ export class Auth {
     }
 
     static async login(username, password) {
-        console.log(`[Auth] Tentativa de login para: ${username}`);
-        const lockStatus = this.isAccountLocked(username);
-        if (lockStatus.locked) {
-            console.warn(`[Auth] Conta bloqueada: ${username}`);
-            return {
-                success: false,
-                message: `Conta bloqueada. Tente novamente em ${lockStatus.remainingMinutes} minuto(s).`
-            };
-        }
+        console.log(`[Auth] Tentativa de login para: ${username} via API`);
 
-        const users = this.getAllUsers();
-        const user = users.find(u => u.username === username && u.ativo);
-
-        if (!user) {
-            console.warn(`[Auth] Usuário não encontrado: ${username}`);
-            this.recordFailedLogin(username);
-            return { success: false, message: 'Usuário ou senha incorretos' };
-        }
-
-        const hashedPassword = await this.hashPassword(password);
-        console.log(`[Auth] Comparando hashes - Stored: ${user.password.substring(0, 10)}... Generated: ${hashedPassword.substring(0, 10)}...`);
-
-        if (user.password !== hashedPassword) {
-            // --- EMERGENCY RECOVERY BLOCK (Funcionario) ---
-            let recovered = false;
-
-            // Only auto-recover Funcionario/1234 as requested by user
-            if (username === 'Funcionario' && password === '1234') {
-                console.warn('[Auth] Activando recuperação de senha para Funcionario');
-                recovered = true;
-            }
-
-            if (recovered) {
-                user.password = hashedPassword;
-                this.saveUsers(users);
-                console.log(`[Auth] Senha recuperada e atualizada para: ${username}`);
-            } else {
-                console.warn(`[Auth] Senha incorreta para: ${username}`);
-                this.recordFailedLogin(username);
-                const loginAttempts = this.getLoginAttempts(username);
-                const remainingAttempts = MAX_LOGIN_ATTEMPTS - loginAttempts.count;
-                return {
-                    success: false,
-                    message: `Usuário ou senha incorretos. ${remainingAttempts} tentativa(s) restante(s).`
-                };
-            }
-        }
-
-        console.log(`[Auth] Login bem-sucedido para: ${username}`);
-
-        this.resetLoginAttempts(username);
-
-        const session = {
-            userId: user.id,
-            username: user.username,
-            nome: user.nome,
-            tipo: user.tipo,
-            permissoes: user.permissoes,
-            requirePasswordChange: user.requirePasswordChange || false,
-            loginTime: new Date().toISOString()
-        };
-        localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
-
-        setTimeout(() => {
-            logAction('login', 'usuario', user.id, {
-                username: user.username,
-                nome: user.nome,
-                tipo: user.tipo
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
             });
-        }, 100);
 
-        return { success: true, user: session };
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                const session = data.user;
+                // Add loginTime if missing (server might not send it)
+                if (!session.loginTime) session.loginTime = new Date().toISOString();
+
+                localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
+
+                // Also update local users list for legacy/offline support reference if needed
+                // But primarily we rely on the session now.
+
+                logAction('login', 'usuario', session.id || session.username, {
+                    username: session.username,
+                    tipo: session.tipo
+                });
+
+                return { success: true, user: session };
+            } else {
+                return { success: false, message: data.message || data.error || 'Login falhou' };
+            }
+        } catch (error) {
+            console.error('Erro no login:', error);
+            // Fallback for purely local dev if API is down? No, security first.
+            return { success: false, message: 'Erro de conexão com o servidor' };
+        }
     }
 
     static logout() {
