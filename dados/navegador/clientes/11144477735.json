@@ -5,5 +5,13 @@
   "telefone": "(11) 98765-4321",
   "categoria": "",
   "comentarios": [],
-  "bicicletas": []
+  "bicicletas": [
+    {
+      "id": "827a934e-9b64-4662-8b8f-43ea87ee0f21",
+      "modelo": "ARO 29",
+      "marca": "RAVA",
+      "cor": "PRETA E LARANJA",
+      "foto": null
+    }
+  ]
 }

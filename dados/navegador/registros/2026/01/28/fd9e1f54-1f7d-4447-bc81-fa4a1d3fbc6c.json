@@ -1,0 +1,14 @@
+{
+  "id": "fd9e1f54-1f7d-4447-bc81-fa4a1d3fbc6c",
+  "dataHoraEntrada": "2026-01-28T05:27:03.100Z",
+  "dataHoraSaida": null,
+  "clientId": "fba128e1-db3f-451c-8f68-1193e0c17002",
+  "bikeId": "827a934e-9b64-4662-8b8f-43ea87ee0f21",
+  "categoria": "",
+  "bikeSnapshot": {
+    "modelo": "ARO 29",
+    "marca": "RAVA",
+    "cor": "PRETA E LARANJA"
+  },
+  "origem": "autoatendimento"
+}
