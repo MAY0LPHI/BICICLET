@@ -20,7 +20,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-PORT = 5000
+PORT = int(os.environ.get('PORT', 5000))
 DIRECTORY = "."
 
 STORAGE_DIR = "dados/navegador"
@@ -57,6 +57,19 @@ except ImportError as e:
 except Exception as e:
     BACKGROUND_JOBS_AVAILABLE = False
     logger.warning(f"Erro ao inicializar sistema de jobs: {e}")
+
+AUTH_MANAGER = None
+AUTH_AVAILABLE = False
+
+try:
+    from auth_manager import get_auth_manager
+    AUTH_MANAGER = get_auth_manager()
+    AUTH_AVAILABLE = True
+    logger.info("✅ Sistema de autenticação carregado")
+except ImportError as e:
+    logger.warning(f"Sistema de autenticação não disponível: {e}")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar autenticação: {e}")
 
 def use_sqlite_storage() -> bool:
     """Verifica se deve usar SQLite/Banco de Dados baseado na configuração atual"""
