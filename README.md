@@ -503,8 +503,8 @@ npm start                           # Executar modo dev
 npm run build                       # Build para produção
 
 # Utilitários
-python verify_audit_formatting_node.js  # Verificar formatação de logs
-scripts/check-system.js                 # Verificar dependências
+node tests/verify_audit_formatting_node.js  # Verificar formatação de logs
+scripts/check-system.js                     # Verificar dependências
 ```
 
 ---
