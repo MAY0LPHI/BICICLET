@@ -1,0 +1,67 @@
+Preciso reorganizar os arquivos do meu projeto de forma segura, sem quebrar o código.
+
+CONTEXTO DO PROJETO:
+- Nome: Sistema de Gerenciamento de Bicicletário (BICICLET)
+- Linguagens: Python, JavaScript, HTML, CSS
+- Frameworks: Flask (backend), Electron (desktop), TailwindCSS (frontend)
+- Estrutura atual: Arquivos na raiz + pastas js/, scripts/, electron/, dados/
+
+OBJETIVO DA REORGANIZAÇÃO:
+- Centralizar documentação em pasta docs/
+- Organizar melhor arquivos de configuração
+- Separar código legado do atual
+- Manter estrutura limpa e profissional
+
+REQUISITOS IMPORTANTES:
+1. Analisar TODAS as dependências antes de mover qualquer arquivo
+2. Identificar imports, links e referências que serão quebradas
+3. Criar um plano detalhado ANTES de executar
+4. Verificar se arquivos de configuração (package.json, requirements.txt, discloud.config, render.yaml) precisam ser atualizados
+5. Manter compatibilidade com deployment (Discloud, Render, Local)
+6. Criar backup antes de qualquer alteração
+7. Testar após CADA mudança individual
+
+PEDIDO:
+Por favor:
+1. Analise a estrutura atual completa do projeto
+2. Identifique arquivos que podem ser movidos/organizados de forma SEGURA
+3. Liste TODAS as dependências e referências afetadas por cada mudança
+4. Crie um plano de reorganização CONSERVADOR e seguro
+5. Inclua verificações pós-reorganização para cada etapa
+6. Documente os riscos de cada mudança proposta
+7. Sugira apenas mudanças de BAIXO RISCO primeiro
+
+ARQUIVOS CRÍTICOS (NÃO MOVER sem análise profunda):
+- server.py (referenciado em discloud.config, render.yaml, scripts)
+- app.py (WSGI)
+- package.json
+- index.html
+- login.html
+- Arquivos .py do backend (db_manager.py, auth_manager.py, etc)
+- Pasta js/ (imports em HTML)
+
+ARQUIVOS SEGUROS PARA ORGANIZAR:
+- Documentação (.md)
+- Manuais de usuário
+- Scripts auxiliares (desde que caminhos sejam atualizados)
+- Arquivos legados/obsoletos
+
+NÃO FAÇA:
+- Mover arquivos sem analisar dependências primeiro
+- Assumir que "provavelmente funciona"
+- Fazer múltiplas mudanças de uma vez
+- Ignorar arquivos de configuração de deploy
+- Mover arquivos que afetam imports JavaScript ou Python sem plano claro
+- Quebrar compatibilidade com scripts de inicialização existentes
+
+FORMATO DE RESPOSTA ESPERADO:
+1. Lista da estrutura atual (arquivos e pastas principais)
+2. Análise de dependências críticas
+3. Plano de reorganização em etapas (começando pelas mais seguras)
+4. Para cada mudança proposta:
+   - Arquivos/pastas afetados
+   - Referências que precisam ser atualizadas
+   - Nível de risco (BAIXO/MÉDIO/ALTO)
+   - Comandos exatos para executar
+   - Testes necessários após a mudança
+5. Checklist de verificação final
