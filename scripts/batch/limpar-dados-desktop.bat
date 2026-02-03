@@ -19,7 +19,8 @@ echo  • dados/desktop/usuarios.json
 echo  • dados/desktop/auditoria.json
 echo  • dados/desktop/categorias.json
 echo.
-pause /prompt "Pressione ENTER para continuar ou Ctrl+C para cancelar..."
+echo Pressione ENTER para continuar ou Ctrl+C para cancelar...
+pause >nul
 
 REM Deletar pasta de dados
 if exist dados\desktop (
