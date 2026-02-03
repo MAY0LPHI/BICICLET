@@ -1353,15 +1353,235 @@ class DatabaseManager:
             return False
 
 
+
 # Singleton instance
 _db_manager = None
 
 def get_db_manager() -> DatabaseManager:
-    """Retorna a instância singleton do DatabaseManager"""
+    """
+    Retorna a instância singleton do DatabaseManager.
+    Detecta automaticamente se deve usar PostgreSQL ou SQLite.
+    """
     global _db_manager
+    
     if _db_manager is None:
-        _db_manager = DatabaseManager()
+        import os
+        database_url = os.getenv('DATABASE_URL')
+        
+        if database_url:
+            # PostgreSQL para Render
+            logger.info("🐘 DATABASE_URL detectada - usando PostgreSQL")
+            try:
+                import psycopg2
+                from urllib.parse import urlparse
+                
+                result = urlparse(database_url)
+                _db_manager = PostgreSQLDatabaseManager(
+                    host=result.hostname,
+                    port=result.port or 5432,
+                    database=result.path[1:],
+                    user=result.username,
+                    password=result.password
+                )
+            except ImportError:
+                logger.error("❌ psycopg2 não instalado! Usando SQLite como fallback")
+                _db_manager = DatabaseManager()
+            except Exception as e:
+                logger.error(f"❌ Erro ao conectar PostgreSQL: {e}")
+                logger.info("📦 Usando SQLite como fallback")
+                _db_manager = DatabaseManager()
+        else:
+            # SQLite para local/Discloud
+            logger.info("📦 DATABASE_URL não encontrada - usando SQLite")
+            _db_manager = DatabaseManager()
+    
     return _db_manager
+
+
+# ==================== POSTGRESQL MANAGER ====================
+
+class PostgreSQLDatabaseManager(DatabaseManager):
+    """
+    Gerenciador de banco de dados PostgreSQL para ambientes cloud.
+    Herda de DatabaseManager e sobrescreve métodos específicos do banco.
+    """
+    
+    def __init__(self, host: str, port: int, database: str, user: str, password: str):
+        """Inicializa o gerenciador PostgreSQL"""
+        self.host = host
+        self.port = port
+        self.database = database
+        self.user = user
+        self.password = password
+        self.db_type = 'postgresql'
+        
+        # Não chama __init__ do pai pois não usa arquivo SQLite
+        self._init_database()
+        logger.info(f"✅ PostgreSQL conectado: {host}:{port}/{database}")
+    
+    def _ensure_directories(self):
+        """PostgreSQL não precisa criar diretórios locais"""
+        pass
+    
+    def _get_connection(self):
+        """Retorna uma conexão PostgreSQL"""
+        try:
+            import psycopg2
+            from psycopg2.extras import RealDictCursor
+            
+            conn = psycopg2.connect(
+                host=self.host,
+                port=self.port,
+                database=self.database,
+                user=self.user,
+                password=self.password,
+                cursor_factory=RealDictCursor
+            )
+            return conn
+        except Exception as e:
+            logger.error(f"Erro ao conectar PostgreSQL: {e}")
+            raise
+    
+    def _init_database(self):
+        """Inicializa o banco PostgreSQL com as tabelas necessárias"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Tabela de clientes
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS clientes (
+                        id TEXT PRIMARY KEY,
+                        cpf TEXT UNIQUE NOT NULL,
+                        nome TEXT NOT NULL,
+                        telefone TEXT,
+                        categoria TEXT,
+                        comentarios TEXT,
+                        ativo INTEGER DEFAULT 1,
+                        data_cadastro TEXT NOT NULL,
+                        criado_em TEXT NOT NULL,
+                        atualizado_em TEXT NOT NULL
+                    )
+                """)
+                
+                # Tabela de bicicletas
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS bicicletas (
+                        id TEXT PRIMARY KEY,
+                        cliente_id TEXT NOT NULL,
+                        descricao TEXT NOT NULL,
+                        marca TEXT,
+                        modelo TEXT,
+                        cor TEXT,
+                        aro TEXT,
+                        ativa INTEGER DEFAULT 1,
+                        criada_em TEXT NOT NULL,
+                        atualizada_em TEXT NOT NULL,
+                        FOREIGN KEY (cliente_id) REFERENCES clientes (id) ON DELETE CASCADE
+                    )
+                """)
+                
+                # Tabela de registros
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS registros (
+                        id TEXT PRIMARY KEY,
+                        cliente_id TEXT NOT NULL,
+                        bicicleta_id TEXT NOT NULL,
+                        data_hora_entrada TEXT NOT NULL,
+                        data_hora_saida TEXT,
+                        pernoite INTEGER DEFAULT 0,
+                        acesso_removido INTEGER DEFAULT 0,
+                        registro_original_id TEXT,
+                        criado_por TEXT,
+                        criado_em TEXT NOT NULL,
+                        atualizado_em TEXT NOT NULL,
+                        FOREIGN KEY (cliente_id) REFERENCES clientes (id),
+                        FOREIGN KEY (bicicleta_id) REFERENCES bicicletas (id)
+                    )
+                """)
+                
+                # Tabela de usuários
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS usuarios (
+                        id TEXT PRIMARY KEY,
+                        username TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        nome TEXT NOT NULL,
+                        tipo TEXT NOT NULL,
+                        ativo INTEGER DEFAULT 1,
+                        permissoes TEXT,
+                        criado_em TEXT NOT NULL,
+                        atualizado_em TEXT NOT NULL
+                    )
+                """)
+                
+                # Tabela de auditoria
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS auditoria (
+                        id SERIAL PRIMARY KEY,
+                        usuario TEXT NOT NULL,
+                        acao TEXT NOT NULL,
+                        detalhes TEXT,
+                        timestamp TEXT NOT NULL
+                    )
+                """)
+                
+                # Tabela de sincronização
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS sincronizacao_pendente (
+                        id SERIAL PRIMARY KEY,
+                        tipo TEXT NOT NULL,
+                        operacao TEXT NOT NULL,
+                        dados TEXT NOT NULL,
+                        timestamp TEXT NOT NULL,
+                        sincronizado INTEGER DEFAULT 0
+                    )
+                """)
+                
+                # Tabela de configurações
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS configuracoes (
+                        chave TEXT PRIMARY KEY,
+                        valor TEXT NOT NULL,
+                        atualizado_em TEXT NOT NULL
+                    )
+                """)
+                
+                # Tabela de categorias
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS categorias (
+                        id SERIAL PRIMARY KEY,
+                        nome TEXT UNIQUE NOT NULL,
+                        emoji TEXT NOT NULL,
+                        criada_em TEXT NOT NULL,
+                        atualizada_em TEXT NOT NULL
+                    )
+                """)
+                
+                # Índices
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_clientes_cpf ON clientes(cpf)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_bicicletas_cliente ON bicicletas(cliente_id)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_registros_cliente ON registros(cliente_id)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_registros_data ON registros(data_hora_entrada)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_auditoria_usuario ON auditoria(usuario)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_auditoria_timestamp ON auditoria(timestamp)")
+                
+                conn.commit()
+                logger.info("✅ Banco PostgreSQL inicializado")
+        except Exception as e:
+            logger.error(f"❌ Erro ao inicializar PostgreSQL: {e}", exc_info=True)
+    
+    def create_backup(self, format: str = 'json') -> Optional[str]:
+        """PostgreSQL usa serviços de backup do Render"""
+        logger.warning("⚠️ Backup direto não disponível para PostgreSQL")
+        logger.info("💡 Use pg_dump ou backups automáticos do Render")
+        return None
+    
+    def restore_backup(self, backup_file: str) -> bool:
+        """Restauração não implementada para PostgreSQL"""
+        logger.warning("⚠️ Restauração não disponível para PostgreSQL")
+        return False
+
 
 
 if __name__ == '__main__':

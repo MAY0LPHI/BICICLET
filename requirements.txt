@@ -1,16 +1,28 @@
 # Sistema de Gerenciamento de Bicicletário - Dependências Python
 # Para funcionamento offline completo com SQLite e criptografia
+# Suporte a deployment em Discloud e Render
 
-# Banco de dados local
+# Servidor Web
+Flask>=3.0.0
+flask-cors>=4.0.0
+gunicorn>=21.2.0
+
+# Banco de dados
 # SQLite já vem incluso no Python 3.12
+psycopg2-binary>=2.9.9
 
 # Criptografia e segurança
 cryptography>=41.0.0
 bcrypt>=4.1.0
 argon2-cffi>=23.1.0
+PyJWT>=2.8.0
+
+# Configuração e ambiente
+python-dotenv>=1.0.0
+
+# Utilitários
+qrcode>=7.4.2
+pillow>=10.2.0
 
 # Backup e compressão
 # zipfile já vem incluso no Python 3.12
-
-# Servidor web (já instalado)
-# http.server já vem incluso no Python 3.12
