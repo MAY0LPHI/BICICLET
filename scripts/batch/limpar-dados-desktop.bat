@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0..\.."
 REM Limpar dados corrompidos do desktop
 chcp 65001 > nul
 setlocal enabledelayedexpansion
@@ -37,7 +38,7 @@ echo Os dados padrão serão recriados automaticamente ao iniciar:
 echo  • admin / admin123
 echo  • CELO123 / CELO123
 echo.
-echo Agora execute: INICIAR.bat
+echo Agora execute: scripts\batch\INICIAR.bat
 echo ════════════════════════════════════════════════════════════
 echo.
 pause

@@ -15,7 +15,7 @@ Este guia foi criado para quem está usando o sistema **pela primeira vez**. Sig
 ### Windows
 
 1. Navegue até a pasta do sistema
-2. Clique duas vezes em: **`scripts\INICIAR-NAVEGADOR.bat`**
+2. Clique duas vezes em: **`scripts\batch\INICIAR-NAVEGADOR.bat`**
 3. Uma janela do navegador abrirá automaticamente
 
 ### Linux/Mac
