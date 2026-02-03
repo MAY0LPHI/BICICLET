@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0..\.."
 REM Limpar dados corrompidos do desktop
 chcp 65001 > nul
 setlocal enabledelayedexpansion
@@ -18,7 +19,8 @@ echo  • dados/desktop/usuarios.json
 echo  • dados/desktop/auditoria.json
 echo  • dados/desktop/categorias.json
 echo.
-pause /prompt "Pressione ENTER para continuar ou Ctrl+C para cancelar..."
+echo Pressione ENTER para continuar ou Ctrl+C para cancelar...
+pause >nul
 
 REM Deletar pasta de dados
 if exist dados\desktop (
@@ -37,7 +39,7 @@ echo Os dados padrão serão recriados automaticamente ao iniciar:
 echo  • admin / admin123
 echo  • CELO123 / CELO123
 echo.
-echo Agora execute: INICIAR.bat
+echo Agora execute: scripts\batch\INICIAR.bat
 echo ════════════════════════════════════════════════════════════
 echo.
 pause

@@ -15,11 +15,13 @@ Arquivo principal do Electron. Contém:
 ### `preload.js`
 Script de pré-carregamento para segurança. Expõe informações seguras para o renderer process através do contextBridge.
 
-### `build-helper.bat`
+### `build-helper.bat` (Movido para `scripts/batch/`)
 Script auxiliar para Windows que automatiza:
 1. Verificação do Node.js
 2. Instalação de dependências (`npm install`)
 3. Geração do executável (`npm run build`)
+
+**Nota:** Este script foi movido para `scripts/batch/build-helper.bat` como parte da reorganização de scripts.
 
 ### `README-ICONE.md`
 Guia detalhado sobre como criar e adicionar ícones personalizados para a aplicação.

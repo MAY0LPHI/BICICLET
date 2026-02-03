@@ -81,7 +81,7 @@ Solução moderna e robusta que combina:
 
 ```bash
 # Windows
-scripts/INICIAR-NAVEGADOR.bat
+scripts/batch/INICIAR-NAVEGADOR.bat
 
 # Linux/Mac
 bash scripts/INICIAR-NAVEGADOR.sh
@@ -237,7 +237,6 @@ bicicletario/
 │   ├── main.js                     # Processo principal Electron
 │   ├── preload.js                  # Script de preload
 │   ├── storage-backend.js          # Backend de armazenamento local
-│   ├── build-helper.bat            # Script de build Windows
 │   ├── README.md                   # Documentação Electron
 │   └── README-ICONE.md             # Guia de ícones
 │
@@ -494,8 +493,8 @@ python server.py                    # Iniciar servidor (porta 5000)
 python app.py                       # Iniciar com Gunicorn (produção)
 
 # Navegador
-scripts/INICIAR-NAVEGADOR.bat       # Windows
-bash scripts/INICIAR-NAVEGADOR.sh   # Linux/Mac
+scripts/batch/INICIAR-NAVEGADOR.bat       # Windows
+bash scripts/INICIAR-NAVEGADOR.sh         # Linux/Mac
 
 # Desktop (Electron)
 npm install                         # Instalar dependências

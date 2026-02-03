@@ -66,23 +66,25 @@ O sistema salva todos os dados em pastas separadas:
 
 ### **Windows (.bat)**
 
+Todos os scripts batch foram reorganizados em `scripts/batch/`:
+
 #### **INICIAR-NAVEGADOR.bat** ⭐ Recomendado
 - Verifica se Python está instalado
 - Inicia o servidor automaticamente
 - Abre no navegador padrão do Windows
-- **Como usar:** Clique duas vezes no arquivo
+- **Como usar:** Clique duas vezes em `scripts/batch/INICIAR-NAVEGADOR.bat`
 
 #### **INICIAR-CHROME.bat**
 - Abre especificamente no Google Chrome
-- **Como usar:** Clique duas vezes no arquivo
+- **Como usar:** Clique duas vezes em `scripts/batch/INICIAR-CHROME.bat`
 
 #### **INICIAR-FIREFOX.bat**
 - Abre especificamente no Mozilla Firefox
-- **Como usar:** Clique duas vezes no arquivo
+- **Como usar:** Clique duas vezes em `scripts/batch/INICIAR-FIREFOX.bat`
 
 #### **INICIAR-EDGE.bat**
 - Abre especificamente no Microsoft Edge
-- **Como usar:** Clique duas vezes no arquivo
+- **Como usar:** Clique duas vezes em `scripts/batch/INICIAR-EDGE.bat`
 
 ### **Linux/Mac (.sh)**
 
@@ -111,7 +113,7 @@ O sistema salva todos os dados em pastas separadas:
    - Você deve ver os arquivos: `server.py`, `index.html`, etc.
 
 3. **Execute o atalho**
-   - Clique duas vezes em `INICIAR-NAVEGADOR.bat`
+   - Clique duas vezes em `scripts/batch/INICIAR-NAVEGADOR.bat`
    - Uma janela de comando abrirá
    - O navegador iniciará automaticamente
    - O sistema estará disponível em: `http://localhost:5000`

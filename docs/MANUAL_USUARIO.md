@@ -26,7 +26,7 @@
 **Opção 1: Navegador Web** (Recomendado)
 ```bash
 # Windows
-scripts\INICIAR-NAVEGADOR.bat
+scripts\batch\INICIAR-NAVEGADOR.bat
 
 # Linux/Mac
 bash scripts/INICIAR-NAVEGADOR.sh
@@ -35,7 +35,7 @@ bash scripts/INICIAR-NAVEGADOR.sh
 **Opção 2: Aplicação Desktop**
 ```bash
 # Windows
-scripts\INICIAR-DESKTOP.bat
+scripts\batch\INICIAR-DESKTOP.bat
 ```
 
 **Opção 3: Servidor Manual**

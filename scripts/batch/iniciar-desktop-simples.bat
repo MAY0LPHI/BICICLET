@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0..\.."
 REM Versão simplificada - rápida e direta
 setlocal enabledelayedexpansion
 
