@@ -1,3 +1,53 @@
+/**
+ * ============================================================
+ *  ARQUIVO: dashboard.js  (pasta: js/dono/)
+ *  DESCRIÇÃO: Dashboard Operacional do Dono/Administrador
+ *
+ *  FUNÇÃO:
+ *  Renderiza um painel visual de métricas em tempo real para o
+ *  usuário com papel "dono" ou "admin", exibindo:
+ *  - Total de clientes e bicicletas cadastradas
+ *  - Ocupação atual do bicicletário (bicicletas no pátio)
+ *  - Alertas de permanência superior a 24 horas
+ *  - Gráfico de atividade semanal (entradas por dia)
+ *  - Gráfico de horários de pico (entradas por hora do dia)
+ *
+ *  CLASSE: DonoDashboard
+ *  Instanciada em app-modular.js como this.donoDashboard
+ *
+ *  FLUXO:
+ *  1. donoDashboard.render() é chamado ao carregar a aba
+ *  2. calculateMetrics() agrega os dados de clientes e registros
+ *  3. HTML com cards e gráficos é injetado no containerId
+ *  4. Botão "lápis" na ocupação → editCapacity → salva Config.MAX_CAPACITY
+ *  5. Card "Permanência > 24h" abre lista de registros em alerta
+ *
+ *  CONFIGURAÇÃO DE CAPACIDADE:
+ *  - Lida de Config.MAX_CAPACITY (shared/config.js)
+ *  - Editável via botão pencil → Modals.showInputPrompt()
+ *  - Salva localmente via Config.saveLocal() (imediato)
+ *  - Sincroniza com servidor via POST /api/system-config (best-effort)
+ *
+ *  GRÁFICOS:
+ *  - Implementados em HTML/CSS puro (sem biblioteca gráfica)
+ *  - renderWeeklyChart(data) → barras por dia da semana
+ *  - renderPeakHoursChart(data) → barras por hora (0-23)
+ *  - Dados calculados em Storage.getWeeklyActivityStats() e getPeakHourStats()
+ *
+ *  DEPENDÊNCIAS:
+ *  - utils.js   → Utils (importado mas delegado ao Storage)
+ *  - storage.js → Storage.getWeeklyActivityStats(), getPeakHourStats()
+ *  - config.js  → Config.MAX_CAPACITY, Config.LONG_STAY_HOURS
+ *  - modals.js  → importado dinamicamente (import()) para mostrar modais
+ *
+ *  PARA INICIANTES:
+ *  Para adicionar um novo card de métrica:
+ *  1. Calcule a métrica em calculateMetrics()
+ *  2. Adicione o card HTML dentro do grid em render()
+ *  3. Execute lucide.createIcons() se usar ícones Lucide no card
+ * ============================================================
+ */
+
 import { Utils } from '../shared/utils.js';
 import { Storage } from '../shared/storage.js';
 import { Config } from '../shared/config.js';
@@ -13,7 +63,7 @@ export class DonoDashboard {
         if (!container) return;
 
         try {
-            // Show loading state
+            // Exibe o estado de carregamento enquanto busca os dados
             container.innerHTML = '<div class="flex items-center justify-center h-64"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>';
 
             const metrics = await this.calculateMetrics();
@@ -88,7 +138,7 @@ export class DonoDashboard {
             </div>
 
             <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 <!-- Chart 1: Atividade Semanal -->
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
                     <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
@@ -195,8 +245,8 @@ export class DonoDashboard {
     setupLongStayClick() {
         const card = document.getElementById('long-stay-card');
         if (card) {
-            // Remove old listener if any (managed by replacing element? No, here we just add)
-            // Ideally we should handle cleanup but since render replaces innerHTML, it's fine.
+            // Adiciona listener de clique (o render() substitui o innerHTML,
+            // portanto não há duplicação de listeners entre re-renders)
             card.addEventListener('click', () => this.showLongStayDetails());
         }
     }
@@ -216,14 +266,14 @@ export class DonoDashboard {
             return Modals.showAlert('Nenhuma bicicleta com permanência superior a 24h no momento.', 'Tudo Certo');
         }
 
-        // Map to format expected by openCustomListModal
+        // Mapeia os registros para o formato esperado pelo openCustomListModal
         const mappedRecords = longStayRecords.map(registro => {
             const client = this.app.data.clients.find(c => c.id === registro.clientId);
             if (!client) return null;
             const bike = client.bicicletas.find(b => b.id === registro.bikeId);
             if (!bike) return null;
 
-            // Fix bikeSnapshot if missing (legacy support)
+            // Corrige bikeSnapshot ausente em registros antigos (suporte legado)
             if (!registro.bikeSnapshot && bike) {
                 registro.bikeSnapshot = {
                     modelo: bike.modelo,
@@ -299,10 +349,10 @@ export class DonoDashboard {
 
     renderWeeklyChart(data) {
         if (!data || data.length === 0) return '<div class="w-full h-full flex items-center justify-center text-slate-400">Sem dados</div>';
-        const maxValue = Math.max(...data.map(d => d.value)) || 1; // Avoid divide by zero
+        const maxValue = Math.max(...data.map(d => d.value)) || 1; // Evita divisão por zero
 
         return data.map(item => {
-            const height = Math.max((item.value / maxValue) * 100, 4); // Min height for visibility
+            const height = Math.max((item.value / maxValue) * 100, 4); // Altura mínima para visibilidade
             return `
                 <div class="flex flex-col items-center flex-1 group relative h-full justify-end">
                      <!-- Tooltip -->
@@ -327,7 +377,7 @@ export class DonoDashboard {
 
         return data.map((value, hour) => {
             const height = Math.max((value / maxValue) * 100, 2);
-            // Highlight busy hours (e.g. > 50% max)
+            // Destaca horários de pico (acima de 70% do máximo em roxo escuro)
             const colorClass = (value / maxValue) > 0.7 ? 'bg-purple-500 dark:bg-purple-400' : 'bg-purple-300 dark:bg-purple-900/40';
 
             return `

@@ -1,3 +1,53 @@
+/**
+ * ============================================================
+ *  ARQUIVO: mobile-access.js
+ *  DESCRIÇÃO: Sistema de Autoatendimento Mobile (Totem QR)
+ *
+ *  FUNÇÃO:
+ *  Controla a interface do totem de autoatendimento (mobile-access.html),
+ *  utilizada pela tela sensível ao toque na entrada do bicicletário.
+ *  Permite que clientes se identifiquem por CPF, selecionem a bicicleta
+ *  e enviem solicitações de entrada/saída para aprovação do atendente.
+ *
+ *  CLASSE: MobileAccess
+ *  Singleton — instanciada em window.app ao carregar o HTML
+ *
+ *  FLUXO DE USO:
+ *  1. Cliente digita CPF → handleIdentify() busca em Storage.loadClients()
+ *  2. Se encontrado: showActions() exibe as bicicletas cadastradas
+ *  3. Se não encontrado: showRegisterClient() permite novo cadastro
+ *  4. Após cadastro do cliente: showRegisterBike() para adicionar bicicleta
+ *  5. Cliente seleciona bicicleta e clica Entrada/Saída → handleRequest()
+ *  6. Solicitação vai para localStorage 'bicicletario_requests' com status 'pendente'
+ *  7. Atendente aprova/rejeita via RegistrosManager.openSolicitacoesModal()
+ *  8. showSuccess() exibe tela de sucesso e reseta após 5 segundos
+ *
+ *  SELEÇÃO DE BICICLETA (Custom Dropdown):
+ *  - Substituição do <select> nativo por botão + lista customizada
+ *  - toggleCustomSelect() abre/fecha o dropdown
+ *  - selectBike(id, nome) preenche o campo oculto e atualiza o texto
+ *  - Clique fora do dropdown fecha automaticamente (listener no document)
+ *
+ *  BOTÕES ENTRADA/SAÍDA (Inteligentes):
+ *  - updateActionButtons() verifica se a bike está dentro ou fora
+ *  - Busca em Storage.loadRegistros() por registro ativo (sem saída)
+ *  - Mostra apenas o botão relevante para evitar erros do cliente
+ *
+ *  NOTIFICAÇÕES:
+ *  - showNotification(titulo, msg, tipo) abre modal #custom-notification-modal
+ *  - Tipos: 'error' (vermelho), 'warning' (âmbar), 'info' (azul)
+ *  - Fallback para alert() se modal não existir no HTML (compatibilidade)
+ *
+ *  DEPENDÊNCIAS:
+ *  - utils.js   → Utils.formatCPF(), formatTelefone(), validateCPF(), generateUUID()
+ *  - storage.js → Storage.loadClients(), loadRegistros(), saveClient()
+ *
+ *  PARA INICIANTES:
+ *  Este arquivo é carregado APENAS pelo mobile-access.html, não pelo index.html.
+ *  O index.html usa app-modular.js. São sistemas separados que compartilham
+ *  apenas o localStorage para comunicação (via 'bicicletario_requests').
+ * ============================================================
+ */
 
 import { Utils } from './shared/utils.js';
 import { Storage } from './shared/storage.js';
@@ -31,7 +81,15 @@ class MobileAccess {
             // Actions
             clientName: document.getElementById('client-name'),
             bikeSelectionContainer: document.getElementById('bike-selection-container'),
-            bikeSelect: document.getElementById('bike-select'),
+
+            // Custom Select
+            bikeSelect: document.getElementById('bike-select'), // Now hidden input
+            customSelectBtn: document.getElementById('custom-select-btn'),
+            customSelectText: document.getElementById('custom-select-text'),
+            customSelectIcon: document.getElementById('custom-select-icon'),
+            customSelectDropdown: document.getElementById('custom-select-dropdown'),
+            customSelectList: document.getElementById('custom-select-list'),
+
             btnAddAnotherBike: document.getElementById('btn-add-another-bike'),
             noBikeContainer: document.getElementById('no-bike-container'),
             btnNewBike: document.getElementById('btn-new-bike'),
@@ -39,7 +97,15 @@ class MobileAccess {
             btnSaida: document.getElementById('btn-saida'),
             btnVoltar: document.getElementById('btn-voltar'),
             btnReset: document.getElementById('btn-reset'),
-            loadingOverlay: document.getElementById('loading-overlay')
+            loadingOverlay: document.getElementById('loading-overlay'),
+
+            // Custom Notification
+            notificationModal: document.getElementById('custom-notification-modal'),
+            notificationTitle: document.getElementById('notification-title'),
+            notificationMessage: document.getElementById('notification-message'),
+            notificationIcon: document.getElementById('notification-icon'),
+            notificationIconContainer: document.getElementById('notification-icon-container'),
+            btnCloseNotification: document.getElementById('btn-close-notification')
         };
 
         this.currentClient = null;
@@ -84,6 +150,25 @@ class MobileAccess {
             }
         });
 
+        // Custom Select Logic
+        if (this.elements.customSelectBtn) {
+            this.elements.customSelectBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleCustomSelect();
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (this.elements.customSelectDropdown &&
+                    !this.elements.customSelectDropdown.classList.contains('hidden') &&
+                    !this.elements.customSelectDropdown.contains(e.target) &&
+                    !this.elements.customSelectBtn.contains(e.target)) {
+                    this.closeCustomSelect();
+                }
+            });
+        }
+
         // Dashboard Actions
         this.elements.btnEntrada.addEventListener('click', () => this.handleRequest('entrada'));
         this.elements.btnSaida.addEventListener('click', () => this.handleRequest('saida'));
@@ -93,7 +178,42 @@ class MobileAccess {
         this.elements.btnNewBike.addEventListener('click', () => this.showRegisterBike());
         this.elements.btnAddAnotherBike.addEventListener('click', () => this.showRegisterBike());
 
-        // Disable buttons if no bike selected or invalid state
+        this.elements.btnCloseNotification.addEventListener('click', () => {
+            if (this.elements.notificationModal) {
+                this.elements.notificationModal.classList.add('hidden');
+            }
+        });
+        this.elements.btnVoltar.addEventListener('click', () => this.showLogin());
+        this.elements.btnReset.addEventListener('click', () => this.showLogin());
+
+        this.elements.btnNewBike.addEventListener('click', () => this.showRegisterBike());
+        this.elements.btnAddAnotherBike.addEventListener('click', () => this.showRegisterBike());
+
+        // Desabilita botões se nenhuma bike estiver selecionada
+    }
+
+    toggleCustomSelect() {
+        if (!this.elements.customSelectDropdown) return;
+        const isHidden = this.elements.customSelectDropdown.classList.contains('hidden');
+        if (isHidden) {
+            this.elements.customSelectDropdown.classList.remove('hidden');
+            this.elements.customSelectIcon.classList.add('rotate-180');
+        } else {
+            this.closeCustomSelect();
+        }
+    }
+
+    closeCustomSelect() {
+        if (!this.elements.customSelectDropdown) return;
+        this.elements.customSelectDropdown.classList.add('hidden');
+        this.elements.customSelectIcon.classList.remove('rotate-180');
+    }
+
+    selectBike(bikeId, bikeName) {
+        this.elements.bikeSelect.value = bikeId;
+        this.elements.customSelectText.textContent = bikeName;
+        this.closeCustomSelect();
+        this.updateActionButtons();
     }
 
     startClock() {
@@ -133,8 +253,52 @@ class MobileAccess {
     }
 
     showError(msg) {
-        this.elements.loginError.textContent = msg;
-        this.elements.loginError.classList.remove('hidden');
+        if (this.elements.loginError) {
+            this.elements.loginError.textContent = msg;
+            this.elements.loginError.classList.remove('hidden');
+        } else {
+            this.showNotification('Erro', msg, 'error');
+        }
+    }
+
+    showNotification(title, message, type = 'info') {
+        if (!this.elements.notificationTitle || !this.elements.notificationModal) {
+            console.warn('Notification elements missing - HTML might be cached. Falling back to alert.');
+            alert(`${title}\n\n${message.replace(/<br>/g, '\n').replace(/<[^>]*>/g, '')}`);
+            return;
+        }
+
+        this.elements.notificationTitle.textContent = title;
+        this.elements.notificationMessage.innerHTML = message;
+
+        const icon = this.elements.notificationIcon;
+        const container = this.elements.notificationIconContainer;
+
+        // Reset classes
+        container.className = 'mb-4 w-16 h-16 rounded-full flex items-center justify-center';
+        icon.className = 'w-8 h-8';
+
+        if (type === 'error') {
+            container.classList.add('bg-red-100');
+            icon.classList.add('text-red-600');
+            icon.setAttribute('data-lucide', 'alert-circle');
+            this.elements.btnCloseNotification.className = 'w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition-colors active:scale-95 shadow-md';
+        } else if (type === 'warning') {
+            container.classList.add('bg-amber-100');
+            icon.classList.add('text-amber-600');
+            icon.setAttribute('data-lucide', 'alert-triangle');
+            this.elements.btnCloseNotification.className = 'w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-xl transition-colors active:scale-95 shadow-md';
+        } else {
+            container.classList.add('bg-blue-100');
+            icon.classList.add('text-blue-600');
+            icon.setAttribute('data-lucide', 'info');
+            this.elements.btnCloseNotification.className = 'w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-colors active:scale-95 shadow-md';
+        }
+
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+        this.elements.notificationModal.classList.remove('hidden');
     }
 
     showLogin() {
@@ -143,7 +307,7 @@ class MobileAccess {
         this.elements.loginError.classList.add('hidden');
 
         this.hideAllSteps();
-        this.elements.loginForm.parentElement.classList.remove('hidden'); // Parent includes header? No, just the form wrapper
+        this.elements.loginForm.parentElement.classList.remove('hidden'); // Elemento pai do formulário de login
         this.elements.loginForm.classList.remove('hidden');
         // Ensure header is visible if we hid it
     }
@@ -171,18 +335,41 @@ class MobileAccess {
             this.elements.noBikeContainer.classList.add('hidden');
             this.elements.bikeSelectionContainer.classList.remove('hidden');
 
-            // Populate Dropdown
-            this.elements.bikeSelect.innerHTML = bikes.map(bike =>
-                `<option value="${bike.id}">${bike.modelo} - ${bike.cor} (${bike.marca})</option>`
-            ).join('');
+            // Populate Custom Dropdown
+            if (this.elements.customSelectList) {
+                this.elements.customSelectList.innerHTML = bikes.map(bike => {
+                    const displayName = `${bike.modelo} - ${bike.cor} (${bike.marca})`;
+                    // We map the click to the global window.app instance
+                    return `
+                    <li>
+                        <button type="button" class="w-full text-left px-4 py-4 text-white hover:bg-white/10 active:bg-white/20 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0"
+                            onclick="window.app.selectBike('${bike.id}', '${displayName}')">
+                            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 shadow-inner">
+                                <i data-lucide="bike" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <span class="font-medium text-sm truncate flex-1">${displayName}</span>
+                        </button>
+                    </li>`;
+                }).join('');
+
+                // Select first by default
+                const first = bikes[0];
+                this.elements.bikeSelect.value = first.id;
+                this.elements.customSelectText.textContent = `${first.modelo} - ${first.cor} (${first.marca})`;
+
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            } else {
+                // Fallback for old HTML just in case
+                this.elements.bikeSelect.innerHTML = bikes.map(bike =>
+                    `<option value="${bike.id}" class="bg-blue-900 text-white py-2">${bike.modelo} - ${bike.cor} (${bike.marca})</option>`
+                ).join('');
+                this.elements.bikeSelect.onchange = () => this.updateActionButtons();
+            }
 
             // Initial check for buttons
             await this.updateActionButtons();
-
-            // Add listener for change (remove old one if exists to avoid duplicates, though replacing innerHTML of parent might not be enough if element is static)
-            // It's better to add the listener in setupEventListeners and just call a method here, 
-            // but for now I will add a simple onchange here or ensuring updateActionButtons is called.
-            this.elements.bikeSelect.onchange = () => this.updateActionButtons();
         }
     }
 
@@ -246,7 +433,7 @@ class MobileAccess {
         const telefone = this.elements.regTelefone.value;
 
         if (!Utils.validateCPF(cpf)) {
-            alert('CPF inválido');
+            this.showNotification('CPF Inválido', 'Por favor, digite um CPF válido.', 'error');
             return;
         }
 
@@ -255,8 +442,13 @@ class MobileAccess {
         try {
             const clients = await Storage.loadClients();
 
-            if (clients.some(c => c.cpf === cpf)) {
-                alert('CPF já cadastrado!');
+            if (clients.some(c => c.cpf.replace(/\D/g, '') === cpf.replace(/\D/g, ''))) {
+                const existing = clients.find(c => c.cpf.replace(/\D/g, '') === cpf.replace(/\D/g, ''));
+                this.showNotification(
+                    'Cliente Já Cadastrado',
+                    `Este CPF já pertence ao cliente:<br><strong class="text-slate-800">${existing.nome}</strong>`,
+                    'warning'
+                );
                 this.toggleLoading(false);
                 return;
             }
@@ -282,7 +474,7 @@ class MobileAccess {
 
         } catch (error) {
             console.error(error);
-            alert('Erro ao cadastrar. Tente novamente.');
+            this.showNotification('Erro no Cadastro', 'Não foi possível realizar o cadastro. Tente novamente.', 'error');
             this.toggleLoading(false);
         }
     }
@@ -315,7 +507,7 @@ class MobileAccess {
             this.showActions();
         } catch (error) {
             console.error(error);
-            alert('Erro ao salvar bicicleta.');
+            this.showNotification('Erro', 'Erro ao salvar bicicleta.', 'error');
             this.toggleLoading(false);
         }
     }
@@ -358,7 +550,7 @@ class MobileAccess {
 
         } catch (error) {
             console.error(error);
-            alert('Erro ao enviar solicitação.');
+            this.showNotification('Erro', 'Erro ao enviar solicitação.', 'error');
             this.toggleLoading(false);
         }
     }
@@ -378,5 +570,5 @@ class MobileAccess {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    new MobileAccess();
+    window.app = new MobileAccess();
 });

@@ -1,12 +1,63 @@
+/**
+ * ============================================================
+ *  ARQUIVO: clientes.js
+ *  DESCRIÇÃO: Gerenciador de Cadastro e Listagem de Clientes
+ *
+ *  FUNÇÃO:
+ *  Controla todo o gerenciamento de clientes no sistema:
+ *  - Cadastro de novo cliente (formulário #add-client-form)
+ *  - Listagem e busca de clientes com paginação progressiva
+ *  - Edição de dados do cliente (modal #edit-client-modal)
+ *  - Sistema de comentários por cliente
+ *  - Toast de confirmação ao salvar
+ *  - Controle de permissões por papel (admin/funcionario)
+ *
+ *  CLASSE: ClientesManager
+ *  Instanciada em app-modular.js como this.clientesManager
+ *
+ *  DEPENDÊNCIAS:
+ *  - utils.js             → formatCPF(), formatTelefone(), validateCPF(), debounce()
+ *  - storage.js           → Storage.saveClient()
+ *  - auth.js              → Auth.requirePermission(), Auth.getCurrentSession()
+ *  - modals.js            → Modals.alert()
+ *  - audit-logger.js      → logAction()
+ *  - performance-config.js → PerformanceConfig.get('clientListLimit'), enableDebounce
+ *
+ *  FLUXO PRINCIPAL:
+ *  1. Usuário preenche formulário → handleAddClient() valida CPF e duplicatas
+ *  2. Salvo com sucesso → Storage.saveClient() + logAction() + toast + foco automático
+ *  3. Busca no campo #search → renderClientList(filtro) com debounce opcional
+ *  4. Clique no cliente → selectedClientId atualizado → bicicletasManager.renderClientDetails()
+ *
+ *  LISTAGEM COM PAGINAÇÃO:
+ *  - Máximo de 50 clientes renderizados de início (protege baixo hardware)
+ *  - Botão "Carregar mais" incrementa em clientListLimit (configurável)
+ *  - currentLimit é resetado a cada busca nova
+ *
+ *  TOAST DE CONFIRMAÇÃO (_showSaveToast):
+ *  - Aparece no centro-baixo da tela por 3 segundos
+ *  - Cor dinâmica para modo claro/escuro
+ *  - Usa animation via requestAnimationFrame
+ *
+ *  PARA INICIANTES:
+ *  Para adicionar campos (ex: endereço):
+ *  1. Crie o <input id="endereco"> no formulário em index.html
+ *  2. Leia com formData.get('endereco') em handleAddClient()
+ *  3. Inclua no objeto newClient
+ * ============================================================
+ */
+
 import { Utils } from '../shared/utils.js';
 import { Storage } from '../shared/storage.js';
 import { Auth } from '../shared/auth.js';
 import { Modals } from '../shared/modals.js';
 import { logAction } from '../shared/audit-logger.js';
+import { PerformanceConfig } from '../shared/performance-config.js';
 
 export class ClientesManager {
     constructor(app) {
         this.app = app;
+        this.currentLimit = 100; // Limite atual de itens renderizados
         this.elements = {
             addClientForm: document.getElementById('add-client-form'),
             cpfInput: document.getElementById('cpf'),
@@ -32,10 +83,31 @@ export class ClientesManager {
         const nomeInput = document.getElementById('nome');
 
         this.elements.addClientForm.addEventListener('submit', this.handleAddClient.bind(this));
-        this.elements.searchInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.toUpperCase();
-            this.renderClientList(e.target.value);
+
+        // Pressionar enter em qualquer input do form tenta salvar
+        const handleEnterSubmit = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.elements.addClientForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+        };
+        this.elements.addClientForm.querySelectorAll('input').forEach(input => {
+            input.addEventListener('keypress', handleEnterSubmit);
         });
+
+        // Aplica debounce se habilitado nas configurações
+        const handleSearch = (e) => {
+            e.target.value = e.target.value.toUpperCase();
+            this.currentLimit = PerformanceConfig.get('clientListLimit'); // Reseta limite ao buscar
+            this.renderClientList(e.target.value);
+        };
+
+        if (PerformanceConfig.get('enableDebounce')) {
+            const delay = PerformanceConfig.get('debounceDelay');
+            this.elements.searchInput.addEventListener('input', Utils.debounce(handleSearch, delay));
+        } else {
+            this.elements.searchInput.addEventListener('input', handleSearch);
+        }
 
         nomeInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
@@ -113,12 +185,75 @@ export class ClientesManager {
         this.renderClientList();
         this.elements.addClientForm.reset();
 
+        // Toast de confirmação
+        this._showSaveToast(nome);
+
+        // Automação: Focar novamente no Nome Completo após salvar
+        const nomeInput = document.getElementById('nome');
+        if (nomeInput) {
+            nomeInput.focus();
+            const card = nomeInput.closest('.bg-white, .dark\\\\:bg-slate-800');
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
         if (this.app.configuracaoManager) {
             this.app.configuracaoManager.renderCategoriasStats();
         }
     }
 
-    renderClientList(filter = '') {
+    _showSaveToast(nome) {
+        // Remove toast anterior se existir
+        document.getElementById('client-save-toast')?.remove();
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const toast = document.createElement('div');
+        toast.id = 'client-save-toast';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-radius: 50px;
+            background: ${isDark ? '#1e293b' : '#ffffff'};
+            color: ${isDark ? '#f1f5f9' : '#1e293b'};
+            border: 1px solid ${isDark ? '#334155' : '#e2e8f0'};
+            box-shadow: 0 12px 40px rgba(0,0,0,${isDark ? '0.5' : '0.15'});
+            font-size: 13px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(.16,1,.3,1);
+            white-space: nowrap;
+            max-width: 90vw;
+        `;
+        toast.innerHTML = `
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--color-success,#16a34a);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span>Cliente <strong>${nome}</strong> salvo com sucesso!</span>
+        `;
+        document.body.appendChild(toast);
+
+        // Animar entrada
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+        });
+
+        // Remover após 3s
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(12px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+
+    renderClientList(filter = '', limit = null) {
         const lowercasedFilter = filter.toLowerCase();
         const numericFilter = filter.replace(/\D/g, '');
 
@@ -131,15 +266,15 @@ export class ClientesManager {
             const matchesCPF = numericFilter.length > 0 && cpf.includes(numericFilter);
             const matchesTelefone = numericFilter.length > 0 && telefone.includes(numericFilter);
 
-            // Global Bike Search
-            const matchesBike = client.bicicletas && client.bicicletas.some(bike => {
-                const modelo = (bike.modelo || '').toLowerCase();
-                const marca = (bike.marca || '').toLowerCase();
-                const cor = (bike.cor || '').toLowerCase();
-                return modelo.includes(lowercasedFilter) ||
-                    marca.includes(lowercasedFilter) ||
-                    cor.includes(lowercasedFilter);
-            });
+            // Busca Global (Otimizada: evita `toLowerCase()` on the fly para todos usando cache ou check rápido)
+            let matchesBike = false;
+            if (lowercasedFilter.length > 2 && client.bicicletas) {
+                matchesBike = client.bicicletas.some(bike => {
+                    const m = (bike.modelo || '').toLowerCase();
+                    const mc = (bike.marca || '').toLowerCase();
+                    return m.includes(lowercasedFilter) || mc.includes(lowercasedFilter);
+                });
+            }
 
             return matchesName || matchesCPF || matchesTelefone || matchesBike;
         }).sort((a, b) => a.nome.localeCompare(b.nome));
@@ -149,7 +284,17 @@ export class ClientesManager {
             return;
         }
 
-        this.elements.clientList.innerHTML = filteredClients.map(client => {
+        // Aplica limite de renderização agressivo para computadores fracos
+        // Sempre força um limite máximo, mesmo se a configuração falhar (Proteção de Memória)
+        const useLimit = true; // Forçamos ativação do limitador de interface
+        const safeLimit = PerformanceConfig.get('clientListLimit') || 50; // Menos injeções no DOM ao abrir
+        const baseLimit = Math.min(safeLimit, 50); // Hardcap em 50 para start inicial instantâneo
+        const currentLimit = limit !== null ? limit : baseLimit;
+
+        const displayClients = filteredClients.slice(0, currentLimit);
+        const hasMore = filteredClients.length > currentLimit;
+
+        this.elements.clientList.innerHTML = displayClients.map(client => {
             let comentarios = client.comentarios || [];
             if (typeof comentarios === 'string') {
                 try { comentarios = JSON.parse(comentarios); } catch (e) { comentarios = []; }
@@ -158,6 +303,14 @@ export class ClientesManager {
             const hasComments = comentarios.length > 0;
             const commentCount = comentarios.length;
             const categoryBadge = client.categoria ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">${client.categoria}</span>` : '';
+
+            // Botão de Entrada Rápida
+            const canAddRegistros = Auth.hasPermission('registros', 'adicionar');
+            const quickAddBtn = (canAddRegistros && client.bicicletas && client.bicicletas.length > 0) ? `
+                <button class="quick-entry-btn flex items-center justify-center w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full cursor-pointer hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors ml-2" data-client-id="${client.id}" title="Entrada Rápida">
+                    <i data-lucide="play" class="w-4 h-4 text-green-600 dark:text-green-400 ml-0.5"></i>
+                </button>
+            ` : '';
 
             return `
             <div class="client-item p-3 rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-blue-400 cursor-pointer transition-colors dark:border-slate-700 dark:hover:bg-slate-700/50 dark:hover:border-blue-500 ${this.app.data.selectedClientId === client.id ? 'bg-blue-100 border-blue-400 dark:bg-blue-900/50 dark:border-blue-500' : ''}" data-id="${client.id}">
@@ -175,16 +328,48 @@ export class ClientesManager {
                         </div>
                     </div>
                     ` : ''}
+                    ${quickAddBtn}
                 </div>
             </div>
         `;
         }).join('');
+
+        // Adiciona botão "Carregar mais" se houver mais itens
+        if (hasMore) {
+            const remaining = filteredClients.length - currentLimit;
+            this.elements.clientList.innerHTML += `
+                <div class="text-center py-4">
+                    <button id="load-more-clients" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+                        Carregar mais (${remaining} restantes)
+                    </button>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Mostrando ${currentLimit} de ${filteredClients.length} clientes</p>
+                </div>
+            `;
+
+            // Event listener para carregar mais
+            const loadMoreBtn = document.getElementById('load-more-clients');
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', () => {
+                    this.currentLimit += PerformanceConfig.get('clientListLimit');
+                    this.renderClientList(filter, this.currentLimit);
+                });
+            }
+        }
 
         this.elements.clientList.querySelectorAll('.client-item').forEach(item => {
             item.addEventListener('click', () => {
                 this.app.data.selectedClientId = item.dataset.id;
                 this.app.bicicletasManager.renderClientDetails();
                 this.renderClientList(this.elements.searchInput.value);
+            });
+        });
+
+        this.elements.clientList.querySelectorAll('.quick-entry-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.app.registrosManager && typeof this.app.registrosManager.handleQuickEntry === 'function') {
+                    this.app.registrosManager.handleQuickEntry(btn.dataset.clientId);
+                }
             });
         });
 

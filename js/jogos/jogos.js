@@ -1,6 +1,52 @@
 /**
- * Módulo de Jogos - Sistema de Jogos com Ranking
- * Gerencia jogos leves e sistema de pontuação por usuário
+ * ============================================================
+ *  ARQUIVO: jogos.js
+ *  DESCRIÇÃO: Sistema de Jogos com Ranking por Usuário
+ *
+ *  FUNÇÃO:
+ *  Oferece uma aba de entretenimento com múltiplos mini-jogos
+ *  integrados ao sistema de autenticação, pontuação e conquistas.
+ *
+ *  CLASSE: JogosManager
+ *  Instanciada em app-modular.js como this.jogosManager
+ *
+ *  JOGOS DISPONÍVEIS:
+ *  ┌──────────────────────────────────────────────────────────┐
+ *  │ Ação:    Snake, Doom, Space Invaders, Breakout           │
+ *  │ Palavras: Typing, Termo, Termo Dueto, Termo Quarteto     │
+ *  │ Outros:  Jogo da Memória, Caça Palavras, Cruzadinha      │
+ *  └──────────────────────────────────────────────────────────┘
+ *
+ *  SISTEMA DE PONTUAÇÃO:
+ *  - Cada vitória concede exatamente 2 pontos (addScore)
+ *  - Rankings salvos em localStorage 'bicicletario_game_rankings'
+ *  - Top 100 pontuações por jogo são mantidas
+ *
+ *  CONQUISTAS (Achievements):
+ *  - Salvas em 'bicicletario_game_achievements' (localStorage)
+ *  - Notificação toast ao desbloquear (top-right, 3 segundos)
+ *  - Conquistas disponíveis: first_win, snake_master, doom_slayer,
+ *    elephant_memory, destroyer, galaxy_defender, termo_master
+ *
+ *  CONTROLE DE ACESSO:
+ *  - applyPermissionsToUI() mostra/oculta a aba via Auth.hasPermission
+ *  - Permissão necessária: Auth.hasPermission('jogos', 'ver')
+ *
+ *  ARQUITETURA INTERNA:
+ *  - JogosManager: orquestra menu, abertura/fechamento e ranking
+ *  - Cada jogo é uma classe independente (SnakeGame, DoomGame, etc.)
+ *  - Canvas #game-canvas é reutilizado por todos os jogos
+ *  - currentGame.stop() é chamado ao fechar para limpar loops/listeners
+ *
+ *  DEPENDÊNCIAS:
+ *  - auth.js → Auth.getCurrentSession(), Auth.hasPermission()
+ *
+ *  PARA INICIANTES:
+ *  Para adicionar um novo jogo:
+ *  1. Crie uma classe NovoJogo com métodos start() e stop()
+ *  2. Adicione ao array games em renderGameMenu()
+ *  3. Adicione à tabela games em startGame()
+ * ============================================================
  */
 
 import { Auth } from '../shared/auth.js';
@@ -1213,18 +1259,16 @@ class DoomGame {
         this.ctx.fillStyle = gradientFloor;
         this.ctx.fillRect(0, this.canvas.height / 2, this.canvas.width, this.canvas.height / 2);
 
-        // Raycasting
+        // Painter's Algorithm: Create a render queue for both walls and sprites
+        const renderQueue = [];
         const fov = Math.PI / 3;
         const numRays = 120; // Increased resolution
         const stripWidth = Math.ceil(this.canvas.width / numRays);
 
-        // Z-Buffer for sprite culling (simple 1D buffer)
-        this.zBuffer = new Array(numRays).fill(0);
-
+        // 1. Raycasting (Collect Walls)
         for (let i = 0; i < numRays; i++) {
             const rayAngle = this.player.angle - fov / 2 + i * (fov / numRays);
             const result = this.castRay(rayAngle);
-            this.zBuffer[i] = result.distance; // Store for sprite culling
 
             if (result.distance > 0 && result.distance < 20) {
                 const wallHeight = Math.min(this.canvas.height, (this.canvas.height / result.distance) * 0.8);
@@ -1235,38 +1279,34 @@ class DoomGame {
                 const brightness = Math.max(0.1, 1 - result.distance / 15);
 
                 // Fake texture shading: darken edges of the block
-                // result.xPos is 0..1 across the face of the block
                 const edgeShade = (result.xPos < 0.05 || result.xPos > 0.95) ? 0.7 : 1;
 
                 const r = Math.floor(baseColor.r * brightness * edgeShade);
                 const g = Math.floor(baseColor.g * brightness * edgeShade);
                 const b = Math.floor(baseColor.b * brightness * edgeShade);
 
-                this.ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-                this.ctx.fillRect(i * stripWidth, wallTop, stripWidth, wallHeight);
+                renderQueue.push({
+                    type: 'wall',
+                    dist: result.distance, // Use generic dist for sorting
+                    col: i,
+                    stripWidth,
+                    wallTop,
+                    wallHeight,
+                    color: `rgb(${r}, ${g}, ${b})`
+                });
             }
         }
 
-        this.drawShotAnimations();
-
-        // Sort enemies by distance to draw far ones first
-        const renderList = [
+        // 2. Collect Sprites (Enemies + Pickups)
+        const sprites = [
             ...this.enemies.map(e => ({ ...e, type: 'enemy', dist: Math.sqrt((e.x - this.player.x) ** 2 + (e.y - this.player.y) ** 2) })),
             ...this.pickups.map(p => ({ ...p, type: 'pickup', dist: Math.sqrt((p.x - this.player.x) ** 2 + (p.y - this.player.y) ** 2) }))
-        ].sort((a, b) => b.dist - a.dist);
+        ];
 
-        renderList.forEach(obj => {
-            // Simple sprite projection
+        sprites.forEach(obj => {
             const dx = obj.x - this.player.x;
             const dy = obj.y - this.player.y;
 
-            // Rotate around player to find position on screen
-            // Transform sprite with the inverse camera matrix
-            // [ planeX   dirX ] -1                                       [ dirY      -dirX ]
-            // [               ]       =  1/(planeX*dirY-dirX*planeY) *   [                 ]
-            // [ planeY   dirY ]                                          [ -planeY  planeX ]
-
-            // Simplified projection for this engine:
             let objAngle = Math.atan2(dy, dx) - this.player.angle;
 
             // Normalize angle to -PI to +PI
@@ -1276,27 +1316,42 @@ class DoomGame {
             // Only draw if in front of player
             if (Math.abs(objAngle) < fov / 1.5) {
                 const dist = obj.dist;
-                // Fish-eye correction for sprite size (optional, but good for consistent feel)
+                // Fish-eye correction for sprite size
                 const correctDist = dist * Math.cos(objAngle);
 
                 const screenX = (0.5 * (objAngle / (fov / 2)) + 0.5) * this.canvas.width;
                 const size = Math.min(600, (this.canvas.height / correctDist) * 0.7);
                 const screenY = (this.canvas.height - size) / 2 + this.bobbingAmount;
 
-                // Simple z-check: if the center of the sprite is occluded by a wall, don't draw
-                // This is an approximation. A real engine checks all stripes.
-                const centerStripIdx = Math.floor(screenX / (this.canvas.width / numRays));
-                if (centerStripIdx >= 0 && centerStripIdx < numRays) {
-                    if (this.zBuffer[centerStripIdx] < dist - 0.5) return; // Occluded
-                }
+                renderQueue.push({
+                    type: 'sprite',
+                    dist: dist,
+                    screenX,
+                    screenY,
+                    size,
+                    obj
+                });
+            }
+        });
 
-                if (obj.type === 'enemy') {
-                    this.drawEnemy(screenX, screenY, size, obj);
+        // 3. Sort by Distance Descending (Far -> Near)
+        renderQueue.sort((a, b) => b.dist - a.dist);
+
+        // 4. Render All
+        renderQueue.forEach(item => {
+            if (item.type === 'wall') {
+                this.ctx.fillStyle = item.color;
+                this.ctx.fillRect(item.col * item.stripWidth, item.wallTop, item.stripWidth, item.wallHeight);
+            } else {
+                if (item.obj.type === 'enemy') {
+                    this.drawEnemy(item.screenX, item.screenY, item.size, item.obj);
                 } else {
-                    this.drawPickup(screenX, screenY, size, obj);
+                    this.drawPickup(item.screenX, item.screenY, item.size, item.obj);
                 }
             }
         });
+
+        this.drawShotAnimations();
 
         this.drawWeapon();
         this.drawHUD();
@@ -1363,7 +1418,7 @@ class DoomGame {
         const isBoss = enemy.type === 'boss';
 
         this.ctx.save();
-        this.ctx.translate(x, y);
+        this.ctx.translate(x, y + size * 0.5); // Fix: Lower sprite to stand on floor (was flying)
 
         // Shadow
         this.ctx.fillStyle = 'rgba(0,0,0,0.5)';

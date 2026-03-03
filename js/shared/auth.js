@@ -1,6 +1,45 @@
 /**
- * Sistema de Autenticação
- * Gerencia login, logout e controle de sessão com segurança aprimorada
+ * ============================================================
+ *  ARQUIVO: auth.js
+ *  DESCRIÇÃO: Sistema de Autenticação e Controle de Sessão
+ *
+ *  FUNÇÃO:
+ *  Gerencia todo o ciclo de vida de autenticação do sistema:
+ *  - Login com senha hasheada (SHA-256 via Web Crypto API)
+ *  - Proteção contra força bruta: bloqueia após 5 tentativas por 15 min
+ *  - Sessão armazenada no localStorage com dados do usuário logado
+ *  - CRUD de usuários com verificação de permissões
+ *  - Sistema de permissões granular por módulo e ação
+ *
+ *  USUÁRIOS PADRÃO (criados automaticamente na primeira execução):
+ *  ┌─────────────┬──────────┬───────────────────────────────┐
+ *  │ Usuário     │ Senha    │ Tipo                          │
+ *  ├─────────────┼──────────┼───────────────────────────────┤
+ *  │ admin       │ admin123 │ admin (acesso total)           │
+ *  │ CELO123     │ CELO123  │ dono (acesso total)            │
+ *  │ Funcionario │ 1234     │ funcionario (acesso limitado)  │
+ *  └─────────────┴──────────┴───────────────────────────────┘
+ *
+ *  ESTRUTURA DA SESSÃO (salva em 'bicicletario_session'):
+ *  {
+ *    userId, username, nome, tipo,
+ *    permissoes: { clientes, registros, dados, configuracao, jogos },
+ *    loginTime
+ *  }
+ *
+ *  ESTRUTURA DE PERMISSÕES (por módulo):
+ *  - clientes:     { ver, adicionar, editar, excluir }
+ *  - registros:    { ver, adicionar, editar, excluir, solicitacoes }
+ *  - dados:        { ver, exportar, importar, exportarDados, importarDados, ... }
+ *  - configuracao: { ver, gerenciarUsuarios, buscaAvancada, backupVer, ... }
+ *  - jogos:        { ver }
+ *
+ *  PARA INICIANTES:
+ *  - Use Auth.login(username, password) para autenticar
+ *  - Use Auth.getCurrentSession() para obter o usuário logado
+ *  - Use Auth.hasPermission('modulo', 'acao') para verificar acesso
+ *  - Exemplo: Auth.hasPermission('clientes', 'excluir') → true/false
+ * ============================================================
  */
 
 import { Storage } from './storage.js';
@@ -15,7 +54,7 @@ const LOCKOUT_DURATION = 15 * 60 * 1000;
 
 export class Auth {
     static async hashPassword(password) {
-        // Try to use native crypto if available and secure
+        // Tenta usar o crypto nativo do navegador para máxima segurança
         if (window.crypto && window.crypto.subtle && window.crypto.subtle.digest) {
             try {
                 const msgUint8 = new TextEncoder().encode(password);
@@ -28,7 +67,7 @@ export class Auth {
             }
         }
 
-        // Fallback to JS implementation
+        // Fallback: implementação manual de SHA-256 em JavaScript puro
         return this.sha256(password);
     }
 
@@ -162,7 +201,7 @@ export class Auth {
         const celoPassHash = await this.hashPassword('CELO123');
         if (celoIndex === -1) {
             await this.createCeloUser(); // This saves inside
-            // Reload users after create
+            // Recarrega lista de usuários após criação para garantir consistência
             const newUsers = this.getAllUsers();
             if (newUsers.length > users.length) needsSave = false; // Already saved (users ref outdated but acceptable context)
         } else {

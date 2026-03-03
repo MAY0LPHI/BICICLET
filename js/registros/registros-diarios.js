@@ -1,3 +1,69 @@
+/**
+ * ============================================================
+ *  ARQUIVO: registros-diarios.js
+ *  DESCRIÇÃO: Gerenciador de Registros Diários (Entradas e Saídas)
+ *
+ *  FUNÇÃO:
+ *  Módulo mais complexo do sistema. Controla toda a operação
+ *  diária do bicicletário: entradas, saídas, edição de registros,
+ *  filtros, exportação, dashboard, pernoites e solicitações QR.
+ *
+ *  CLASSE: RegistrosManager
+ *  Instanciada em app-modular.js como this.registrosManager
+ *
+ *  RESPONSABILIDADES PRINCIPAIS:
+ *  ┌──────────────────────────────────────────────────────────────┐
+ *  │ renderDailyRecords()     → Renderiza tabela do dia filtrada  │
+ *  │ openAddRegistroModal()   → Abre modal de entrada de bike     │
+ *  │ handleAddRegistro()      → Cria registro de entrada          │
+ *  │ handleRegisterSaida()    → Registra saída de uma linha       │
+ *  │ handleRowDoubleClick()   → Saída com duplo clique na linha   │
+ *  │ handleReverterAcao()     → Desfaz saída ou remoção de acesso │
+ *  │ handleQuickEntry()       → Entrada rápida (botão ▶ da lista) │
+ *  │ openEditRegistroModal()  → Edita todos os dados de um acesso │
+ *  │ exportToCSV() / exportToPDF() → Exporta registros do dia    │
+ *  │ openDashboardModal()     → Gráficos semanais e por hora      │
+ *  │ openSolicitacoesModal()  → Approva/rejeita pedidos QR        │
+ *  └──────────────────────────────────────────────────────────────┘
+ *
+ *  SISTEMA DE FILTROS:
+ *  - initializeFilterUI() injeta o HTML do modal de filtros no body
+ *  - Filtros disponíveis: Status (em-aberto/saida/pernoite/removido)
+ *    e Categoria (por nome de categoria)
+ *  - applyFilters(records) filtra antes de renderizar
+ *
+ *  ESTRUTURA DE UM REGISTRO (objeto JavaScript):
+ *  {
+ *    id:              UUID único do registro
+ *    clientId:        ID do cliente
+ *    bikeId:          ID da bicicleta
+ *    dataHoraEntrada: ISO string da entrada
+ *    dataHoraSaida:   ISO string da saída (null se ainda no pátio)
+ *    categoria:       Categoria do registro (ex: 'CLIENTE')
+ *    acessoRemovido:  boolean (saída removida manualmente)
+ *    pernoite:        boolean (mais de 24h no pátio)
+ *    bikeSnapshot:    { modelo, marca, cor } (cópia do momento do registro)
+ *    origem:           'sistema' | 'autoatendimento'
+ *  }
+ *
+ *  PERNOITE:
+ *  - Registro sem saída com mais de 24h é automaticamente marcado
+ *  - Aparece com badge roxo "Pernoite" na tabela
+ *
+ *  SOLICITAÇÕES QR (autoatendimento mobile):
+ *  - Clientes no totem/mobile solicitam entrada/saída
+ *  - Ficam em localStorage 'bicicletario_requests' com status 'pendente'
+ *  - checkPendingRequests() roda a cada 10 segundos
+ *  - Administrador aprova/rejeita em openSolicitacoesModal()
+ *
+ *  PARA INICIANTES:
+ *  Para adicionar um campo novo aos registros (ex: 'observacao'):
+ *  1. Adicione campo no modal #add-registro-modal em index.html
+ *  2. Leia na handleAddRegistro() e inclua no newRegistro
+ *  3. Mostre na tabela em renderDailyRecords()
+ * ============================================================
+ */
+
 import { Utils } from '../shared/utils.js';
 import { Storage } from '../shared/storage.js';
 import { Modals } from '../shared/modals.js';
@@ -8,6 +74,11 @@ import { notificationManager } from '../shared/notifications.js';
 export class RegistrosManager {
     constructor(app) {
         this.app = app;
+        // Estado dos filtros
+        this.filters = {
+            status: [],      // ['em-aberto', 'saida', 'pernoite', 'acesso-removido']
+            categorias: []   // Lista de categorias selecionadas
+        };
         this.elements = {
             // ... existing elements ...
             addRegistroModal: document.getElementById('add-registro-modal'),
@@ -20,6 +91,13 @@ export class RegistrosManager {
             dailyRecordsDateInput: document.getElementById('daily-records-date'),
             dailyRecordsSearchInput: document.getElementById('daily-records-search'),
             dailyRecordsList: document.getElementById('daily-records-list'),
+            // Filter elements
+            filterBtn: document.getElementById('filter-btn-registros'),
+            filterDropdown: document.getElementById('filter-dropdown-registros'),
+            filterBadge: document.getElementById('filter-badge'),
+            applyFiltersBtn: document.getElementById('apply-filters-btn'),
+            clearFiltersBtn: document.getElementById('clear-filters-btn'),
+            filterCategoriasList: document.getElementById('filter-categorias-list'),
             // Modal Solicitacoes Elements
             solicitacoesModal: document.getElementById('solicitacoes-modal'),
             solicitacoesModalList: document.getElementById('solicitacoes-modal-list'),
@@ -48,13 +126,27 @@ export class RegistrosManager {
             openDashboardModalBtn: document.getElementById('open-dashboard-modal-btn'),
             dashboardModal: document.getElementById('dashboard-modal'),
         };
+        this.expandedGroups = new Set();
         this.setupEventListeners();
+    }
+
+    toggleGroup(clientId, bikeId) {
+        const key = `${clientId}_${bikeId}`;
+        if (this.expandedGroups.has(key)) {
+            this.expandedGroups.delete(key);
+        } else {
+            this.expandedGroups.add(key);
+        }
+        this.renderDailyRecords();
     }
 
     setupEventListeners() {
         this.elements.addRegistroForm.addEventListener('submit', this.handleAddRegistro.bind(this));
         this.elements.cancelAddRegistroBtn.addEventListener('click', () => this.app.toggleModal('add-registro-modal', false));
         this.elements.dailyRecordsDateInput.addEventListener('change', this.renderDailyRecords.bind(this));
+
+        // Inicializa UI de filtros (injetará HTML e configurará event listeners)
+        this.initializeFilterUI();
 
         // Modal Solicitacoes Listeners
         if (this.elements.openSolicitacoesModalBtn) {
@@ -75,6 +167,10 @@ export class RegistrosManager {
         this.elements.dailyRecordsList.addEventListener('click', this.handleReverterAcao.bind(this));
         this.elements.dailyRecordsList.addEventListener('click', this.handleReverterPernoite.bind(this));
         this.elements.dailyRecordsList.addEventListener('click', this.handleEditRegistroClick.bind(this));
+
+        // Novo Listener para Duplo Clique em Linhas (Saída Rápida)
+        this.elements.dailyRecordsList.addEventListener('dblclick', this.handleRowDoubleClick.bind(this));
+
         this.elements.dailyRecordsList.addEventListener('click', this.handleViewComments.bind(this));
         this.elements.dailyRecordsList.addEventListener('click', this.handleCategoriaBoxClick.bind(this));
         this.elements.dailyRecordsList.addEventListener('change', this.handleActionChange.bind(this));
@@ -100,7 +196,13 @@ export class RegistrosManager {
 
         window.addEventListener('click', (e) => {
             this.toggleExportMenu(false);
-            // Close all action dropdowns when clicking outside
+            // Close filter dropdown when clicking outside
+            if (this.elements.filterBtn && this.elements.filterDropdown &&
+                !this.elements.filterBtn.contains(e.target) &&
+                !this.elements.filterDropdown.contains(e.target)) {
+                this.elements.filterDropdown.classList.add('hidden');
+            }
+            // Fecha todos os dropdowns de ações ao clicar fora deles
             if (!e.target.closest('.action-dropdown')) {
                 document.querySelectorAll('.action-dropdown .dropdown-menu').forEach(menu => {
                     menu.classList.add('hidden');
@@ -110,9 +212,213 @@ export class RegistrosManager {
             }
         });
 
-        // Init check for requests
+        // Inicia verificação inicial de solicitações pendentes
         this.checkPendingRequests();
         setInterval(() => this.checkPendingRequests(), 10000);
+    }
+
+    async handleRowDoubleClick(e) {
+        const row = e.target.closest('.record-row');
+        if (!row) return;
+
+        // Não ativar se o duplo clique foi num botão específico
+        if (e.target.closest('button') || e.target.closest('.custom-dropdown') || e.target.closest('.dropdown-button')) return;
+
+        const registroId = row.dataset.registroId;
+        const jaSaiu = row.dataset.saidaRegistrada === 'true';
+        const isPernoite = row.dataset.pernoite === 'true';
+
+        if (!registroId || jaSaiu || isPernoite) return;
+
+        try {
+            Auth.requirePermission('registros', 'editar');
+        } catch (error) {
+            return; // Silently fail on double click for usability, or alert
+        }
+
+        const confirmed = await Modals.showConfirm('Deseja registrar a SAÍDA deste acesso?', 'Saída Rápida');
+        if (confirmed) {
+            await this.registerSaida(registroId);
+        }
+    }
+
+    /**
+     * Inicializa UI de filtros (injeta HTML dinamicamente)
+     */
+    initializeFilterUI() {
+        // Procura pelo container de busca na aba de registros
+        const searchInput = this.elements.dailyRecordsSearchInput;
+        if (!searchInput || !searchInput.parentElement) {
+            console.warn('Campo de busca não encontrado para adicionar filtros');
+            return;
+        }
+
+        // Verifica se já existe
+        if (document.getElementById('filter-btn-registros')) {
+            return; // Já foi inicializado
+        }
+
+        // HTML do botão de filtro (fica na toolbar)
+        const filterBtnHTML = `
+            <div class="relative">
+                <button id="filter-btn-registros" class="relative p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" title="Filtrar registros">
+                    <i data-lucide="filter" class="w-5 h-5"></i>
+                    <span id="filter-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">0</span>
+                </button>
+            </div>
+        `;
+
+        // HTML do modal de filtros (vai direto no body para garantir centralização perfeita)
+        const filterModalHTML = `
+            <div id="filter-dropdown-registros" class="hidden fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" style="backdrop-filter: blur(2px);">
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md max-h-[90vh] flex flex-col">
+                    <!-- Cabeçalho -->
+                    <div class="p-4 border-b border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <i data-lucide="sliders" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                                Filtros de Registros
+                            </h3>
+                            <button id="close-filter-modal-btn" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors">
+                                <i data-lucide="x" class="w-5 h-5 text-slate-500"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Corpo (scrollable) -->
+                    <div class="p-4 space-y-4 overflow-y-auto flex-1">
+                        <!-- Filtro por Status -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                                <i data-lucide="activity" class="w-4 h-4 inline mr-1"></i>
+                                Status
+                            </label>
+                            <div class="space-y-2">
+                                <label class="flex items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 p-2 rounded transition-colors">
+                                    <input type="checkbox" class="filter-status rounded text-blue-600" value="em-aberto" />
+                                    <span class="ml-2 text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                                        <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+                                        Em Aberto
+                                    </span>
+                                </label>
+                                <label class="flex items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 p-2 rounded transition-colors">
+                                    <input type="checkbox" class="filter-status rounded text-blue-600" value="saida" />
+                                    <span class="ml-2 text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                                        <i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i>
+                                        Saída Registrada
+                                    </span>
+                                </label>
+                                <label class="flex items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 p-2 rounded transition-colors">
+                                    <input type="checkbox" class="filter-status rounded text-blue-600" value="pernoite" />
+                                    <span class="ml-2 text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                                        <i data-lucide="moon" class="w-4 h-4 text-purple-500"></i>
+                                        Pernoite (24h+)
+                                    </span>
+                                </label>
+                                <label class="flex items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 p-2 rounded transition-colors">
+                                    <input type="checkbox" class="filter-status rounded text-blue-600" value="acesso-removido" />
+                                    <span class="ml-2 text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                                        <i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>
+                                        Acesso Removido
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Filtro por Categoria -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                                <i data-lucide="folder" class="w-4 h-4 inline mr-1"></i>
+                                Categoria
+                            </label>
+                            <div id="filter-categorias-list" class="space-y-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Rodapé -->
+                    <div class="p-4 border-t border-slate-200 dark:border-slate-700 flex gap-2">
+                        <button id="clear-filters-btn" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors font-medium">
+                            Limpar
+                        </button>
+                        <button id="apply-filters-btn" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">
+                            Aplicar Filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Botão vai na toolbar (após o campo de busca)
+        searchInput.parentElement.insertAdjacentHTML('afterend', filterBtnHTML);
+
+        // Modal vai diretamente no body para garantir posicionamento central correto
+        document.body.insertAdjacentHTML('beforeend', filterModalHTML);
+
+        // Atualiza referências dos elementos
+        this.elements.filterBtn = document.getElementById('filter-btn-registros');
+        this.elements.filterDropdown = document.getElementById('filter-dropdown-registros');
+        this.elements.filterBadge = document.getElementById('filter-badge');
+        this.elements.applyFiltersBtn = document.getElementById('apply-filters-btn');
+        this.elements.clearFiltersBtn = document.getElementById('clear-filters-btn');
+        this.elements.filterCategoriasList = document.getElementById('filter-categorias-list');
+
+        // Inicializa ícones do Lucide
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Adiciona event listeners dos filtros
+        this.setupFilterEventListeners();
+    }
+
+    /**
+     * Configura event listeners específicos dos filtros
+     */
+    setupFilterEventListeners() {
+        if (this.elements.filterBtn) {
+            this.elements.filterBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.elements.filterDropdown?.classList.toggle('hidden');
+                if (!this.elements.filterDropdown?.classList.contains('hidden')) {
+                    this.renderFilterCategorias();
+                }
+            });
+        }
+
+        // Botão X para fechar modal
+        const closeFilterBtn = document.getElementById('close-filter-modal-btn');
+        if (closeFilterBtn) {
+            closeFilterBtn.addEventListener('click', () => {
+                this.elements.filterDropdown?.classList.add('hidden');
+            });
+        }
+
+        // Fechar ao clicar no overlay (fundo escuro)
+        if (this.elements.filterDropdown) {
+            this.elements.filterDropdown.addEventListener('click', (e) => {
+                // Só fecha se clicar no próprio overlay, não no conteúdo interno
+                if (e.target === this.elements.filterDropdown) {
+                    this.elements.filterDropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        if (this.elements.applyFiltersBtn) {
+            this.elements.applyFiltersBtn.addEventListener('click', () => {
+                this.collectFilters();
+                this.renderDailyRecords();
+                this.elements.filterDropdown?.classList.add('hidden');
+                this.updateFilterBadge();
+            });
+        }
+        if (this.elements.clearFiltersBtn) {
+            this.elements.clearFiltersBtn.addEventListener('click', () => {
+                this.filters = { status: [], categorias: [] };
+                this.renderDailyRecords();
+                this.updateFilterBadge();
+                this.renderFilterCategorias();
+            });
+        }
     }
 
     checkPendingRequests() {
@@ -127,7 +433,7 @@ export class RegistrosManager {
         const pending = requests.filter(r => r.status === 'pendente');
         const count = pending.length;
 
-        // Ensure button is always visible
+        // Botão sempre visível independente do estado atual
         if (this.elements.openSolicitacoesModalBtn) {
             this.elements.openSolicitacoesModalBtn.classList.remove('hidden');
 
@@ -220,7 +526,7 @@ export class RegistrosManager {
 
         if (!request) return;
 
-        // Permission check
+        // Verificação de permissão antes de prosseguir
         const permission = request.tipo === 'entrada' ? 'adicionar' : 'editar'; // Exit counts as edit
         try {
             Auth.requirePermission('registros', permission);
@@ -299,6 +605,130 @@ export class RegistrosManager {
             const clientId = btn.dataset.clientId;
             this.app.openCommentsModal(clientId, () => this.renderDailyRecords());
         }
+    }
+
+    /**
+     * Verifica se há filtros ativos
+     */
+    hasActiveFilters() {
+        return this.filters.status.length > 0 || this.filters.categorias.length > 0;
+    }
+
+    /**
+     * Coleta valores dos checkboxes de filtro
+     */
+    collectFilters() {
+        // Coleta filtros de status
+        const statusCheckboxes = document.querySelectorAll('.filter-status');
+        this.filters.status = Array.from(statusCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        // Coleta filtros de categoria
+        const categoriaCheckboxes = document.querySelectorAll('.filter-categoria');
+        this.filters.categorias = Array.from(categoriaCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+    }
+
+    /**
+     * Renderiza lista de categorias no dropdown de filtros
+     */
+    renderFilterCategorias() {
+        if (!this.elements.filterCategoriasList) return;
+
+        const categorias = Storage.loadCategorias();
+        const categoriasArray = Object.keys(categorias);
+
+        // Adiciona opção "Sem Categoria"
+        categoriasArray.push('SEM CATEGORIA');
+
+        const html = categoriasArray.map(categoria => {
+            const isChecked = this.filters.categorias.includes(categoria);
+            const emoji = categorias[categoria] || '';
+            const iconMap = {
+                '👤': 'user', '🏢': 'building', '🍽️': 'utensils', '💪': 'dumbbell',
+                '👨': 'user', '🏪': 'store', '⚙️': 'settings', '🎯': 'target',
+                '📱': 'smartphone', '📊': 'bar-chart', '🔧': 'wrench', '🎨': 'palette',
+                '⭐': 'star', '📦': 'package', '🚀': 'rocket', '🛍️': 'shopping-bag', '☕': 'coffee'
+            };
+            const iconName = iconMap[emoji] || (categoria === 'SEM CATEGORIA' ? 'minus-circle' : 'circle');
+
+            return `
+                <label class="flex items-center">
+                    <input type="checkbox" class="filter-categoria" value="${categoria}" ${isChecked ? 'checked' : ''} />
+                    <span class="ml-2 text-sm text-slate-600 dark:text-slate-300">
+                        <i data-lucide="${iconName}" class="w-4 h-4 inline text-slate-500"></i>
+                        ${categoria}
+                    </span>
+                </label>
+            `;
+        }).join('');
+
+        this.elements.filterCategoriasList.innerHTML = html;
+        lucide.createIcons();
+
+        // Marca checkboxes de status de acordo com filtros ativos
+        document.querySelectorAll('.filter-status').forEach(cb => {
+            cb.checked = this.filters.status.includes(cb.value);
+        });
+    }
+
+    /**
+     * Atualiza badge de contagem de filtros ativos
+     */
+    updateFilterBadge() {
+        if (!this.elements.filterBadge) return;
+
+        const totalFilters = this.filters.status.length + this.filters.categorias.length;
+
+        if (totalFilters > 0) {
+            this.elements.filterBadge.textContent = totalFilters;
+            this.elements.filterBadge.classList.remove('hidden');
+        } else {
+            this.elements.filterBadge.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Aplica filtros aos registros
+     */
+    applyFilters(records) {
+        let filtered = records;
+
+        // Filtro por Status
+        if (this.filters.status.length > 0) {
+            filtered = filtered.filter(({ registro }) => {
+                const now = new Date();
+                const entrada = new Date(registro.dataHoraEntrada);
+                const diffHrs = (now - entrada) / (1000 * 60 * 60);
+
+                return this.filters.status.some(status => {
+                    switch (status) {
+                        case 'em-aberto':
+                            return !registro.dataHoraSaida && !registro.acessoRemovido;
+                        case 'saida':
+                            return registro.dataHoraSaida && !registro.acessoRemovido;
+                        case 'pernoite':
+                            return !registro.dataHoraSaida && diffHrs >= 24;
+                        case 'acesso-removido':
+                            return registro.acessoRemovido;
+                        default:
+                            return false;
+                    }
+                });
+            });
+        }
+
+        // Filtro por Categoria
+        if (this.filters.categorias.length > 0) {
+            filtered = filtered.filter(({ registro, client }) => {
+                const categoria = (registro.categoria || client.categoria || 'SEM CATEGORIA').toUpperCase();
+                return this.filters.categorias.some(cat => cat.toUpperCase() === categoria);
+            });
+        }
+
+        return filtered;
     }
 
     handleCategoriaBoxClick(e) {
@@ -538,6 +968,71 @@ export class RegistrosManager {
         }
     }
 
+    async handleQuickEntry(clientId) {
+        try {
+            Auth.requirePermission('registros', 'adicionar');
+        } catch (error) {
+            Modals.alert(error.message, 'Permissão Negada');
+            return;
+        }
+
+        const client = this.app.data.clients.find(c => c.id === clientId);
+        if (!client || !client.bicicletas || client.bicicletas.length === 0) {
+            Modals.showAlert('Cliente não tem bicicletas cadastradas.', 'Atenção');
+            return;
+        }
+
+        // Se houver mais de 1 bike, abrir o modal simplificado pedindo qual bike escolher
+        if (client.bicicletas.length > 1) {
+            // Em vez de criar lógica complexa de prompt, usa o Modal Padrão pré-preenchido
+            this.openAddRegistroModal(clientId, client.bicicletas[0].id);
+            return;
+        }
+
+        // Caso tenha apenas 1 bike (Ação expressa)
+        const bike = client.bicicletas[0];
+
+        // Verifica se a bicicleta já não tem um registro em aberto
+        const hasOpenRecord = this.app.data.registros.some(r => r.clientId === clientId && r.bikeId === bike.id && !r.dataHoraSaida);
+        if (hasOpenRecord) {
+            Modals.showAlert('Esta bicicleta já tem um acesso em andamento.', 'Atenção');
+            return;
+        }
+
+        const categoria = client.categoria || '';
+        const newRegistro = {
+            id: Utils.generateUUID(),
+            dataHoraEntrada: Utils.getLocalISOString(),
+            dataHoraSaida: null,
+            clientId: clientId,
+            bikeId: bike.id,
+            categoria: categoria,
+            bikeSnapshot: {
+                modelo: bike.modelo,
+                marca: bike.marca,
+                cor: bike.cor
+            }
+        };
+
+        this.app.data.registros.push(newRegistro);
+        await Storage.saveRegistros(this.app.data.registros);
+        notificationManager.onClientActivity();
+
+        logAction('register_entry', 'registro_rapido', newRegistro.id, {
+            cliente: client.nome,
+            modelo: bike.modelo,
+            categoria: categoria
+        });
+
+        // Feedback Rápido
+        Modals.showAlert('Entrada expressa registrada!', 'Sucesso');
+
+        this.app.bicicletasManager.renderClientDetails();
+        if (this.app.data.activeTab === 'registros-diarios') {
+            this.renderDailyRecords();
+        }
+    }
+
     openAddRegistroModal(clientId, bikeId) {
         const client = this.app.data.clients.find(c => c.id === clientId);
         const bike = client?.bicicletas.find(b => b.id === bikeId);
@@ -644,7 +1139,7 @@ export class RegistrosManager {
             const menu = dropdown.querySelector('.dropdown-menu');
             const isOpen = !menu.classList.contains('hidden');
 
-            // Close all other action dropdowns
+            // Fecha todos os outros dropdowns de ação abertos
             document.querySelectorAll('.action-dropdown .dropdown-menu').forEach(m => {
                 if (m !== menu) {
                     m.classList.add('hidden');
@@ -652,7 +1147,7 @@ export class RegistrosManager {
                 }
             });
 
-            // Toggle this dropdown
+            // Alterna (abre ou fecha) este dropdown
             if (isOpen) {
                 menu.classList.add('hidden');
                 dropdownButton.classList.remove('active');
@@ -861,14 +1356,14 @@ export class RegistrosManager {
         Object.entries(categorias).forEach(([nome, emoji]) => {
             const option = document.createElement('option');
             option.value = nome;
-            option.textContent = `${emoji} ${nome}`;
+            option.textContent = `${nome}`;
             if (registro.categoria === nome) {
                 option.selected = true;
             }
             this.elements.editRegistroCategoriaSelect.appendChild(option);
         });
 
-        // Update the custom dropdown visual
+        // Atualiza o visual do dropdown customizado (texto do botão)
         this.updateEditCategoriaDropdown(categorias, registro.categoria);
 
         const entradaDate = new Date(registro.dataHoraEntrada);
@@ -917,7 +1412,7 @@ export class RegistrosManager {
             '☕': 'coffee'
         };
 
-        // Build the dropdown options HTML
+        // Monta o HTML das opções do dropdown
         let optionsHtml = `
             <div class="dropdown-option ${!selectedCategoria ? 'selected' : ''}" data-value="">
                 <i data-lucide="settings" class="w-4 h-4 inline mr-2"></i>
@@ -931,19 +1426,19 @@ export class RegistrosManager {
             optionsHtml += `
                 <div class="dropdown-option ${isSelected ? 'selected' : ''}" data-value="${nome}">
                     <i data-lucide="${iconName}" class="w-4 h-4 inline mr-2"></i>
-                    ${emoji} ${nome}
+                    ${nome}
                 </div>
             `;
         });
 
         dropdownMenu.innerHTML = optionsHtml;
 
-        // Update the button text
+        // Atualiza o texto exibido no botão do dropdown
         if (dropdownText) {
             if (selectedCategoria && categorias[selectedCategoria]) {
                 const emoji = categorias[selectedCategoria];
                 const iconName = iconMap[emoji] || 'circle';
-                dropdownText.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 inline mr-2"></i>${emoji} ${selectedCategoria}`;
+                dropdownText.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 inline mr-2"></i>${selectedCategoria}`;
             } else {
                 dropdownText.innerHTML = `<i data-lucide="settings" class="w-4 h-4 inline mr-2"></i>Selecione uma categoria (opcional)`;
             }
@@ -1296,12 +1791,14 @@ export class RegistrosManager {
             return;
         }
 
+        // 1. Filtrar registros do dia
         const dailyRecordsRaw = this.app.data.registros.filter(registro => {
             const entradaDate = new Date(registro.dataHoraEntrada);
             const localDateStr = Utils.getLocalDateString(entradaDate);
             return localDateStr === selectedDateStr;
         });
 
+        // 2. Enriquecer com dados de Cliente e Bike
         let dailyRecords = dailyRecordsRaw.map(registro => {
             const client = this.app.data.clients.find(c => c.id === registro.clientId);
             if (!client) return null;
@@ -1310,6 +1807,7 @@ export class RegistrosManager {
             return { client, bike, registro };
         }).filter(Boolean);
 
+        // 3. Filtro de Busca Texto
         const searchTerm = this.elements.dailyRecordsSearchInput.value.toLowerCase();
         if (searchTerm) {
             dailyRecords = dailyRecords.filter(({ client, bike }) =>
@@ -1321,6 +1819,12 @@ export class RegistrosManager {
             );
         }
 
+        // 4. Filtros Personalizados (Status/Categoria)
+        if (this.hasActiveFilters()) {
+            dailyRecords = this.applyFilters(dailyRecords);
+        }
+
+        // ARMAZENAR LISTA PLANA PARA EXPORTAÇÃO (PDF/CSV devem ser detalhados)
         this.app.data.currentDailyRecords = dailyRecords;
 
         if (dailyRecords.length === 0) {
@@ -1328,11 +1832,30 @@ export class RegistrosManager {
             return;
         }
 
+        // 5. AGRUPAMENTO VISUAL
+        const groupedRecords = [];
+        const groups = {};
+
+        dailyRecords.forEach(item => {
+            // Chave única por Cliente + Bike
+            const key = `${item.client.id}_${item.bike.id}`;
+
+            if (!groups[key]) {
+                groups[key] = {
+                    client: item.client,
+                    bike: item.bike,
+                    items: []
+                };
+                groupedRecords.push(groups[key]);
+            }
+            groups[key].items.push(item);
+        });
+
         const canEditRegistros = Auth.hasPermission('registros', 'editar');
         const canAddRegistros = Auth.hasPermission('registros', 'adicionar');
-
-        // Seção de Registros
         const categorias = Storage.loadCategorias();
+
+        // Renderização da Tabela (Iterando sobre GRUPOS, não registros individuais)
         const registrosTable = `
             <div class="space-y-6">
                 <div>
@@ -1340,73 +1863,168 @@ export class RegistrosManager {
                         <i data-lucide="clipboard-list" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
                         <span>Registro</span>
                     </h3>
-                    <table class="w-full text-sm">
+                    <table class="w-full text-xs">
                         <thead class="text-left bg-slate-50 dark:bg-slate-700/40">
                             <tr class="border-b border-slate-200 dark:border-slate-700">
-                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Cliente</th>
-                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Categoria</th>
-                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Bicicleta</th>
-                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Entrada</th>
-                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Saída</th>
-                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-3">Ação</th>
-                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-3 w-12"></th>
+                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-2">Cliente</th>
+                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-2">Categoria</th>
+                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-2">Bicicleta</th>
+                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-2">Entrada</th>
+                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-2">Saída</th>
+                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-2">Ação</th>
+                                <th class="font-semibold text-slate-600 dark:text-slate-300 p-2 w-12"></th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${dailyRecords.map(({ client, bike, registro }) => {
+                            ${groupedRecords.map(group => {
+            const isGrouped = group.items.length > 1;
+
+            // Se agrupado, ordenar itens para pegar o primeiro (entrada mais cedo) e último
+            // Mas dailyRecords já vem ordenado pela criação? Melhor garantir.
+            // Registros geralmente são appended, então ordem de criação = ordem cronológica.
+            const firstItem = group.items[0]; // Primeiro registro do dia
+            const lastItem = group.items[group.items.length - 1]; // Último registro
+
+            const { client, bike, registro } = isGrouped ? lastItem : firstItem; // Para exibição principal usamos o último estado ou primeiro?
+            // Usuário quer: "DEIXE O ACESSO MEIO QUE UNIFICADO"
+            // Vamos usar dados do primeiro item para colunas estáticas (Cliente, Bike)
+
             const categoria = registro.categoria || client.categoria || '';
             const categoriaEmoji = categoria && categorias[categoria] ? categorias[categoria] : '';
+
             const categoriaDisplay = categoria ? (() => {
-                const iconMap = {
-                    '👤': 'user',
-                    '🏢': 'building',
-                    '🍽️': 'utensils',
-                    '💪': 'dumbbell',
-                    '👨': 'user',
-                    '🏪': 'store',
-                    '⚙️': 'settings',
-                    '🎯': 'target',
-                    '📱': 'smartphone',
-                    '📊': 'bar-chart',
-                    '🔧': 'wrench',
-                    '🎨': 'palette',
-                    '⭐': 'star',
-                    '📦': 'package',
-                    '🚀': 'rocket',
-                    '🛍️': 'shopping-bag',
-                    '☕': 'coffee'
-                };
+                const iconMap = { '👤': 'user', '🏢': 'building', '🍽️': 'utensils', '💪': 'dumbbell', '👨': 'user', '🏪': 'store', '⚙️': 'settings', '🎯': 'target', '📱': 'smartphone', '📊': 'bar-chart', '🔧': 'wrench', '🎨': 'palette', '⭐': 'star', '📦': 'package', '🚀': 'rocket', '🛍️': 'shopping-bag', '☕': 'coffee' };
                 const iconName = iconMap[categoriaEmoji] || 'circle';
-                return `<i data-lucide="${iconName}" class="w-4 h-4 inline mr-2"></i>${categoria}`;
+                return `<span class="flex items-center whitespace-nowrap"><i data-lucide="${iconName}" class="w-4 h-4 mr-2"></i>${categoria}</span>`;
             })() : '<span class="text-xs text-slate-400">-</span>';
 
-            return `
-                        <tr class="border-b border-slate-100 dark:border-slate-700">
-                            <td class="p-3 align-top">
-                                <p class="font-medium text-slate-800 dark:text-slate-100">${client.nome}</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">${client.cpf}</p>
-                            </td>
-                            <td class="p-3 align-top">
-                                <span class="text-slate-700 dark:text-slate-200">${categoriaDisplay}</span>
-                            </td>
-                            <td class="p-3 align-top">
-                                <p class="font-medium text-slate-800 dark:text-slate-100">${bike.modelo}</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">${bike.marca} - ${bike.cor}</p>
-                            </td>
-                            <td class="p-3 align-top text-slate-600 dark:text-slate-300">
-                                ${registro.pernoite && registro.dataHoraEntradaOriginal ?
-                    `${new Date(registro.dataHoraEntradaOriginal).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>`
-                    : registro.pernoite ?
-                        `${new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>`
-                        : new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')}
-                            </td>
-                            <td class="p-3 align-top text-slate-600 dark:text-slate-300">${registro.dataHoraSaida ? new Date(registro.dataHoraSaida).toLocaleString('pt-BR') : ''}</td>
-                            <td class="p-3 align-top">
-                                ${!registro.dataHoraSaida && !registro.pernoite && (canEditRegistros || canAddRegistros) ? `
+            if (isGrouped) {
+                // RENDERIZAÇÃO DE LINHA AGRUPADA (ACCORDION - ÚLTIMO REGISTRO COMO PRINCIPAL)
+                const groupKey = `${client.id}_${bike.id}`;
+                const isExpanded = this.expandedGroups.has(groupKey);
+
+                // Ordenar itens cronologicamente
+                const sortedItems = [...group.items].sort((a, b) =>
+                    new Date(a.registro.dataHoraEntrada) - new Date(b.registro.dataHoraEntrada)
+                );
+
+                // O último registro (mais recente) será o "Cabeçalho"
+                const latestItem = sortedItems[sortedItems.length - 1];
+                const previousItems = sortedItems.slice(0, -1);
+
+                // Dados para exibição da linha principal (usando latestItem)
+                const { client: lClient, bike: lBike, registro: lRegistro } = latestItem;
+
+                // Preparar HTML de ações para a linha principal
+                let mainActionsHtml = '';
+
+                // Botões comuns (Chat/Edit)
+                // NOTE: Copiando lógica exata da linha não agrupada para manter consistência visual (badges, classes)
+
+                const chatBtn = (() => {
+                    let c = lClient.comentarios || [];
+                    if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { c = []; } }
+                    if (!Array.isArray(c)) { c = []; }
+                    return c.length > 0 ? `
+                        <div class="relative inline-block ml-1">
+                            <button class="view-comments-btn flex items-center justify-center w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full cursor-pointer" 
+                                    data-client-id="${lClient.id}"
+                                    title="Ver comentários">
+                                <i data-lucide="message-circle" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                            </button>
+                            <span class="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-amber-500 rounded-full">${c.length}</span>
+                        </div>
+                    ` : `
+                        <button class="view-comments-btn text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 transition-colors p-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 ml-1" 
+                                data-client-id="${lClient.id}"
+                                title="Ver comentários">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                })();
+
+                const editBtn = canEditRegistros ? `
+                    <button class="edit-registro-btn text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 ml-1" 
+                            data-registro-id="${lRegistro.id}"
+                            title="Editar registro">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                            <path d="m15 5 4 4"/>
+                        </svg>
+                    </button>
+                ` : '';
+
+                // Chevron do histórico
+                const chevronBtn = `
+                     <button class="flex items-center p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors mr-2"
+                            title="Ver histórico (${group.items.length - 1} anteriores)"
+                            onclick="window.app.registrosManager.toggleGroup('${lClient.id}', '${lBike.id}')">
+                         <span class="text-[10px] font-bold mr-1 hidden sm:inline whitespace-nowrap">Histórico</span>
+                         <i data-lucide="chevron-right" class="w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}"></i>
+                    </button>
+                `;
+
+                if (!lRegistro.dataHoraSaida && !lRegistro.pernoite && (canEditRegistros || canAddRegistros)) {
+                    // EM ABERTO: Chevron > Dropdown Standard > Chat > Edit
+                    mainActionsHtml = `
+                        <div class="flex items-center justify-end gap-2">
+                            ${group.items.length > 1 ? chevronBtn : ''}
+                            
+                            <div class="custom-dropdown-wrapper">
+                                <div class="custom-dropdown action-dropdown" data-registro-id="${lRegistro.id}" data-client-id="${lClient.id}" data-bike-id="${lBike.id}">
+                                    <div class="dropdown-button">
+                                        <span class="dropdown-text whitespace-nowrap">Selecione uma ação</span>
+                                        <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </div>
+                                    <div class="dropdown-menu hidden">
+                                        ${canEditRegistros ? '<div class="dropdown-option" data-value="saida"><i data-lucide="log-out" class="w-4 h-4 inline mr-2"></i>Registrar Saída</div>' : ''}
+                                        ${canEditRegistros ? '<div class="dropdown-option" data-value="remover"><i data-lucide="x-circle" class="w-4 h-4 inline mr-2"></i>Remover Acesso</div>' : ''}
+                                        ${canEditRegistros ? '<div class="dropdown-option" data-value="pernoite"><i data-lucide="moon" class="w-4 h-4 inline mr-2"></i>Pernoite</div>' : ''}
+                                        ${canEditRegistros ? '<div class="dropdown-option" data-value="alterar"><i data-lucide="repeat" class="w-4 h-4 inline mr-2"></i>Trocar Bicicleta</div>' : ''}
+                                        ${canAddRegistros ? '<div class="dropdown-option" data-value="adicionar"><i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i>Adicionar Outra Bike</div>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center">
+                                ${chatBtn}
+                                ${editBtn}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // CONCLUÍDO/PERNOITE
+
+                    let statusAndRevertHtml = '';
+
+                    if (lRegistro.pernoite && !lRegistro.dataHoraSaida) {
+                        // PERNOITE ATIVO
+                        statusAndRevertHtml = `
+                             <div class="flex items-center gap-2">
+                                <span class="text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full">PERNOITE Ativo</span>
+                                ${canEditRegistros ? `<button class="reverter-pernoite-btn text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20" 
+                                        data-registro-id="${lRegistro.id}"
+                                        title="Reverter pernoite">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                                        <path d="M21 3v5h-5"/>
+                                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                                        <path d="M8 16H3v5"/>
+                                    </svg>
+                                </button>` : ''}
+                            </div>
+                         `;
+                        // Se tiver pernoite ativo, também pode ter dropdown de ações adicionais se quiser (como na original), 
+                        // mas a original coloca o dropdown E o status.
+                        // Vamos replicar a estrutura da original (lines 1999+): Dropdown + Status
+
+                        if (canEditRegistros || canAddRegistros) {
+                            statusAndRevertHtml = `
+                                <div class="flex flex-col gap-2 items-end">
                                     <div class="custom-dropdown-wrapper">
-                                        <div class="custom-dropdown action-dropdown" data-registro-id="${registro.id}" data-client-id="${client.id}" data-bike-id="${bike.id}">
+                                        <div class="custom-dropdown action-dropdown" data-registro-id="${lRegistro.id}" data-client-id="${lClient.id}" data-bike-id="${lBike.id}">
                                             <div class="dropdown-button">
-                                                <span class="dropdown-text">Selecione uma ação</span>
+                                                <span class="dropdown-text whitespace-nowrap">Selecione uma ação</span>
                                                 <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                             </div>
                                             <div class="dropdown-menu hidden">
@@ -1418,111 +2036,291 @@ export class RegistrosManager {
                                             </div>
                                         </div>
                                     </div>
-                                ` : !registro.dataHoraSaida && !registro.pernoite ? '<span class="text-xs text-slate-500">Em aberto</span>' : registro.pernoite && !registro.dataHoraSaida && registro.registroOriginalId && (canEditRegistros || canAddRegistros) ? `
-                                    <div class="flex flex-col gap-2">
-                                        <div class="custom-dropdown-wrapper">
-                                            <div class="custom-dropdown action-dropdown" data-registro-id="${registro.id}" data-client-id="${client.id}" data-bike-id="${bike.id}">
-                                                <div class="dropdown-button">
-                                                    <span class="dropdown-text">Selecione uma ação</span>
-                                                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                                </div>
-                                                <div class="dropdown-menu hidden">
-                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="saida"><i data-lucide="log-out" class="w-4 h-4 inline mr-2"></i>Registrar Saída</div>' : ''}
-                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="remover"><i data-lucide="x-circle" class="w-4 h-4 inline mr-2"></i>Remover Acesso</div>' : ''}
-                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="pernoite"><i data-lucide="moon" class="w-4 h-4 inline mr-2"></i>Pernoite</div>' : ''}
-                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="alterar"><i data-lucide="repeat" class="w-4 h-4 inline mr-2"></i>Trocar Bicicleta</div>' : ''}
-                                                    ${canAddRegistros ? '<div class="dropdown-option" data-value="adicionar"><i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i>Adicionar Outra Bike</div>' : ''}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full">PERNOITE Ativo</span>
-                                            ${canEditRegistros ? `<button class="reverter-pernoite-btn text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20" 
-                                                    data-registro-id="${registro.id}"
-                                                    title="Reverter pernoite">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-                                                    <path d="M21 3v5h-5"/>
-                                                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-                                                    <path d="M8 16H3v5"/>
-                                                </svg>
-                                            </button>` : ''}
-                                        </div>
-                                    </div>
-                                ` : registro.pernoite && !registro.dataHoraSaida && canEditRegistros ? `
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full">PERNOITE Ativo</span>
-                                        <button class="reverter-pernoite-btn text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20" 
-                                                data-registro-id="${registro.id}"
-                                                title="Reverter pernoite">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-                                                <path d="M21 3v5h-5"/>
-                                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-                                                <path d="M8 16H3v5"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                ` : registro.pernoite && !registro.dataHoraSaida ? `
-                                    <span class="text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full">PERNOITE Ativo</span>
-                                ` : registro.dataHoraSaida && canEditRegistros ? `
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs font-medium ${registro.acessoRemovido ? 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/50' : 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/50'} px-2 py-1 rounded-full">${registro.acessoRemovido ? 'Acesso Removido' : 'Concluído'}</span>
-                                        <button class="reverter-acao-btn text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20" 
-                                                data-registro-id="${registro.id}"
-                                                title="Reverter ação">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-                                                <path d="M21 3v5h-5"/>
-                                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-                                                <path d="M8 16H3v5"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                ` : registro.dataHoraSaida ? `
-                                    <span class="text-xs font-medium ${registro.acessoRemovido ? 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/50' : 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/50'} px-2 py-1 rounded-full">${registro.acessoRemovido ? 'Acesso Removido' : 'Concluído'}</span>
-                                ` : `
-                                    <span class="text-xs text-slate-500">Sem ações disponíveis</span>
-                                `}
-                            </td>
-                            <td class="p-3 align-top flex items-center gap-2">
-                                ${(() => {
-                    let c = client.comentarios || [];
-                    if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { c = []; } }
-                    if (!Array.isArray(c)) { c = []; }
-                    return c.length > 0 ? `
-                                <div class="relative">
-                                    <button class="view-comments-btn flex items-center justify-center w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full cursor-pointer" 
-                                            data-client-id="${client.id}"
-                                            title="Ver comentários">
-                                        <i data-lucide="message-circle" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
-                                    </button>
-                                    <span class="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-amber-500 rounded-full">${c.length}</span>
+                                    ${statusAndRevertHtml}
                                 </div>
-                                ` : `
-                                <button class="view-comments-btn text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 transition-colors p-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20" 
-                                        data-client-id="${client.id}"
-                                        title="Ver comentários">
-                                    <i data-lucide="message-circle" class="w-4 h-4"></i>
-                                </button>
-                                `;
-                })()}
-                                ${canEditRegistros ? `
-                                <button class="edit-registro-btn text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" 
-                                        data-registro-id="${registro.id}"
-                                        title="Editar registro">
+                             `;
+                        }
+
+                    } else if (lRegistro.dataHoraSaida) {
+                        // CONCLUÍDO / REMOVIDO
+                        statusAndRevertHtml = `
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-medium ${lRegistro.acessoRemovido ? 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/50' : 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/50'} px-2 py-1 rounded-full">${lRegistro.acessoRemovido ? 'Acesso Removido' : 'Concluído'}</span>
+                                ${canEditRegistros ? `<button class="reverter-acao-btn text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20" 
+                                        data-registro-id="${lRegistro.id}"
+                                        title="Reverter ação">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                                        <path d="m15 5 4 4"/>
+                                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                                        <path d="M21 3v5h-5"/>
+                                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                                        <path d="M8 16H3v5"/>
                                     </svg>
-                                </button>
-                                ` : ''}
+                                </button>` : ''}
+                            </div>
+                         `;
+                    } else {
+                        statusAndRevertHtml = '<span class="text-xs text-slate-500">Sem ações disponíveis</span>';
+                    }
+
+                    mainActionsHtml = `
+                        <div class="flex items-center justify-end gap-2">
+                             ${group.items.length > 1 ? chevronBtn : ''}
+                             
+                             ${statusAndRevertHtml}
+                             
+                             <div class="flex items-center">
+                                ${chatBtn}
+                                ${editBtn}
+                             </div>
+                        </div>
+                     `;
+                }
+
+
+                // Linhas de histórico (anteriores)
+                const detailsRows = previousItems.map((item, index) => {
+                    const reg = item.registro;
+                    const canEdit = Auth.hasPermission('registros', 'editar');
+
+                    // Status/Ações para cada item anterior
+                    let actionsHtml = '';
+                    if (!reg.dataHoraSaida && !reg.pernoite) {
+                        actionsHtml = `
+                            <button class="register-saida-btn text-xs bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:hover:bg-red-800/50 dark:text-red-300 px-2 py-1 rounded transition-colors border border-red-200 dark:border-red-800" 
+                                    data-registro-id="${reg.id}" data-client-id="${lClient.id}" data-bike-id="${lBike.id}">
+                                Registrar Saída
+                            </button>
+                         `;
+                    } else if (reg.dataHoraSaida) {
+                        actionsHtml = `<span class="text-xs text-green-600 dark:text-green-400 font-medium">Concluído</span>`;
+                    }
+
+                    const editBtn = canEdit ? `
+                        <button class="edit-registro-btn p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors ml-2" 
+                                data-registro-id="${reg.id}" title="Editar registro">
+                            <i data-lucide="pencil" class="w-3 h-3"></i>
+                        </button>
+                    ` : '';
+
+                    return `
+                        <tr class="border-b border-slate-100 dark:border-slate-700/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <td class="px-4 py-2 text-xs text-slate-500 dark:text-slate-400 w-12 text-center">${index + 1}º</td>
+                            <td class="px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                                ${new Date(reg.dataHoraEntrada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td class="px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                                ${reg.dataHoraSaida ? new Date(reg.dataHoraSaida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) :
+                            '<span class="text-amber-600 dark:text-amber-400 font-medium">Em aberto</span>'}
+                            </td>
+                            <td class="px-4 py-2 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    ${actionsHtml}
+                                    ${editBtn}
+                                </div>
                             </td>
                         </tr>
                     `;
+                }).join('');
+
+                return `
+                    <!-- Linha Mestra (Último Registro) -->
+                     <tr class="record-row border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group-row cursor-pointer" data-registro-id="${lRegistro.id}" data-saida-registrada="${lRegistro.dataHoraSaida ? 'true' : 'false'}" data-pernoite="${lRegistro.pernoite ? 'true' : 'false'}" title="${!lRegistro.dataHoraSaida && !lRegistro.pernoite ? 'Duplo clique para registrar saída rápida' : ''}">
+                        \u003ctd class="p-2 align-top">
+                             <div class="flex items-center gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-medium text-slate-800 dark:text-slate-100 truncate" title="${lClient.nome}">${lClient.nome}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate">${lClient.cpf}</p>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-800 whitespace-nowrap" title="${group.items.length} acessos no total">
+                                    ${group.items.length} acessos
+                                </span>
+                            </div>
+                        </td>
+                        \u003ctd class="p-2 align-top">
+                            <span class="text-slate-700 dark:text-slate-200">${categoriaDisplay}</span>
+                        </td>
+                        \u003ctd class="p-2 align-top">
+                            <p class="font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">${lBike.modelo}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">${lBike.marca} - ${lBike.cor}</p>
+                        </td>
+                        \u003ctd class="p-2 align-top text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            ${lRegistro.pernoite && lRegistro.dataHoraEntradaOriginal ?
+                        `${new Date(lRegistro.dataHoraEntradaOriginal).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>`
+                        : lRegistro.pernoite ?
+                            `${new Date(lRegistro.dataHoraEntrada).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>`
+                            : new Date(lRegistro.dataHoraEntrada).toLocaleString('pt-BR')}
+                        </td>
+                        \u003ctd class="p-2 align-top text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            ${lRegistro.dataHoraSaida ? new Date(lRegistro.dataHoraSaida).toLocaleString('pt-BR') : ''}
+                        </td>
+                        \u003ctd class="p-2 align-top text-right" colspan="2">
+                             ${mainActionsHtml}
+                        </td>
+                    </tr>
+                    
+                    <!-- Linha de Detalhes (Expandível - Histórico) -->
+                    <tr class="${isExpanded ? '' : 'hidden'} bg-slate-50/50 dark:bg-slate-800/30 shadow-inner group-details-row">
+                        <td colspan="7" class="p-0 border-b border-slate-200 dark:border-slate-700">
+                            <div class="p-4 pl-12">
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                    <i data-lucide="history" class="w-3 h-3"></i>
+                                    Histórico Anterior (${previousItems.length})
+                                </p>
+                                <table class="w-full text-left bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                     <thead class="bg-slate-100 dark:bg-slate-700/50 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                        <tr>
+                                            <th class="px-4 py-2 w-12 text-center">#</th>
+                                            <th class="px-4 py-2">Entrada</th>
+                                            <th class="px-4 py-2">Saída</th>
+                                            <th class="px-4 py-2 text-right">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                        ${detailsRows.length > 0 ? detailsRows : '<tr><td colspan="4" class="px-4 py-2 text-xs text-slate-400 text-center">Nenhum histórico anterior hoje.</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // RENDERIZAÇÃO DE LINHA ÚNICA (Normal)
+                // Precisa renderizar exatamente como antes para manter consistência nas colunas
+                const { client, bike, registro } = group.items[0];
+
+                return `
+                                        <tr class="record-row border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors" data-registro-id="${registro.id}" data-saida-registrada="${registro.dataHoraSaida ? 'true' : 'false'}" data-pernoite="${registro.pernoite ? 'true' : 'false'}" title="${!registro.dataHoraSaida && !registro.pernoite ? 'Duplo clique para registrar saída rápida' : ''}">
+                                            \u003ctd class="p-2 align-top">
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="font-medium text-slate-800 dark:text-slate-100 truncate" title="${client.nome}">${client.nome}</p>
+                                                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate">${client.cpf}</p>
+                                                </div>
+                                            </td>
+                                            \u003ctd class="p-2 align-top">
+                                                <span class="text-slate-700 dark:text-slate-200">${categoriaDisplay}</span>
+                                            </td>
+                                            \u003ctd class="p-2 align-top">
+                                                <p class="font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">${bike.modelo}</p>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">${bike.marca} - ${bike.cor}</p>
+                                            </td>
+                                            \u003ctd class="p-2 align-top text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                                                ${registro.pernoite && registro.dataHoraEntradaOriginal ?
+                        `${new Date(registro.dataHoraEntradaOriginal).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>`
+                        : registro.pernoite ?
+                            `${new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')} <span class="ml-2 text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full inline-flex items-center gap-1"><i data-lucide="moon" class="w-3 h-3"></i> PERNOITE</span>`
+                            : new Date(registro.dataHoraEntrada).toLocaleString('pt-BR')}
+                                            </td>
+                                            \u003ctd class="p-2 align-top text-slate-600 dark:text-slate-300 whitespace-nowrap">${registro.dataHoraSaida ? new Date(registro.dataHoraSaida).toLocaleString('pt-BR') : ''}</td>
+                                            \u003ctd class="p-2 align-top text-right" colspan="2">
+                                                <div class="flex items-center justify-end gap-2">
+                                                    ${!registro.dataHoraSaida && !registro.pernoite && (canEditRegistros || canAddRegistros) ? `
+                                                        <div class="custom-dropdown-wrapper">
+                                                            <div class="custom-dropdown action-dropdown" data-registro-id="${registro.id}" data-client-id="${client.id}" data-bike-id="${bike.id}">
+                                                                <div class="dropdown-button">
+                                                                    <span class="dropdown-text whitespace-nowrap">Selecione uma ação</span>
+                                                                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                                </div>
+                                                                <div class="dropdown-menu hidden">
+                                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="saida"><i data-lucide="log-out" class="w-4 h-4 inline mr-2"></i>Registrar Saída</div>' : ''}
+                                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="remover"><i data-lucide="x-circle" class="w-4 h-4 inline mr-2"></i>Remover Acesso</div>' : ''}
+                                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="pernoite"><i data-lucide="moon" class="w-4 h-4 inline mr-2"></i>Pernoite</div>' : ''}
+                                                                    ${canEditRegistros ? '<div class="dropdown-option" data-value="alterar"><i data-lucide="repeat" class="w-4 h-4 inline mr-2"></i>Trocar Bicicleta</div>' : ''}
+                                                                    ${canAddRegistros ? '<div class="dropdown-option" data-value="adicionar"><i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i>Adicionar Outra Bike</div>' : ''}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ` : !registro.dataHoraSaida && !registro.pernoite ? '<span class="text-xs text-slate-500">Em aberto</span>' : registro.pernoite && !registro.dataHoraSaida && (canEditRegistros || canAddRegistros) ? `
+                                                        <div class="flex flex-col gap-2 items-end">
+                                                            <div class="custom-dropdown-wrapper">
+                                                                <div class="custom-dropdown action-dropdown" data-registro-id="${registro.id}" data-client-id="${client.id}" data-bike-id="${bike.id}">
+                                                                    <div class="dropdown-button">
+                                                                        <span class="dropdown-text whitespace-nowrap">Selecione uma ação</span>
+                                                                        <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                                    </div>
+                                                                    <div class="dropdown-menu hidden">
+                                                                        ${canEditRegistros ? '<div class="dropdown-option" data-value="saida"><i data-lucide="log-out" class="w-4 h-4 inline mr-2"></i>Registrar Saída</div>' : ''}
+                                                                        ${canEditRegistros ? '<div class="dropdown-option" data-value="remover"><i data-lucide="x-circle" class="w-4 h-4 inline mr-2"></i>Remover Acesso</div>' : ''}
+                                                                        ${canEditRegistros ? '<div class="dropdown-option" data-value="pernoite"><i data-lucide="moon" class="w-4 h-4 inline mr-2"></i>Pernoite</div>' : ''}
+                                                                        ${canEditRegistros ? '<div class="dropdown-option" data-value="alterar"><i data-lucide="repeat" class="w-4 h-4 inline mr-2"></i>Trocar Bicicleta</div>' : ''}
+                                                                        ${canAddRegistros ? '<div class="dropdown-option" data-value="adicionar"><i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i>Adicionar Outra Bike</div>' : ''}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-center gap-2">
+                                                                <span class="text-xs font-medium text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50 px-2 py-1 rounded-full">PERNOITE Ativo</span>
+                                                                ${canEditRegistros ? `<button class="reverter-pernoite-btn text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20" 
+                                                                        data-registro-id="${registro.id}"
+                                                                        title="Reverter pernoite">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                                                                        <path d="M21 3v5h-5"/>
+                                                                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                                                                        <path d="M8 16H3v5"/>
+                                                                    </svg>
+                                                                </button>` : ''}
+                                                            </div>
+                                                        </div>
+                                                    ` : registro.dataHoraSaida && canEditRegistros ? `
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="text-xs font-medium ${registro.acessoRemovido ? 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/50' : 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/50'} px-2 py-1 rounded-full">${registro.acessoRemovido ? 'Acesso Removido' : 'Concluído'}</span>
+                                                            <button class="reverter-acao-btn text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20" 
+                                                                    data-registro-id="${registro.id}"
+                                                                    title="Reverter ação">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                                                                    <path d="M21 3v5h-5"/>
+                                                                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                                                                    <path d="M8 16H3v5"/>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    ` : registro.dataHoraSaida ? `
+                                                        <span class="text-xs font-medium ${registro.acessoRemovido ? 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/50' : 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/50'} px-2 py-1 rounded-full">${registro.acessoRemovido ? 'Acesso Removido' : 'Concluído'}</span>
+                                                    ` : `
+                                                        <span class="text-xs text-slate-500">Sem ações disponíveis</span>
+                                                    `}
+                                                    
+                                                    <div class="flex items-center gap-1">
+                                                        ${(() => {
+                        let c = client.comentarios || [];
+                        if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { c = []; } }
+                        if (!Array.isArray(c)) { c = []; }
+                        return c.length > 0 ? `
+                                                                <div class="relative">
+                                                                    <button class="view-comments-btn flex items-center justify-center w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full cursor-pointer" 
+                                                                            data-client-id="${client.id}"
+                                                                            title="Ver comentários">
+                                                                        <i data-lucide="message-circle" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                                                                    </button>
+                                                                    <span class="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-amber-500 rounded-full">${c.length}</span>
+                                                                </div>
+                                                            ` : `
+                                                                <button class="view-comments-btn text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 transition-colors p-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20" 
+                                                                        data-client-id="${client.id}"
+                                                                        title="Ver comentários">
+                                                                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                                                </button>
+                                                            `;
+                    })()}
+                                                        ${canEditRegistros ? `
+                                                        <button class="edit-registro-btn text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" 
+                                                                data-registro-id="${registro.id}"
+                                                                title="Editar registro">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                                                                <path d="m15 5 4 4"/>
+                                                            </svg>
+                                                        </button>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+            }
         }).join('')}
-                </tbody>
-            </table>
+                        </tbody>
+                    </table>
                 </div>
 
                 <div>
@@ -1787,7 +2585,7 @@ export class RegistrosManager {
         });
     }
 
-    // Assuming this is part of an 'init' or 'constructor' method
+    // Parte do método de inicialização (init ou construtor)
     // This block is inserted here based on the provided context.
     initEventListeners() {
         if (this.elements.exportPdfBtn) {
@@ -1800,7 +2598,7 @@ export class RegistrosManager {
 
         window.addEventListener('click', (e) => {
             this.toggleExportMenu(false);
-            // Close all action dropdowns when clicking outside
+            // Fecha todos os dropdowns de ação ao clicar fora deles
             if (!e.target.closest('.action-dropdown')) {
                 document.querySelectorAll('.action-dropdown .dropdown-menu').forEach(menu => {
                     menu.classList.add('hidden');
@@ -1810,7 +2608,7 @@ export class RegistrosManager {
             }
         });
 
-        // Check for requests periodically or on load to update button visibility
+        // Verifica solicitações periodicamente para atualizar visibilidade do badge
         this.checkPendingRequests();
         // Optional: Poll for new requests every few seconds
         setInterval(() => this.checkPendingRequests(), 5000);

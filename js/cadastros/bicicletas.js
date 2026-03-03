@@ -1,3 +1,48 @@
+/**
+ * ============================================================
+ *  ARQUIVO: bicicletas.js
+ *  DESCRIÇÃO: Gerenciador de Bicicletas dos Clientes
+ *
+ *  FUNÇÃO:
+ *  Controla tudo relacionado às bicicletas cadastradas no sistema:
+ *  - Renderização dos detalhes do cliente selecionado (painel direito)
+ *  - Cadastro de nova bicicleta (modal #add-bike-modal)
+ *  - Edição de bicicleta existente (modal #edit-bike-modal)
+ *  - Exclusão de bicicleta com confirmação
+ *  - Captura e compressão de foto (câmera ou upload de arquivo)
+ *  - Exibição de comentários do cliente
+ *  - Controle de permissões via Auth.hasPermission()
+ *
+ *  CLASSE: BicicletasManager
+ *  Instanciada em app-modular.js como this.bicicletasManager
+ *
+ *  DEPENDÊNCIAS:
+ *  - utils.js          → Utils.generateUUID(), formatCPF(), formatTelefone()
+ *  - storage.js        → Storage.saveClient(), Storage.saveImage()
+ *  - auth.js           → Auth.requirePermission(), Auth.hasPermission()
+ *  - modals.js         → Modals.showConfirm(), Modals.alert(), Modals.showImage()
+ *  - audit-logger.js   → logAction() para rastreamento de alterações
+ *
+ *  FLUXO PRINCIPAL:
+ *  1. Usuário clica em cliente → ClientesManager.renderClientList() seleciona
+ *  2. BicicletasManager.renderClientDetails() renderiza painel direito
+ *  3. Botão "Adicionar Bicicleta" → openAddBikeModal(clientId)
+ *  4. Formulário submetido → handleAddBike() → Storage.saveClient()
+ *
+ *  CÂMERA:
+ *  - Usa navigator.mediaDevices.getUserMedia() com facingMode: 'environment'
+ *  - _captureAndResizeCanvas() redimensiona para max 800px (JPEG 70%)
+ *  - compressImage() faz o mesmo para uploads de arquivo
+ *  - Ambos os modais (add/edit) têm handlers de câmera independentes
+ *
+ *  PARA INICIANTES:
+ *  Para adicionar um campo novo à bicicleta (ex: 'tamanho'):
+ *  1. Adicione o <input id="bike-tamanho"> no modal em index.html
+ *  2. Leia o valor em handleAddBike() e handleEditBike()
+ *  3. Inclua-o no objeto newBike/bike
+ * ============================================================
+ */
+
 import { Utils } from '../shared/utils.js';
 import { Storage } from '../shared/storage.js';
 import { Auth } from '../shared/auth.js';
@@ -12,7 +57,6 @@ export class BicicletasManager {
             clientDetailsPlaceholder: document.getElementById('client-details-placeholder'),
             addBikeModal: document.getElementById('add-bike-modal'),
             addBikeForm: document.getElementById('add-bike-form'),
-            cancelAddBikeBtn: document.getElementById('cancel-add-bike'),
             cancelAddBikeBtn: document.getElementById('cancel-add-bike'),
             bikeClientIdInput: document.getElementById('bike-client-id'),
 
@@ -374,8 +418,6 @@ export class BicicletasManager {
         this.elements.editBikeId.value = bikeId;
         this.elements.editBikeModelo.value = bike.modelo;
         this.elements.editBikeMarca.value = bike.marca;
-        this.elements.editBikeModelo.value = bike.modelo;
-        this.elements.editBikeMarca.value = bike.marca;
         this.elements.editBikeCor.value = bike.cor;
 
         // Setup Photo
@@ -522,40 +564,12 @@ export class BicicletasManager {
 
     handleTakePhoto() {
         if (!this.currentStream) return;
-
         const video = this.elements.cameraStream;
         const canvas = this.elements.cameraCanvas;
-
-        // Define canvas size to match video resolution (or limit it)
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        // Compress directly from canvas
-        const quality = 0.7;
-        const maxWidth = 800;
-
-        let finalWidth = canvas.width;
-        let finalHeight = canvas.height;
-
-        if (finalWidth > maxWidth) {
-            const scale = maxWidth / finalWidth;
-            finalWidth = maxWidth;
-            finalHeight = finalHeight * scale;
-
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = finalWidth;
-            tempCanvas.height = finalHeight;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(canvas, 0, 0, finalWidth, finalHeight);
-            this.currentPhotoBase64 = tempCanvas.toDataURL('image/jpeg', quality);
-        } else {
-            this.currentPhotoBase64 = canvas.toDataURL('image/jpeg', quality);
-        }
-
-        this.showPreview(this.currentPhotoBase64);
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        this._captureAndResizeCanvas(canvas, false);
         this.handleStopCamera();
     }
 
@@ -596,39 +610,12 @@ export class BicicletasManager {
 
     handleEditTakePhoto() {
         if (!this.currentStream) return;
-
         const video = this.elements.editCameraStream;
         const canvas = this.elements.editCameraCanvas;
-
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const quality = 0.7;
-        const maxWidth = 800;
-
-        let finalWidth = canvas.width;
-        let finalHeight = canvas.height;
-
-        // Resize logic (could be extracted but duplicating for safety)
-        if (finalWidth > maxWidth) {
-            const scale = maxWidth / finalWidth;
-            finalWidth = maxWidth;
-            finalHeight = finalHeight * scale;
-
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = finalWidth;
-            tempCanvas.height = finalHeight;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(canvas, 0, 0, finalWidth, finalHeight);
-            this.editCurrentPhotoBase64 = tempCanvas.toDataURL('image/jpeg', quality);
-        } else {
-            this.editCurrentPhotoBase64 = canvas.toDataURL('image/jpeg', quality);
-        }
-
-        this.showEditPreview(this.editCurrentPhotoBase64);
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        this._captureAndResizeCanvas(canvas, true);
         this.handleEditStopCamera();
     }
 
@@ -650,6 +637,36 @@ export class BicicletasManager {
     showEditPreview(base64) {
         this.elements.editBikePhotoPreview.src = base64;
         this.elements.editPhotoPreviewContainer.classList.remove('hidden');
+    }
+
+    // Método compartilhado: captura canvas e faz resize/compress para add ou edit
+    _captureAndResizeCanvas(canvas, isEdit = false) {
+        const quality = 0.7;
+        const maxWidth = 800;
+        let finalWidth = canvas.width;
+        let finalHeight = canvas.height;
+        let base64;
+
+        if (finalWidth > maxWidth) {
+            const scale = maxWidth / finalWidth;
+            finalWidth = maxWidth;
+            finalHeight = Math.round(finalHeight * scale);
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = finalWidth;
+            tempCanvas.height = finalHeight;
+            tempCanvas.getContext('2d').drawImage(canvas, 0, 0, finalWidth, finalHeight);
+            base64 = tempCanvas.toDataURL('image/jpeg', quality);
+        } else {
+            base64 = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        if (isEdit) {
+            this.editCurrentPhotoBase64 = base64;
+            this.showEditPreview(base64);
+        } else {
+            this.currentPhotoBase64 = base64;
+            this.showPreview(base64);
+        }
     }
 
     // Updated helper to support edit mode target
