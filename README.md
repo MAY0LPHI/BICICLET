@@ -1,9 +1,10 @@
 # 🚲 Sistema de Gerenciamento de Bicicletário
 
-**Sistema completo para gestão de estacionamento de bicicletas** | Versão 3.1 (Offline + Jogos)
+**Sistema completo para gestão de estacionamento de bicicletas** | Versão 3.2 (Clean Code & Documentação)
 
 [![Replit](https://img.shields.io/badge/Executar-Replit-blue)](https://replit.com)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Doc](https://img.shields.io/badge/Documenta%C3%A7%C3%A3o-100%25%20PT--BR-yellow.svg)](#)
 
 ---
 
@@ -25,6 +26,7 @@ Sistema web profissional para gerenciamento de bicicletários, desenvolvido para
 - ✅ **🎮 Módulo de Jogos** - Sistema de entretenimento com Ranking e Conquistas.
 - ✅ **🌐 Modo Offline Completo** - Funciona 100% sem internet com sincronização automática.
 - ✅ **💾 SQLite Local** - Banco de dados robusto com backup automático.
+- ✅ **📝 Clean Code & Documentação** - 100% do código JavaScript e HTML documentado e padronizado em Português-BR para facilitar onboarding de novos desenvolvedores.
 
 ---
 
@@ -92,6 +94,9 @@ bicicletario/
 
 ## 📅 Histórico de Versões
 
+- **v3.2** (02/03/2026) - 📝 **Clean Code & Documentação 100% PT-BR**
+  - Revisão, tradução e padronização completa de todos os 18 módulos JS e 5 arquivos HTML.
+  - Implementação de JSDoc em todos os módulos para facilitar o onboarding de Devs.
 - **v3.1** (23/01/2026) - 🎮 **Módulo de Jogos + Configuração Avançada**
   - Jogos integrados: Snake, Doom, Termo, Memória, etc.
   - Customização de Temas (Cores e Presets).
