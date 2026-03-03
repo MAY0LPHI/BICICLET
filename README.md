@@ -83,6 +83,8 @@ bicicletario/
 │   └── shared/                     # Utilitários compartilhados
 ├── 📂 docs/                        # Manuais atuais
 │   └── legacy/                     # Documentação antiga
+├── 📂 tests/                       # Arquivos de teste e templates auxiliares
+├── 📂 legado/                      # Scripts antigos e backups manuais
 ├── 📂 scripts/                     # Scripts de inicialização
 ├── 📂 electron/                    # Aplicação desktop
 ├── 📄 index.html                   # Página principal
@@ -94,7 +96,17 @@ bicicletario/
 
 ## 📅 Histórico de Versões
 
-- **v3.2** (02/03/2026) - 📝 **Clean Code & Documentação 100% PT-BR**
+- **v3.4** (02/03/2026) - ⚡ **Produtividade e Automações de UX**
+  - Implementação de Atalhos Globais de Teclado (Busca Rápidas, Logout, Navegação).
+  - Guia de Ajuda integrado com painel interativo.
+  - Tutorial Passo-a-Passo com marcações visuais na tela para novos membros.
+  - Duplo-clique para dar Saída diretamente na aba de Registros.
+  - Automações de foco (Nome) e confirmações via `Enter`/`Esc` nos modais.
+- **v3.3** (24/02/2026) - 🧹 **Reorganização, Limpeza e Otimização**
+  - Limpeza da raiz do projeto, criando as pastas `tests/` e isolando backups em `legado/`.
+  - Refatoração para remover duplicação de validação de CPF (`utils.js` e `validator.js`).
+  - Otimização do processamento de imagens de bicicletas em um método centralizado no controller.
+- **v3.2** (15/02/2026) - 📝 **Clean Code & Documentação 100% PT-BR**
   - Revisão, tradução e padronização completa de todos os 18 módulos JS e 5 arquivos HTML.
   - Implementação de JSDoc em todos os módulos para facilitar o onboarding de Devs.
 - **v3.1** (23/01/2026) - 🎮 **Módulo de Jogos + Configuração Avançada**
