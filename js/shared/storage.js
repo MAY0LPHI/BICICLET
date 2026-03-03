@@ -1,6 +1,56 @@
+/**
+ * ============================================================
+ *  ARQUIVO: storage.js
+ *  DESCRIÇÃO: Camada de Abstração de Armazenamento de Dados
+ *
+ *  FUNÇÃO:
+ *  É o ÚNICO ponto de acesso aos dados da aplicação.
+ *  Abstrai a origem real dos dados: localStorage, arquivo JSON
+ *  (via API REST local) ou Electron (SQLite/arquivo nativo).
+ *  Todo o código do sistema usa Storage.X() — nunca acessa
+ *  localStorage diretamente.
+ *
+ *  ESTRATÉGIAS DE ARMAZENAMENTO (detectadas automaticamente):
+ *  ┌─────────────────────┬─────────────────────────────────────┐
+ *  │ Ambiente            │ Estratégia                          │
+ *  ├─────────────────────┼─────────────────────────────────────┤
+ *  │ Electron (desktop)  │ window.electron.* (IPC nativo)      │
+ *  │ FileStorage (web)   │ API REST local em /api              │
+ *  │ Navegador simples   │ localStorage (fallback)             │
+ *  └─────────────────────┴─────────────────────────────────────┘
+ *
+ *  CHAVES DO localStorage UTILIZADAS:
+ *  - 'bicicletario_clients'              : array de clientes
+ *  - 'bicicletario_registros'            : array de registros (plano)
+ *  - 'bicicletario_registros_organizados': objeto { ano > mes > dia }
+ *  - 'bicicletario_registros_resumo'     : resumo com contagens
+ *  - 'bicicletario_categorias'           : objeto { nome: emoji }
+ *
+ *  MÉTODOS PRINCIPAIS:
+ *  - Storage.loadClients()               → Promise<Cliente[]>
+ *  - Storage.saveClients(clients)        → Promise<void>
+ *  - Storage.saveClient(client)          → Promise<Cliente[]>
+ *  - Storage.deleteClient(cpf)           → Promise<{success}>
+ *  - Storage.loadRegistros()             → Promise<Registro[]>
+ *  - Storage.saveRegistro(registro)      → Promise<{success}>
+ *  - Storage.loadRegistrosByDate(a,m,d)  → Promise<Registro[]>
+ *  - Storage.loadCategorias()            → { nome: emoji }
+ *  - Storage.saveCategorias(obj)         → Promise<void>
+ *  - Storage.saveImage(base64)           → Promise<string url>
+ *  - Storage.getWeeklyActivityStats()    → Promise<Stat[]>
+ *  - Storage.getPeakHourStats()          → Promise<number[24]>
+ *
+ *  PARA INICIANTES:
+ *  import { Storage } from './shared/storage.js';
+ *  const clients = await Storage.loadClients(); // carrega todos
+ *  await Storage.saveClient(novoCliente);       // salva um
+ * ============================================================
+ */
+
 import { FileStorage } from './file-storage.js';
 import { Utils } from './utils.js';
 
+// Detecta se está rodando dentro do app Electron (desktop)
 const isElectron = typeof window !== 'undefined' && window.electron;
 
 let fileStorageAvailable = false;
@@ -48,26 +98,46 @@ function normalizeClients(clients) {
 }
 
 export const Storage = {
-    async saveClients(clients, syncToDatabase = false, onProgress = null) {
+    _saveTimeout: null,
+
+    async _performSave(clients, syncToDatabase, onProgress) {
         if (isElectron) {
             await window.electron.saveClients(clients);
         } else {
             localStorage.setItem('bicicletario_clients', JSON.stringify(clients));
 
             if (syncToDatabase) {
-                const total = clients.length;
-                for (let i = 0; i < clients.length; i++) {
-                    try {
-                        await FileStorage.saveClient(clients[i]);
-                        if (onProgress && typeof onProgress === 'function') {
-                            onProgress(i + 1, total);
-                        }
-                    } catch (error) {
-                        console.warn('Erro ao sincronizar cliente:', error);
+                try {
+                    await FileStorage.saveAllClients(clients);
+                    if (onProgress && typeof onProgress === 'function') {
+                        onProgress(clients.length, clients.length);
                     }
+                } catch (error) {
+                    console.warn('Erro ao salvar em lote:', error);
                 }
             }
         }
+    },
+
+    async saveClients(clients, syncToDatabase = false, onProgress = null, immediate = false) {
+        if (immediate) {
+            return this._performSave(clients, syncToDatabase, onProgress);
+        }
+
+        if (this._saveTimeout) {
+            clearTimeout(this._saveTimeout);
+        }
+
+        return new Promise((resolve, reject) => {
+            this._saveTimeout = setTimeout(async () => {
+                try {
+                    await this._performSave(clients, syncToDatabase, onProgress);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            }, 1000);
+        });
     },
 
     async loadClients() {
@@ -93,7 +163,7 @@ export const Storage = {
 
         const { clients: normalizedClients, needsSave } = normalizeClients(clients);
         if (needsSave) {
-            await this.saveClients(normalizedClients);
+            await this.saveClients(normalizedClients, false, null, true);
         }
 
         return normalizedClients;
@@ -519,7 +589,7 @@ export const Storage = {
                 return result.url; // Returns /imagens/img_uuid.jpg
             }
         }
-        return base64Data; // Fallback to base64 if upload fails or not available
+        return base64Data; // Fallback: retorna base64 se o upload falhou ou API nao disponível
     },
 
     // Métodos para o Dashboard
@@ -535,7 +605,7 @@ export const Storage = {
             if (flatList && flatList.length > 0) {
                 allRegistros = flatList;
             } else {
-                // Fallback to organized structure if flat list is empty (legacy support)
+                // Fallback: usa estrutura organizada caso a lista plana esteja vazia (suporte legado)
                 const organizedStr = localStorage.getItem('bicicletario_registros_organizados');
                 if (organizedStr) {
                     try {

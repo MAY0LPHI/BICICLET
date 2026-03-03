@@ -1,3 +1,54 @@
+/**
+ * ============================================================
+ *  ARQUIVO: modals.js
+ *  DESCRIÇÃO: Sistema de Modais Customizados (Alertas e Confirmações)
+ *
+ *  FUNÇÃO:
+ *  Substitui os dialogs nativos do navegador (alert, confirm, prompt)
+ *  por janelas modais estilizadas que seguem o tema do sistema.
+ *  Todos os métodos retornam Promises, permitindo uso com async/await.
+ *
+ *  MÉTODOS PRINCIPAIS:
+ *  ┌───────────────────────────────────────────────────────────────┐
+ *  │ Modals.showConfirm(msg, titulo)   → Promise<boolean>          │
+ *  │   Abre janela de confirmação com Sim/Não.                     │
+ *  │   Resolve true se confirmado, false se cancelado.             │
+ *  │                                                               │
+ *  │ Modals.showAlert(msg, titulo)     → Promise<void>             │
+ *  │   Exibe alerta com botão OK. Resolve quando fechado.          │
+ *  │                                                               │
+ *  │ Modals.showInputPrompt(msg)       → Promise<string|null>      │
+ *  │   Exibe campo de texto. Resolve com o valor digitado.         │
+ *  │                                                               │
+ *  │ Modals.showImage(url, titulo)     → void                      │
+ *  │   Abre visualizador de imagem com zoom e arrasto.             │
+ *  │                                                               │
+ *  │ Modals.show(titulo, html)         → void                      │
+ *  │   Abre modal genérico com HTML customizado no corpo.           │
+ *  └───────────────────────────────────────────────────────────────┘
+ *
+ *  REQUISITOS HTML (devem existir no index.html):
+ *  - #custom-confirm-modal: modal de confirmação (Sim/Não)
+ *  - #custom-alert-modal:   modal de alerta (OK)
+ *  - #confirm-title, #confirm-message, #confirm-ok-btn, #confirm-cancel-btn
+ *  - #alert-title, #alert-message, #alert-ok-btn
+ *
+ *  PARA INICIANTES:
+ *  // Usar confirmação:
+ *  const ok = await Modals.showConfirm('Deseja excluir?', 'Confirmar');
+ *  if (ok) { ... }
+ *
+ *  // Usar alerta:
+ *  await Modals.showAlert('Operação concluída!');
+ *
+ *  ATALHOS DE TECLADO:
+ *  - Enter: confirma (equivale a clicar em OK/Sim)
+ *  - Escape: cancela/fecha o modal
+ *
+ *  NOTA: window.Modals é exportado globalmente para uso em
+ *  arquivos não-módulo (ex: onclick="Modals.close()").
+ * ============================================================
+ */
 export const Modals = {
     currentModal: null,
 
@@ -93,7 +144,7 @@ export const Modals = {
                 const oldOkBtn = document.getElementById('confirm-ok-btn');
                 const oldCancelBtn = document.getElementById('confirm-cancel-btn');
 
-                // Clone buttons to remove all old event listeners
+                // Clona os botões para remover todos os listeners antigos e evitar duplicação
                 const okBtn = oldOkBtn.cloneNode(true);
                 const cancelBtn = oldCancelBtn.cloneNode(true);
                 oldOkBtn.parentNode.replaceChild(okBtn, oldOkBtn);
@@ -129,6 +180,7 @@ export const Modals = {
 
                 const cleanup = () => {
                     return new Promise((res) => {
+                        document.removeEventListener('keydown', handleKeyDown);
                         const modalContent = modal.querySelector('.modal-content');
                         if (modalContent) {
                             modalContent.classList.remove('scale-100');
@@ -144,6 +196,23 @@ export const Modals = {
                     });
                 };
 
+                const handleKeyDown = (e) => {
+                    if (isProcessing || !buttonsEnabled) return;
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        isProcessing = true;
+                        cleanup().then(() => resolve(true));
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        isProcessing = true;
+                        cleanup().then(() => resolve(false));
+                    }
+                };
+
                 // Prevenir cliques no backdrop
                 const handleBackdropClick = (e) => {
                     if (e.target === modal && !isProcessing && buttonsEnabled) {
@@ -156,6 +225,7 @@ export const Modals = {
                 okBtn.addEventListener('click', handleOk, { once: true, capture: true });
                 cancelBtn.addEventListener('click', handleCancel, { once: true, capture: true });
                 modal.addEventListener('click', handleBackdropClick);
+                document.addEventListener('keydown', handleKeyDown);
 
                 modal.classList.remove('hidden');
 
@@ -187,7 +257,7 @@ export const Modals = {
             const oldOkBtn = document.getElementById('alert-ok-btn');
             const iconContainer = document.getElementById('alert-icon-container');
 
-            // Clone button to remove all old event listeners
+            // Clona o botão para remover listeners antigos e evitar duplicação
             const okBtn = oldOkBtn.cloneNode(true);
             oldOkBtn.parentNode.replaceChild(okBtn, oldOkBtn);
 
@@ -225,6 +295,7 @@ export const Modals = {
             };
 
             const cleanup = () => {
+                document.removeEventListener('keydown', handleKeyDown);
                 modal.querySelector('.modal-content').classList.remove('scale-100');
                 modal.querySelector('.modal-content').classList.add('scale-95');
                 modal.classList.remove('show');
@@ -234,8 +305,20 @@ export const Modals = {
                 }, 300);
             };
 
+            const handleKeyDown = (e) => {
+                if (isProcessing) return;
+                if (e.key === 'Enter' || e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isProcessing = true;
+                    cleanup();
+                    resolve();
+                }
+            };
+
             // Use { once: true } to ensure the listener only executes once
             okBtn.addEventListener('click', handleOk, { once: true });
+            document.addEventListener('keydown', handleKeyDown);
 
             modal.classList.remove('hidden');
 
@@ -269,7 +352,7 @@ export const Modals = {
             const messageEl = document.getElementById('alert-message');
             const oldOkBtn = document.getElementById('alert-ok-btn');
 
-            // Clone button to remove all old event listeners
+            // Clona o botão para remover listeners antigos
             const okBtn = oldOkBtn.cloneNode(true);
             oldOkBtn.parentNode.replaceChild(okBtn, oldOkBtn);
 
@@ -301,6 +384,7 @@ export const Modals = {
             };
 
             const cleanup = () => {
+                document.removeEventListener('keydown', handleEscapeKey);
                 modal.querySelector('.modal-content').classList.remove('scale-100');
                 modal.querySelector('.modal-content').classList.add('scale-95');
                 modal.classList.remove('show');
@@ -313,9 +397,21 @@ export const Modals = {
                 inputField.removeEventListener('keypress', handleKeyPress);
             };
 
+            const handleEscapeKey = (e) => {
+                if (isProcessing) return;
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isProcessing = true;
+                    cleanup();
+                    resolve(null);
+                }
+            };
+
             // Use { once: true } to ensure the listener only executes once
             okBtn.addEventListener('click', handleOk, { once: true });
             inputField.addEventListener('keypress', handleKeyPress);
+            document.addEventListener('keydown', handleEscapeKey);
             okBtn.textContent = 'Confirmar';
 
             modal.classList.remove('hidden');
@@ -371,7 +467,7 @@ export const Modals = {
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         const imageModal = document.getElementById('image-modal');
 
-        // If there was a previous dynamic modal, we don't want to lose reference to it, 
+        // Se havia um modal dinâmico anterior, mantemos referência para não perdê-la 
         // but Modals system is simple. Let's just track this specific image modal locally 
         // or temporarily override currentModal if we want standard behavior.
         // For safety, let's treat this as a standalone overlay.
@@ -392,7 +488,7 @@ export const Modals = {
         let translateX = 0, translateY = 0;
 
         const updateTransform = () => {
-            if (!img) return; // Safety check
+            if (!img) return; // Verificação de segurança — elemento pode não existir
             img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
             if (zoomLevelDisplay) zoomLevelDisplay.textContent = `${Math.round(scale * 100)}%`;
         };

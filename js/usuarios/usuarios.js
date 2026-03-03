@@ -1,6 +1,62 @@
 /**
- * Módulo de Gerenciamento de Usuários
- * Permite ao administrador gerenciar funcionários e suas permissões
+ * ============================================================
+ *  ARQUIVO: usuarios.js
+ *  DESCRIÇÃO: Gerenciador de Usuários do Sistema (Administração)
+ *
+ *  FUNÇÃO:
+ *  Permite que administradores gerenciem os funcionários e suas
+ *  permissões de acesso às diferentes seções do sistema.
+ *  Também exibe e permite exportar o log de auditoria.
+ *
+ *  CLASSE: Usuarios (estática — todos os métodos são static)
+ *  Usada diretamente via Usuarios.init() em app-modular.js
+ *
+ *  RESPONSABILIDADES:
+ *  - Listar todos os usuários cadastrados (renderUserList)
+ *  - Criar novo usuário com seleção de permissões (showAddUserModal)
+ *  - Editar dados e permissões de usuário existente (editUser)
+ *  - Ativar/desativar usuário sem excluí-lo (toggleUserStatus)
+ *  - Excluir usuário com confirmação (deleteUser)
+ *  - Exibir log de auditoria com filtros (initAuditReport)
+ *  - Exportar log de auditoria em Excel, CSV ou PDF
+ *
+ *  PERMISSÕES POR MÓDULO:
+ *  ┌─────────────────────────────────────────────────────────┐
+ *  │ clientes      → ver, adicionar, editar, excluir          │
+ *  │ registros     → ver, adicionar, editar, excluir,         │
+ *  │                 solicitacoes                             │
+ *  │ dados         → ver, exportar, importar, exportarDados,  │
+ *  │                 importarDados, exportarSistema,          │
+ *  │                 importarSistema, limparDados             │
+ *  │ configuracao  → ver, gerenciarUsuarios, buscaAvancada,   │
+ *  │                 backupVer, backupGerenciar,              │
+ *  │                 storageVer, storageGerenciar             │
+ *  │ jogos         → ver                                      │
+ *  └─────────────────────────────────────────────────────────┘
+ *
+ *  TIPOS DE USUÁRIO:
+ *  - 'dono'       → Acesso total, não pode ser excluído por outros
+ *  - 'admin'      → Pode gerenciar usuários e configurações avançadas
+ *  - 'funcionario'→ Permissões restritas ao definido pelo admin
+ *
+ *  LOG DE AUDITORIA:
+ *  - Registros de ações ficam em 'bicicletario_audit_log' (localStorage)
+ *  - Filtros: data início, data fim, usuário específico
+ *  - Exportável em Excel (.xlsx), CSV ou PDF
+ *
+ *  DEPENDÊNCIAS:
+ *  - auth.js          → Auth.getAllUsers(), addUser(), updateUser(), deleteUser()
+ *  - modals.js        → Modals.show(), Modals.alert(), Modals.showConfirm()
+ *  - audit-logger.js  → AuditLogger, logAction()
+ *  - utils.js         → Utils.generateUUID() (via Auth)
+ *
+ *  PARA INICIANTES:
+ *  Para adicionar uma nova permissão (ex: 'dashboard'):
+ *  1. Adicione o checkbox no HTML do modal showAddUserModal()
+ *  2. Adicione o mesmo checkbox no editUser()
+ *  3. Leia o valor em handleAddUser() e handleEditUser()
+ *  4. Verifique via Auth.hasPermission('dashboard', 'ver')
+ * ============================================================
  */
 
 import { Auth } from '../shared/auth.js';

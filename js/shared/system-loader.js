@@ -1,6 +1,39 @@
 /**
- * System Loader - Verifica e inicializa componentes do sistema
- * Exibe uma tela de carregamento com etapas de validação
+ * ============================================================
+ *  ARQUIVO: system-loader.js
+ *  DESCRIÇÃO: Tela de Carregamento e Verificação do Sistema
+ *
+ *  FUNÇÃO:
+ *  Exibe uma tela animada de inicialização enquanto verifica se
+ *  todos os componentes do sistema estão funcionando corretamente.
+ *  É executado UMA VEZ na primeira carga da página.
+ *
+ *  ETAPAS DE VERIFICAÇÃO (executadas em sequência):
+ *  1. Verificação de Segurança  → localStorage disponível e sem dados corrompidos
+ *  2. Inicialização do Núcleo  → módulos Storage, Auth e Utils carregados
+ *  3. Carregamento de Protocolos → Electron ou localStorage acessível
+ *  4. Ativação de Módulos → Auth.init() chamado, elementos #login e #app existem
+ *
+ *  CONFIGURAÇÃO DE TEMPO (em milissegundos):
+ *  this.config = {
+ *    stepDelay:       600,   // pausa entre cada etapa (600ms × 4 = 2,4s)
+ *    errorDelay:      400,   // pausa adicional se uma etapa falhar
+ *    completionDelay: 600    // pausa final antes de remover a tela
+ *  }
+ *  → Total aprox. 3 segundos (configurável no construtor)
+ *
+ *  LÓGICA DE PULO (skipLoadingScreen):
+ *  - Após login, o app salva 'skipLoadingScreen'='true' no sessionStorage
+ *  - Na recarga da página, SystemLoader.start() detecta esse valor
+ *  - Se encontrado: pula a tela de carregamento imediatamente
+ *  - Isso evita mostrar a animação toda vez que o usuário navega
+ *
+ *  PARA INICIANTES:
+ *  Este arquivo raramente precisa ser modificado. Para alterar
+ *  a duração, mude os valores em this.config no construtor.
+ *  Para adicionar uma nova verificação, adicione um objeto ao
+ *  array this.steps com { id, name, icon, handler }.
+ * ============================================================
  */
 
 import { Storage } from './storage.js';
@@ -16,12 +49,12 @@ export class SystemLoader {
             { id: 'modules', name: 'Ativação de Módulos', icon: 'package', handler: this.checkModules.bind(this) }
         ];
         this.currentStepIndex = 0;
-        
-        // Configurações de delay (em ms) - otimizado para produção
+
+        // Configurações de delay (em ms) - ~3 segundos no total
         this.config = {
-            stepDelay: 50,        // Delay mínimo entre etapas (era 1200ms)
-            errorDelay: 200,      // Delay após erro
-            completionDelay: 100  // Delay antes de remover a tela (era 800ms)
+            stepDelay: 600,       // Delay entre etapas (4 × 600ms = 2400ms)
+            errorDelay: 400,      // Delay após erro
+            completionDelay: 600  // Delay antes de remover a tela (600ms)
         };
     }
 
@@ -32,7 +65,7 @@ export class SystemLoader {
         const loadingScreen = document.createElement('div');
         loadingScreen.id = 'system-loading-screen';
         loadingScreen.className = 'fixed inset-0 z-[10005] bg-gradient-to-br from-indigo-900/50 via-indigo-500/5 to-slate-900/40 backdrop-blur-md flex items-center justify-center';
-        
+
         loadingScreen.innerHTML = `
             <div class="max-w-md w-full mx-4">
                 <div class="bg-white/15 dark:bg-slate-800/40 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/10 ring-1 ring-white/15">
@@ -83,7 +116,7 @@ export class SystemLoader {
         `;
 
         document.body.appendChild(loadingScreen);
-        
+
         // Inicializar ícones do Lucide
         if (window.lucide) {
             window.lucide.createIcons();
@@ -105,8 +138,8 @@ export class SystemLoader {
         if (status === 'loading') {
             stepElement.classList.add('ring-blue-400/30', 'bg-white/15');
             statusIcons[0]?.classList.remove('hidden'); // loader
-            
-            // Highlight the step icon during loading
+
+            // Destaca o ícone da etapa enquanto está sendo processada
             const iconDiv = stepElement.querySelector('.step-icon');
             iconDiv.classList.add('bg-blue-500/40', 'ring-2', 'ring-blue-400/30');
             const stepIcon = iconDiv.querySelector('i');
@@ -118,11 +151,11 @@ export class SystemLoader {
             stepElement.classList.remove('ring-blue-400/30');
             stepElement.classList.add('ring-emerald-500/25', 'bg-white/10');
             statusIcons[1]?.classList.remove('hidden'); // check
-            
+
             const iconDiv = stepElement.querySelector('.step-icon');
             iconDiv.classList.remove('bg-white/20', 'bg-blue-500/40', 'ring-2', 'ring-blue-400/30');
             iconDiv.classList.add('bg-emerald-500/60', 'completed');
-            // Keep the original icon visible but with success color
+            // Mantém o ícone original visível, mas com cor de sucesso (verde)
             const stepIcon = iconDiv.querySelector('i');
             if (stepIcon) {
                 stepIcon.classList.remove('text-white/60');
@@ -132,7 +165,7 @@ export class SystemLoader {
             stepElement.classList.remove('ring-blue-400/30');
             stepElement.classList.add('ring-red-500/25', 'bg-red-500/20');
             statusIcons[2]?.classList.remove('hidden'); // alert-circle
-            
+
             const iconDiv = stepElement.querySelector('.step-icon');
             iconDiv.classList.remove('bg-white/20', 'bg-blue-500/40', 'ring-2', 'ring-blue-400/30');
             iconDiv.classList.add('bg-red-500/60');
@@ -158,7 +191,7 @@ export class SystemLoader {
     updateProgress(percentage) {
         const progressBar = document.getElementById('system-progress-bar');
         const progressText = document.getElementById('system-progress-text');
-        
+
         if (progressBar) {
             progressBar.style.width = `${percentage}%`;
         }
@@ -233,7 +266,7 @@ export class SystemLoader {
     async checkProtocols() {
         // Verificar se está em ambiente Electron ou navegador
         const isElectron = typeof window !== 'undefined' && window.electron;
-        
+
         if (isElectron) {
             // Verificar APIs do Electron
             if (!window.electron.saveClients || !window.electron.loadClients) {
@@ -291,26 +324,26 @@ export class SystemLoader {
      */
     async runChecks() {
         const totalSteps = this.steps.length;
-        
+
         for (let i = 0; i < this.steps.length; i++) {
             const step = this.steps[i];
             const percentage = Math.floor((i / totalSteps) * 100);
-            
+
             this.updateProgress(percentage);
             this.updateStepStatus(step.id, 'loading', step.name);
 
             try {
                 // Delay para visualização (configurável via this.config.stepDelay)
                 await new Promise(resolve => setTimeout(resolve, this.config.stepDelay));
-                
+
                 // Executar a verificação
                 await step.handler();
-                
+
                 this.updateStepStatus(step.id, 'success', `${step.name} - Concluído`);
             } catch (error) {
                 console.error(`Erro na etapa ${step.id}:`, error);
                 this.updateStepStatus(step.id, 'error', `${step.name} - Erro: ${error.message}`);
-                
+
                 // Delay após erro (configurável via this.config.errorDelay)
                 await new Promise(resolve => setTimeout(resolve, this.config.errorDelay));
             }
@@ -319,7 +352,7 @@ export class SystemLoader {
         // Completar 100%
         this.updateProgress(100);
         document.getElementById('system-status-message').textContent = 'Sistema pronto!';
-        
+
         // Delay antes de remover a tela (configurável via this.config.completionDelay)
         await new Promise(resolve => setTimeout(resolve, this.config.completionDelay));
     }
@@ -332,7 +365,7 @@ export class SystemLoader {
         if (loadingScreen) {
             loadingScreen.style.opacity = '0';
             loadingScreen.style.transition = 'opacity 0.5s ease-out';
-            
+
             setTimeout(() => {
                 loadingScreen.remove();
             }, 500);
@@ -345,12 +378,12 @@ export class SystemLoader {
     async start() {
         // Verificar se é uma recarga após login/logout ou carga inicial
         const skipLoadingScreen = sessionStorage.getItem('skipLoadingScreen');
-        
+
         if (skipLoadingScreen === 'true') {
             // Remover a flag e pular a tela de carregamento
             sessionStorage.removeItem('skipLoadingScreen');
             console.log('Pulando tela de carregamento (recarga do sistema)');
-            
+
             // É seguro pular as verificações em uma recarga porque:
             // 1. Os módulos JavaScript já foram carregados na primeira carga
             // 2. Auth.init() será chamado novamente por App.init() (ver app-modular.js)
@@ -358,17 +391,17 @@ export class SystemLoader {
             // 4. Recargas sempre passam pelo mesmo fluxo: DOMContentLoaded → SystemLoader.start() → App.init()
             return true;
         }
-        
+
         // Primeira carga do sistema - mostrar tela de carregamento
         this.createLoadingScreen();
-        
+
         try {
             await this.runChecks();
             this.removeLoadingScreen();
             return true;
         } catch (error) {
             console.error('Erro crítico durante inicialização:', error);
-            document.getElementById('system-status-message').textContent = 
+            document.getElementById('system-status-message').textContent =
                 'Erro crítico. Recarregue a página.';
             return false;
         }
