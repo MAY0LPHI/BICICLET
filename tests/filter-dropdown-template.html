@@ -1,0 +1,94 @@
+<!-- INSTRUÇÕES: Adicionar este código HTML na aba Registros Diários -->
+<!-- Localização: Dentro da seção de registros diários, próximo ao campo de busca -->
+
+<!-- Botão de Filtro (adicionar ao lado do campo de busca) -->
+<div class="relative">
+    <button id="filter-btn-registros"
+        class="relative p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+        title="Filtrar registros">
+        <i data-lucide="filter" class="w-5 h-5"></i>
+        <!-- Badge de filtros ativos -->
+        <span id="filter-badge"
+            class="hidden absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+            0
+        </span>
+    </button>
+</div>
+
+<!-- Dropdown de Filtros (adicionar logo após o botão acima) -->
+<div id="filter-dropdown-registros"
+    class="hidden absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 z-50">
+    <!-- Cabeçalho -->
+    <div class="p-4 border-b border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <i data-lucide="sliders" class="w-4 h-4"></i>
+                Filtros
+            </h3>
+            <button id="clear-filters-btn" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                Limpar tudo
+            </button>
+        </div>
+    </div>
+
+    <div class="p-4 space-y-4 max-h-96 overflow-y-auto">
+        <!-- Filtro por Status -->
+        <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Status
+            </label>
+            <div class="space-y-2">
+                <label
+                    class="flex items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 p-2 rounded transition-colors">
+                    <input type="checkbox" class="filter-status rounded text-blue-600" value="em-aberto" />
+                    <span class="ml-2 text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                        <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+                        Em Aberto
+                    </span>
+                </label>
+                <label
+                    class="flex items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 p-2 rounded transition-colors">
+                    <input type="checkbox" class="filter-status rounded text-blue-600" value="saida" />
+                    <span class="ml-2 text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i>
+                        Saída Registrada
+                    </span>
+                </label>
+                <label
+                    class="flex items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 p-2 rounded transition-colors">
+                    <input type="checkbox" class="filter-status rounded text-blue-600" value="pernoite" />
+                    <span class="ml-2 text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                        <i data-lucide="moon" class="w-4 h-4 text-purple-500"></i>
+                        Pernoite (24h+)
+                    </span>
+                </label>
+                <label
+                    class="flex items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 p-2 rounded transition-colors">
+                    <input type="checkbox" class="filter-status rounded text-blue-600" value="acesso-removido" />
+                    <span class="ml-2 text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                        <i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>
+                        Acesso Removido
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Filtro por Categoria -->
+        <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Categoria
+            </label>
+            <div id="filter-categorias-list" class="space-y-2">
+                <!-- Preenchido dinamicamente pelo JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="p-4 border-t border-slate-200 dark:border-slate-700">
+        <button id="apply-filters-btn"
+            class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">
+            Aplicar Filtros
+        </button>
+    </div>
+</div>

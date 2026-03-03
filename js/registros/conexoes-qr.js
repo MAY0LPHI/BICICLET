@@ -1,3 +1,42 @@
+/**
+ * ============================================================
+ *  ARQUIVO: conexoes-qr.js
+ *  DESCRIÇÃO: Gerenciador de Conexões via QR Code
+ *
+ *  FUNÇÃO:
+ *  Gerencia as solicitações de cadastro de novos clientes feitas
+ *  através de QR Code (totem de autoatendimento ou app mobile).
+ *  Permite que administradores visualizem, aprovem ou rejeitem
+ *  solicitações em um modal dedicado.
+ *
+ *  CLASSE: ConexoesQRManager
+ *  Instanciada em app-modular.js; aberta via botão #open-qr-connections-modal-btn
+ *
+ *  FLUXO:
+ *  1. Cliente escaneia QR Code e preenche formulário no mobile
+ *  2. Dados enviados para o servidor REST (POST /api/qr/solicitacao)
+ *  3. ConexoesQRManager abre o modal #qr-connections-modal
+ *  4. loadSolicitacoes() busca GET /api/qr/solicitacoes
+ *  5. Admin clica "Aprovar" → POST /api/qr/solicitacao/aprovar
+ *  6. Admin clica "Rejeitar" → POST /api/qr/solicitacao/rejeitar + motivo
+ *  7. Auto-refresh a cada 30 segundos enquanto modal estiver aberto
+ *
+ *  BUSCA LOCAL:
+ *  - filterSolicitacoes() filtra por nome, CPF, ID ou email
+ *  - Não faz nova requisição ao servidor, filtra os dados já carregados
+ *
+ *  DEPENDÊNCIAS DE SERVIDOR:
+ *  - Requer um servidor backend rodando com as rotas /api/qr/*
+ *  - Sem o servidor, o módulo exibe mensagem de erro mas não quebra o sistema
+ *
+ *  PARA INICIANTES:
+ *  Este módulo só funciona se houver um servidor backend rodando.
+ *  Em ambiente apenas de navegador (sem servidor), as requisições
+ *  fetch() falharão e renderError() exibirá a mensagem de erro.
+ *  O resto do sistema funciona normalmente sem este módulo.
+ * ============================================================
+ */
+
 import { Utils } from '../shared/utils.js';
 import { Modals } from '../shared/modals.js';
 import { logAction } from '../shared/audit-logger.js';
@@ -31,7 +70,7 @@ export class ConexoesQRManager {
             this.elements.searchInput.addEventListener('input', () => this.filterSolicitacoes());
         }
 
-        // Close on backdrop click
+        // Fecha o modal ao clicar no fundo escuro (backdrop)
         if (this.elements.modal) {
             this.elements.modal.addEventListener('click', (e) => {
                 if (e.target === this.elements.modal) {
@@ -92,7 +131,7 @@ export class ConexoesQRManager {
 
     filterSolicitacoes() {
         const searchTerm = this.elements.searchInput?.value.toUpperCase() || '';
-        
+
         if (!searchTerm) {
             this.filteredSolicitacoes = this.solicitacoes;
         } else {
@@ -101,14 +140,14 @@ export class ConexoesQRManager {
                 const cpf = s.cpf?.replace(/\D/g, '') || '';
                 const id = s.id?.toUpperCase() || '';
                 const email = s.email?.toUpperCase() || '';
-                
-                return nome.includes(searchTerm) || 
-                       cpf.includes(searchTerm) || 
-                       id.includes(searchTerm) ||
-                       email.includes(searchTerm);
+
+                return nome.includes(searchTerm) ||
+                    cpf.includes(searchTerm) ||
+                    id.includes(searchTerm) ||
+                    email.includes(searchTerm);
             });
         }
-        
+
         this.render();
     }
 
@@ -137,7 +176,7 @@ export class ConexoesQRManager {
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
-            
+
             // Attach retry button handler
             const retryBtn = this.elements.container.querySelector('#retry-load-solicitacoes');
             if (retryBtn) {
@@ -173,7 +212,7 @@ export class ConexoesQRManager {
 
         const html = this.filteredSolicitacoes.map(s => this.renderSolicitacao(s)).join('');
         this.elements.container.innerHTML = html;
-        
+
         // Re-initialize lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
@@ -192,12 +231,12 @@ export class ConexoesQRManager {
             minute: '2-digit'
         });
 
-        const statusClass = s.status === 'pendente' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' : 
-                           s.status === 'aprovado' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                           'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+        const statusClass = s.status === 'pendente' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+            s.status === 'aprovado' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
 
-        const statusText = s.status === 'pendente' ? 'Pendente' : 
-                          s.status === 'aprovado' ? 'Aprovado' : 'Rejeitado';
+        const statusText = s.status === 'pendente' ? 'Pendente' :
+            s.status === 'aprovado' ? 'Aprovado' : 'Rejeitado';
 
         return `
             <div class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 mb-4 hover:shadow-md transition-shadow">
@@ -334,7 +373,7 @@ export class ConexoesQRManager {
         } else {
             observacoes = prompt(`Motivo da rejeição da solicitação de ${Utils.escapeHtml(solicitacao.nome)} (opcional):`);
         }
-        if (observacoes === null) return; // User cancelled
+        if (observacoes === null) return; // Usuário cancelou o diálogo de observações
 
         try {
             const response = await fetch('/api/qr/solicitacao/rejeitar', {

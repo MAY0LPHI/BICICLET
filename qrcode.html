@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,18 +17,19 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container max-w-2xl mx-auto p-4">
         <div class="bg-white rounded-lg shadow-xl p-8 text-center">
             <h1 class="text-4xl font-bold mb-2">🚲 BICICLET</h1>
             <p class="text-xl text-gray-600 mb-8">Sistema de Gerenciamento de Bicicletário</p>
-            
+
             <div id="qrContainer" class="mb-8">
                 <div class="animate-pulse">
                     <div class="h-64 w-64 bg-gray-200 rounded mx-auto"></div>
                 </div>
             </div>
-            
+
             <div class="text-center">
                 <p class="text-2xl font-bold mb-4">Escaneie o QR Code</p>
                 <p class="text-gray-600 mb-2">Use a câmera do seu celular para:</p>
@@ -37,12 +39,13 @@
                     <li>✓ Registrar entrada/saída de bicicletas</li>
                 </ul>
             </div>
-            
+
             <div class="mt-8 pt-8 border-t">
                 <p class="text-sm text-gray-500">
                     Estação: <span id="stationName" class="font-semibold">Carregando...</span>
                 </p>
-                <button id="btnRefresh" class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                <button id="btnRefresh"
+                    class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                     Atualizar QR Code
                 </button>
             </div>
@@ -50,19 +53,19 @@
     </div>
 
     <script>
-        // Get station ID from URL or use default
+        // Obtém o ID da estação pela URL ou usa 'default' como padrão
         const urlParams = new URLSearchParams(window.location.search);
         const stationId = urlParams.get('station') || 'default';
-        
+
         document.getElementById('stationName').textContent = stationId.toUpperCase();
 
         async function loadQRCode() {
             const qrContainer = document.getElementById('qrContainer');
-            
+
             try {
                 const response = await fetch(`/api/qr/generate?station=${stationId}`);
                 const data = await response.json();
-                
+
                 if (data.success && data.qr_code) {
                     qrContainer.innerHTML = `
                         <img src="${data.qr_code}" 
@@ -89,11 +92,12 @@
 
         document.getElementById('btnRefresh').addEventListener('click', loadQRCode);
 
-        // Load QR code on page load
+        // Carrega o QR Code ao abrir a página
         loadQRCode();
-        
-        // Auto refresh every 5 minutes
+
+        // Atualiza o QR Code automaticamente a cada 5 minutos
         setInterval(loadQRCode, 5 * 60 * 1000);
     </script>
 </body>
+
 </html>

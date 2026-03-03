@@ -44,8 +44,26 @@ except Exception as e:
 
 JOB_MANAGER = None
 IMPORT_WORKER = None
+AUTH_MANAGER = None
 
 try:
+    from background_jobs import get_job_manager, get_import_worker
+    JOB_MANAGER = get_job_manager()
+    IMPORT_WORKER = get_import_worker(DB_MANAGER, STORAGE_DIR)
+    logger.info("✅ Sistema de jobs em segundo plano carregado")
+except ImportError as e:
+    logger.warning(f"Sistema de jobs não disponível: {e}")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar sistema de jobs: {e}")
+
+try:
+    from auth_manager import get_auth_manager
+    AUTH_MANAGER = get_auth_manager()
+    logger.info("✅ Gerenciador de Autenticação carregado")
+except ImportError as e:
+    logger.warning(f"Gerenciador de Autenticação não disponível: {e}")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar Gerenciador de Autenticação: {e}")
     from background_jobs import get_job_manager, get_import_worker
     JOB_MANAGER = get_job_manager()
     IMPORT_WORKER = get_import_worker(DB_MANAGER, STORAGE_DIR)
@@ -416,6 +434,39 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         content_length = int(self.headers.get('Content-Length', 0))
         post_data = self.rfile.read(content_length)
         
+        if self.path == '/api/auth/login':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                username = data.get('username')
+                password = data.get('password')
+                
+                if not username or not password:
+                    self._set_api_headers(status=400)
+                    self.wfile.write(json.dumps({"error": "Usuário e senha são obrigatórios"}).encode())
+                    return
+                
+                if AUTH_MANAGER:
+                    user_data = AUTH_MANAGER.authenticate(username, password)
+                    if user_data:
+                        self._set_api_headers(status=200)
+                        self.wfile.write(json.dumps({
+                            "success": True,
+                            "user": user_data
+                        }).encode())
+                    else:
+                        # Log error internally and simulate 1.5s delay to prevent timing attacks
+                        logger.warning(f"Falha de autenticação para usuário: {username}")
+                        import time; time.sleep(1.5)
+                        self._set_api_headers(status=401)
+                        self.wfile.write(json.dumps({"error": "Credenciais inválidas. Verifique usuário e senha."}).encode())
+                else:
+                    self._set_api_headers(status=503)
+                    self.wfile.write(json.dumps({"error": "Serviço de autenticação indisponível"}).encode())
+            except json.JSONDecodeError:
+                self._set_api_headers(status=400)
+                self.wfile.write(json.dumps({"error": "Dados inválidos"}).encode())
+            return
+
         if self.path == '/api/client':
             client = json.loads(post_data.decode('utf-8'))
             if use_sqlite_storage():
@@ -433,6 +484,44 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self._save_client_file(client)
             return
+
+        if self.path == '/api/clients':
+            clients = json.loads(post_data.decode('utf-8'))
+            if use_sqlite_storage():
+                success = DB_MANAGER.save_all_clientes(clients)
+                if success:
+                    # Notify change for all clients? Or just generic 'clients'
+                    # Ideally we would track changes, but for batch save it's a full update
+                    if JOB_MANAGER is not None:
+                         JOB_MANAGER.notify_change('clients')
+                    
+                    self._set_api_headers()
+                    self._set_api_headers()
+                    self.wfile.write(json.dumps({
+                        "success": True,
+                        "count": len(clients)
+                    }).encode())
+                else:
+                    self._set_api_headers(500)
+                    self.wfile.write(json.dumps({"error": "Failed to save clients batch"}).encode())
+            else:
+                # Fallback for file storage (saves one by one effectively, or overwrite all)
+                # Since we don't have a specific "save all files" optimized method yet, 
+                # we can implement a basic loop here or in a helper.
+                # Given the instruction was mainly for SQLite optimization, 
+                # we'll implement a safety loop here.
+                success_count = 0
+                for client in clients:
+                    if self._save_client_file(client): # Assuming this method exists on self logic
+                         success_count += 1
+                
+                self._set_api_headers()
+                self.wfile.write(json.dumps({
+                    "success": True,
+                    "count": success_count
+                }).encode())
+            return
+
         
         if self.path == '/api/registro':
             registro = json.loads(post_data.decode('utf-8'))

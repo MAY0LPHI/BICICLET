@@ -1,3 +1,51 @@
+/**
+ * ============================================================
+ *  ARQUIVO: dados.js
+ *  DESCRIÇÃO: Gerenciador de Dados (Importação, Exportação e Limpeza)
+ *
+ *  FUNÇÃO:
+ *  Responsável por toda operação de dados em massa:
+ *  - Importação de clientes via Excel (.xlsx) ou CSV
+ *  - Exportação de clientes para Excel e CSV (com filtro de período)
+ *  - Exportação completa do sistema (backup: clientes, bicicletas,
+ *    registros, categorias, usuários) em Excel ou CSV multi-seção
+ *  - Importação de backup completo do sistema
+ *  - Limpeza de dados (clientes, registros ou categorias)
+ *  - Barra de progresso em tempo real durante operações longas
+ *
+ *  CLASSE: DadosManager
+ *  Instanciada em app-modular.js como this.dadosManager
+ *
+ *  DEPENDÊNCIAS:
+ *  - storage.js       → Storage.saveClients(), Storage.saveRegistros(), etc.
+ *  - utils.js         → Utils.validateCPF(), Utils.generateUUID(), Utils.getLocalDateString()
+ *  - modals.js        → Modals.alert(), Modals.showConfirm()
+ *  - auth.js          → Auth.requirePermission()
+ *  - audit-logger.js  → logAction()
+ *  - XLSX (global)    → Biblioteca SheetJS para leitura/escrita de Excel
+ *
+ *  IMPORTAÇÃO DE CLIENTES:
+ *  - Formato esperado: Nome | Telefone | CPF | Categoria (colunas)
+ *  - Linha 0 é ignorada se for cabeçalho (contém "nome" ou "name")
+ *  - CPF é validado via Utils.validateCPF()
+ *  - Clientes duplicados (mesmo CPF) não são importados
+ *  - Categorias novas são criadas automaticamente
+ *
+ *  EXPORTAÇÃO:
+ *  - exportToExcel/CSV: apenas clientes, com filtro opcional por período de acesso
+ *  - exportSystemToExcel/CSV: backup completo, cada entidade em uma aba/seção
+ *
+ *  LIMPEZA DE DADOS:
+ *  - Requer confirmação dupla do usuário (double-confirm pattern)
+ *  - Tenta API REST primeiro; usa localStorage como fallback
+ *  - Registra no log de auditoria (logAction)
+ *
+ *  PARA INICIANTES:
+ *  Os dados são armazenados no localStorage do navegador.
+ *  A limpeza é irreversível — use backups regularmente!
+ * ============================================================
+ */
+
 import { Storage } from '../shared/storage.js';
 import { Utils } from '../shared/utils.js';
 import { Modals } from '../shared/modals.js';
@@ -53,11 +101,11 @@ export class DadosManager {
         if (this.elements.importBtn) {
             this.elements.importBtn.addEventListener('click', () => this.handleImport());
         }
-        
+
         if (this.elements.exportExcelBtn) {
             this.elements.exportExcelBtn.addEventListener('click', () => this.exportToExcel());
         }
-        
+
         if (this.elements.exportCsvBtn) {
             this.elements.exportCsvBtn.addEventListener('click', () => this.exportToCSV());
         }
@@ -71,11 +119,11 @@ export class DadosManager {
         if (this.elements.importSystemBtn) {
             this.elements.importSystemBtn.addEventListener('click', () => this.handleSystemImport());
         }
-        
+
         if (this.elements.exportSystemExcelBtn) {
             this.elements.exportSystemExcelBtn.addEventListener('click', () => this.exportSystemToExcel());
         }
-        
+
         if (this.elements.exportSystemCsvBtn) {
             this.elements.exportSystemCsvBtn.addEventListener('click', () => this.exportSystemToCSV());
         }
@@ -92,7 +140,7 @@ export class DadosManager {
         if (this.elements.deleteDataBtn) {
             this.elements.deleteDataBtn.addEventListener('click', () => this.handleDeleteData());
         }
-        
+
         this.updateDeleteCounts();
     }
 
@@ -110,11 +158,11 @@ export class DadosManager {
     }
 
     updateDeleteButtonState() {
-        const anyChecked = 
-            this.elements.deleteClientes?.checked || 
-            this.elements.deleteRegistros?.checked || 
+        const anyChecked =
+            this.elements.deleteClientes?.checked ||
+            this.elements.deleteRegistros?.checked ||
             this.elements.deleteCategorias?.checked;
-        
+
         if (this.elements.deleteDataBtn) {
             this.elements.deleteDataBtn.disabled = !anyChecked;
         }
@@ -249,9 +297,16 @@ export class DadosManager {
                 }
             }
 
-            localStorage.removeItem('bicicletario_clients');
-            localStorage.removeItem('bicicletario_registros');
-            localStorage.removeItem('bicicletario_categorias');
+            // CORREÇÃO: Apenas remove do localStorage os dados que foram efetivamente apagados
+            if (deleteClientes) {
+                localStorage.removeItem('bicicletario_clients');
+            }
+            if (deleteRegistros) {
+                localStorage.removeItem('bicicletario_registros');
+            }
+            if (deleteCategorias) {
+                localStorage.removeItem('bicicletario_categorias');
+            }
 
             if (statusEl) {
                 statusEl.className = 'text-sm text-green-600 dark:text-green-400';
@@ -261,7 +316,7 @@ export class DadosManager {
                 }, 5000);
             }
 
-            logAction('delete', 'dados', null, { 
+            logAction('delete', 'dados', null, {
                 tipos: items,
                 resultado: results.join(', ')
             });
@@ -286,7 +341,7 @@ export class DadosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const file = this.elements.importFile.files[0];
         if (!file) return;
 
@@ -307,7 +362,7 @@ export class DadosManager {
             this.showImportStatus('Importando clientes...', 'info', 60);
             await this.delay(100);
             const imported = this.processImportData(data);
-            
+
             if (imported > 0) {
                 const totalClients = this.app.data.clients.length;
                 this.showImportStatus('Salvando clientes...', 'info', 80, 0, totalClients);
@@ -322,12 +377,12 @@ export class DadosManager {
                 this.app.clientesManager.renderClientList();
 
                 this.showImportStatus(`${imported} cliente(s) importado(s) com sucesso!`, 'success', 100);
-                
-                logAction('import', 'dados', null, { 
+
+                logAction('import', 'dados', null, {
                     tipo: 'clientes',
                     quantidade: imported
                 });
-                
+
                 this.elements.importFile.value = '';
                 this.elements.importBtn.disabled = true;
             } else {
@@ -349,20 +404,20 @@ export class DadosManager {
 
         const colorClass = type === 'success' ? 'text-green-600 dark:text-green-400' :
             type === 'error' ? 'text-red-600 dark:text-red-400' :
-            type === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
-            'text-blue-600 dark:text-blue-400';
+                type === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
+                    'text-blue-600 dark:text-blue-400';
 
         const progressColorClass = type === 'success' ? 'bg-green-500' :
             type === 'error' ? 'bg-red-500' : 'bg-orange-500';
 
         if (progress !== null && progress >= 0 && progress <= 100) {
-            const countDisplay = (current !== null && total !== null) 
-                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>` 
+            const countDisplay = (current !== null && total !== null)
+                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>`
                 : '';
-            const progressDisplay = (current !== null && total !== null) 
+            const progressDisplay = (current !== null && total !== null)
                 ? `${countDisplay} <span class="text-slate-500 dark:text-slate-400">(${progress}%)</span>`
                 : `${progress}%`;
-            
+
             statusEl.innerHTML = `
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
@@ -377,22 +432,22 @@ export class DadosManager {
         } else {
             statusEl.innerHTML = `<p class="${colorClass}">${message}</p>`;
         }
-        
+
         statusEl.className = 'text-sm mt-2';
         statusEl.classList.remove('hidden');
     }
 
     sanitizeCsvCell(cell) {
         if (typeof cell !== 'string') return cell;
-        
+
         let sanitized = cell.trim();
-        
+
         if (sanitized.startsWith('"') && sanitized.endsWith('"')) {
             sanitized = sanitized.slice(1, -1);
         }
-        
+
         sanitized = sanitized.replace(/""/g, '"');
-        
+
         return sanitized;
     }
 
@@ -405,7 +460,7 @@ export class DadosManager {
                 try {
                     if (isCSV) {
                         const text = e.target.result;
-                        const rows = text.split('\n').map(row => 
+                        const rows = text.split('\n').map(row =>
                             row.split(',').map(cell => this.sanitizeCsvCell(cell))
                         );
                         resolve(rows);
@@ -422,7 +477,7 @@ export class DadosManager {
             };
 
             reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-            
+
             if (isCSV) {
                 reader.readAsText(file);
             } else {
@@ -434,7 +489,7 @@ export class DadosManager {
     processImportData(rows) {
         let imported = 0;
         const categoriasExistentes = Storage.loadCategorias();
-        
+
         rows.forEach((row, index) => {
             if (index === 0 && (row[0]?.toLowerCase().includes('nome') || row[0]?.toLowerCase().includes('name'))) {
                 return;
@@ -446,7 +501,7 @@ export class DadosManager {
                 const telefone = telefoneRaw.replace(/\D/g, '');
                 const cpf = String(row[2]).replace(/\D/g, '');
                 const categoriaRaw = row.length >= 4 ? String(row[3] || '').trim().toUpperCase() : '';
-                
+
                 let categoria = '';
                 if (categoriaRaw) {
                     if (categoriaRaw in categoriasExistentes) {
@@ -460,7 +515,7 @@ export class DadosManager {
 
                 if (nome && cpf && Utils.validateCPF(cpf)) {
                     const exists = this.app.data.clients.some(c => c.cpf.replace(/\D/g, '') === cpf);
-                    
+
                     if (!exists) {
                         const newClient = {
                             id: Utils.generateUUID(),
@@ -491,39 +546,39 @@ export class DadosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const dataInicio = this.elements.exportDataInicio.value;
         const dataFim = this.elements.exportDataFim.value;
-        
+
         const exportData = this.prepareSimpleExportData(dataInicio, dataFim);
         const totalClientes = exportData.length - 1;
-        
+
         if (totalClientes === 0) {
-            const periodoMsg = dataInicio || dataFim 
-                ? ` no período selecionado` 
+            const periodoMsg = dataInicio || dataFim
+                ? ` no período selecionado`
                 : '';
             Modals.alert(`Nenhum cliente encontrado${periodoMsg} para exportar.`, 'Aviso');
             return;
         }
-        
+
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(exportData);
         XLSX.utils.book_append_sheet(wb, ws, "Clientes");
 
-        const periodoStr = dataInicio && dataFim 
-            ? `${dataInicio}_${dataFim}` 
+        const periodoStr = dataInicio && dataFim
+            ? `${dataInicio}_${dataFim}`
             : new Date().toISOString().split('T')[0];
         const fileName = `clientes_${periodoStr}.xlsx`;
-        
+
         XLSX.writeFile(wb, fileName);
-        
-        logAction('export', 'dados', null, { 
-            tipo: 'clientes', 
+
+        logAction('export', 'dados', null, {
+            tipo: 'clientes',
             formato: 'xlsx',
             quantidade: totalClientes,
             periodo: { inicio: dataInicio || null, fim: dataFim || null }
         });
-        
+
         Modals.alert(`Exportação concluída! ${totalClientes} cliente(s) exportado(s).`);
     }
 
@@ -534,22 +589,22 @@ export class DadosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const dataInicio = this.elements.exportDataInicio.value;
         const dataFim = this.elements.exportDataFim.value;
-        
+
         const exportData = this.prepareSimpleExportData(dataInicio, dataFim);
         const totalClientes = exportData.length - 1;
-        
+
         if (totalClientes === 0) {
-            const periodoMsg = dataInicio || dataFim 
-                ? ` no período selecionado` 
+            const periodoMsg = dataInicio || dataFim
+                ? ` no período selecionado`
                 : '';
             Modals.alert(`Nenhum cliente encontrado${periodoMsg} para exportar.`, 'Aviso');
             return;
         }
 
-        const csvContent = exportData.map(row => 
+        const csvContent = exportData.map(row =>
             row.map(cell => {
                 const cellStr = String(cell);
                 const escaped = cellStr.replace(/"/g, '""');
@@ -560,51 +615,51 @@ export class DadosManager {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
-        const periodoStr = dataInicio && dataFim 
-            ? `${dataInicio}_${dataFim}` 
+
+        const periodoStr = dataInicio && dataFim
+            ? `${dataInicio}_${dataFim}`
             : new Date().toISOString().split('T')[0];
         const fileName = `clientes_${periodoStr}.csv`;
-        
+
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
-        
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        logAction('export', 'dados', null, { 
-            tipo: 'clientes', 
+
+        logAction('export', 'dados', null, {
+            tipo: 'clientes',
             formato: 'csv',
             quantidade: totalClientes,
             periodo: { inicio: dataInicio || null, fim: dataFim || null }
         });
-        
+
         Modals.alert(`Exportação concluída! ${totalClientes} cliente(s) exportado(s).`);
     }
 
     prepareSimpleExportData(dataInicio, dataFim) {
         let clientesToExport = this.app.data.clients;
-        
+
         if (dataInicio || dataFim) {
             const inicio = dataInicio ? new Date(dataInicio) : null;
             const fim = dataFim ? new Date(dataFim) : null;
-            
+
             if (inicio) inicio.setHours(0, 0, 0, 0);
             if (fim) fim.setHours(23, 59, 59, 999);
-            
+
             const filteredRegistros = this.app.data.registros.filter(registro => {
                 const dataEntrada = new Date(registro.dataHoraEntrada);
                 if (inicio && dataEntrada < inicio) return false;
                 if (fim && dataEntrada > fim) return false;
                 return true;
             });
-            
+
             const clientIds = new Set(filteredRegistros.map(r => r.clientId));
             clientesToExport = this.app.data.clients.filter(c => clientIds.has(c.id));
         }
-        
+
         const headers = ['Nome', 'Telefone', 'CPF', 'Categoria'];
         const rows = clientesToExport.map(client => [
             client.nome,
@@ -623,10 +678,10 @@ export class DadosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const dataInicio = this.elements.exportSystemDataInicio?.value || '';
         const dataFim = this.elements.exportSystemDataFim?.value || '';
-        
+
         const systemData = this.prepareSystemExportData(dataInicio, dataFim);
         const wb = XLSX.utils.book_new();
 
@@ -655,20 +710,20 @@ export class DadosManager {
             XLSX.utils.book_append_sheet(wb, usuariosWs, "Usuarios");
         }
 
-        const periodoStr = dataInicio && dataFim 
-            ? `${dataInicio}_${dataFim}` 
+        const periodoStr = dataInicio && dataFim
+            ? `${dataInicio}_${dataFim}`
             : new Date().toISOString().split('T')[0];
         const fileName = `backup_sistema_${periodoStr}.xlsx`;
         XLSX.writeFile(wb, fileName);
-        
-        logAction('export', 'sistema', null, { 
+
+        logAction('export', 'sistema', null, {
             tipo: 'backup_completo',
             formato: 'xlsx',
             periodo: { inicio: dataInicio || null, fim: dataFim || null }
         });
-        
-        const periodoMsg = dataInicio || dataFim 
-            ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})` 
+
+        const periodoMsg = dataInicio || dataFim
+            ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})`
             : '';
         Modals.alert(`Backup exportado com sucesso${periodoMsg} para ${fileName}`);
     }
@@ -680,12 +735,12 @@ export class DadosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const dataInicio = this.elements.exportSystemDataInicio?.value || '';
         const dataFim = this.elements.exportSystemDataFim?.value || '';
-        
+
         const systemData = this.prepareSystemExportData(dataInicio, dataFim);
-        
+
         const sections = [];
         if (systemData.clientes && systemData.clientes.length > 1) {
             sections.push({ name: 'Clientes', data: systemData.clientes });
@@ -707,7 +762,7 @@ export class DadosManager {
         sections.forEach((section, index) => {
             if (index > 0) csvContent += '\n\n';
             csvContent += `=== ${section.name} ===\n`;
-            csvContent += section.data.map(row => 
+            csvContent += section.data.map(row =>
                 row.map(cell => {
                     const cellStr = String(cell);
                     const escaped = cellStr.replace(/"/g, '""');
@@ -719,27 +774,27 @@ export class DadosManager {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
-        const periodoStr = dataInicio && dataFim 
-            ? `${dataInicio}_${dataFim}` 
+
+        const periodoStr = dataInicio && dataFim
+            ? `${dataInicio}_${dataFim}`
             : new Date().toISOString().split('T')[0];
         const fileName = `backup_sistema_${periodoStr}.csv`;
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
-        
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        logAction('export', 'sistema', null, { 
+
+        logAction('export', 'sistema', null, {
             tipo: 'backup_completo',
             formato: 'csv',
             periodo: { inicio: dataInicio || null, fim: dataFim || null }
         });
-        
-        const periodoMsg = dataInicio || dataFim 
-            ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})` 
+
+        const periodoMsg = dataInicio || dataFim
+            ? ` (período: ${dataInicio || 'início'} até ${dataFim || 'hoje'})`
             : '';
         Modals.alert(`Backup exportado com sucesso${periodoMsg} para ${fileName}`);
     }
@@ -747,7 +802,7 @@ export class DadosManager {
     prepareSystemExportData(dataInicio = '', dataFim = '') {
         let registrosFiltrados = this.app.data.registros;
         let clienteIds = new Set();
-        
+
         if (dataInicio || dataFim) {
             registrosFiltrados = this.app.data.registros.filter(registro => {
                 const dataEntrada = Utils.getLocalDateString(registro.dataHoraEntrada);
@@ -755,11 +810,11 @@ export class DadosManager {
                 if (dataFim && dataEntrada > dataFim) return false;
                 return true;
             });
-            
+
             registrosFiltrados.forEach(reg => clienteIds.add(reg.clientId));
         }
-        
-        const clientesFiltrados = (dataInicio || dataFim) 
+
+        const clientesFiltrados = (dataInicio || dataFim)
             ? this.app.data.clients.filter(c => clienteIds.has(c.id))
             : this.app.data.clients;
 
@@ -892,15 +947,15 @@ export class DadosManager {
                 stats.usuariosNovos++;
             }
         });
-        
+
         const mergedUsuarios = [...existingUsuarios, ...usuariosToAdd];
-        
+
         let mergedCategorias = null;
         if (importedData.categorias) {
             mergedCategorias = importedData.categorias;
             stats.categoriasImportadas = Object.keys(mergedCategorias).length;
         }
-        
+
         return {
             clients: existingClients,
             registros: existingRegistros,
@@ -917,20 +972,20 @@ export class DadosManager {
             Modals.alert(error.message, 'Permissão Negada');
             return;
         }
-        
+
         const file = this.elements.importSystemFile.files[0];
         if (!file) return;
 
         const confirmed = await Modals.showConfirm(
             'Esta operação irá MESCLAR os dados do arquivo com os dados existentes no sistema. Clientes duplicados (mesmo CPF) terão suas bicicletas mescladas, registros e usuários duplicados (mesmo ID/username) serão ignorados. Deseja continuar?'
         );
-        
+
         if (!confirmed) return;
 
         try {
             this.showImportSystemStatus('Lendo arquivo...', 'info', 0);
             await this.delay(100);
-            
+
             const fileExtension = file.name.split('.').pop().toLowerCase();
             let importedData;
 
@@ -947,10 +1002,10 @@ export class DadosManager {
             await this.delay(100);
 
             const mergedData = this.mergeSystemData(importedData);
-            
+
             const totalItems = mergedData.clients.length + mergedData.registros.length;
             const USE_BACKGROUND_THRESHOLD = 20;
-            
+
             if (totalItems >= USE_BACKGROUND_THRESHOLD) {
                 await this.handleBackgroundImport(mergedData);
             } else {
@@ -962,12 +1017,12 @@ export class DadosManager {
             this.showImportSystemStatus(`Erro ao importar: ${error.message}`, 'error', null);
         }
     }
-    
+
     async handleBackgroundImport(mergedData) {
         const jobMonitor = getJobMonitor();
-        
+
         this.showImportSystemStatus('Iniciando importação em segundo plano...', 'info', 40);
-        
+
         try {
             const backupData = {
                 clients: mergedData.clients,
@@ -975,24 +1030,24 @@ export class DadosManager {
                 usuarios: mergedData.usuarios,
                 categorias: mergedData.categorias
             };
-            
+
             const result = await jobMonitor.startImportBackup(backupData);
-            
+
             if (result.success) {
                 this.showImportSystemStatus(
-                    `Importação iniciada em segundo plano! Acompanhe o progresso no canto inferior direito da tela.`, 
-                    'success', 
+                    `Importação iniciada em segundo plano! Acompanhe o progresso no canto inferior direito da tela.`,
+                    'success',
                     100
                 );
-                
+
                 Auth.saveUsers(mergedData.usuarios);
                 if (mergedData.categorias) {
                     Storage.saveCategorias(mergedData.categorias);
                 }
-                
+
                 this.elements.importSystemFile.value = '';
                 this.elements.importSystemBtn.disabled = true;
-                
+
                 jobMonitor.showToast('Importação iniciada em segundo plano', 'info');
             } else {
                 throw new Error(result.error || 'Falha ao iniciar importação');
@@ -1003,7 +1058,7 @@ export class DadosManager {
             await this.handleSyncImport(mergedData);
         }
     }
-    
+
     async handleSyncImport(mergedData) {
         const totalClients = mergedData.clients.length;
         this.showImportSystemStatus('Salvando clientes...', 'info', 50, 0, totalClients);
@@ -1038,19 +1093,19 @@ export class DadosManager {
         await this.delay(200);
 
         this.showImportSystemStatus(`Backup importado com sucesso! ${mergedData.stats.clientesNovos} clientes novos, ${mergedData.stats.clientesMesclados} mesclados, ${mergedData.stats.bicicletasAdicionadas} bicicletas adicionadas, ${mergedData.stats.registrosNovos} registros novos, ${mergedData.stats.usuariosNovos} usuários novos, ${mergedData.stats.categoriasImportadas} categorias.`, 'success', 100);
-        
-        logAction('import', 'sistema', null, { 
+
+        logAction('import', 'sistema', null, {
             tipo: 'backup_completo',
             clientesNovos: mergedData.stats.clientesNovos,
             clientesMesclados: mergedData.stats.clientesMesclados,
             registrosNovos: mergedData.stats.registrosNovos,
             usuariosNovos: mergedData.stats.usuariosNovos
         });
-        
+
         this.app.clientesManager.renderClientList();
-        
+
         sessionStorage.setItem('skipLoadingScreen', 'true');
-        
+
         setTimeout(() => {
             Modals.alert('Dados importados com sucesso! A página será recarregada.', 'Importação Concluída', 'check-circle');
             setTimeout(() => {
@@ -1062,7 +1117,7 @@ export class DadosManager {
     async processSystemExcelImport(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            
+
             reader.onload = (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
@@ -1109,11 +1164,11 @@ export class DadosManager {
         const result = [];
         let current = '';
         let inQuotes = false;
-        
+
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
             const nextChar = line[i + 1];
-            
+
             if (char === '"') {
                 if (inQuotes && nextChar === '"') {
                     current += '"';
@@ -1128,7 +1183,7 @@ export class DadosManager {
                 current += char;
             }
         }
-        
+
         result.push(current.trim());
         return result;
     }
@@ -1136,26 +1191,26 @@ export class DadosManager {
     async processSystemCSVImport(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            
+
             reader.onload = (e) => {
                 try {
                     const text = e.target.result;
                     const sections = text.split(/\n\n=== /);
-                    
+
                     let clientesData = [];
                     let bicicletasData = [];
                     let categoriasData = [];
                     let registrosData = [];
                     let usuariosData = [];
-                    
+
                     sections.forEach(section => {
                         const lines = section.split('\n');
                         const sectionName = lines[0].replace('=== ', '').replace(' ===', '').trim();
-                        
+
                         const rows = lines.slice(1).filter(line => line.trim()).map(line => {
                             return this.parseCSVLine(line);
                         });
-                        
+
                         if (sectionName === 'Clientes') {
                             clientesData = rows;
                         } else if (sectionName === 'Bicicletas') {
@@ -1168,16 +1223,16 @@ export class DadosManager {
                             usuariosData = rows;
                         }
                     });
-                    
+
                     if (clientesData.length === 0) {
                         throw new Error('Arquivo CSV inválido. Certifique-se de que contém dados de Clientes');
                     }
-                    
+
                     const clients = this.parseClientesData(clientesData, bicicletasData);
                     const registros = this.parseRegistrosData(registrosData);
                     const usuarios = this.parseUsuariosData(usuariosData);
                     const categorias = this.parseCategoriasData(categoriasData);
-                    
+
                     resolve({
                         clients,
                         registros,
@@ -1188,7 +1243,7 @@ export class DadosManager {
                     reject(error);
                 }
             };
-            
+
             reader.onerror = () => reject(new Error('Erro ao ler arquivo CSV'));
             reader.readAsText(file);
         });
@@ -1196,7 +1251,7 @@ export class DadosManager {
 
     parseClientesData(clientesData, bicicletasData) {
         const clientesMap = new Map();
-        
+
         for (let i = 1; i < clientesData.length; i++) {
             const row = clientesData[i];
             if (!row[0]) continue;
@@ -1204,10 +1259,10 @@ export class DadosManager {
             let bicicletas = [];
             let categoria = '';
             let comentarios = [];
-            
+
             if (row.length >= 7) {
                 categoria = row[4] || '';
-                
+
                 if (row[5] && row[5].trim()) {
                     try {
                         const parsed = JSON.parse(row[5]);
@@ -1217,7 +1272,7 @@ export class DadosManager {
                         comentarios = [];
                     }
                 }
-                
+
                 if (row[6] && row[6].trim()) {
                     try {
                         const parsed = JSON.parse(row[6]);
@@ -1259,7 +1314,7 @@ export class DadosManager {
 
                 const clienteId = row[1];
                 const client = clientesMap.get(clienteId);
-                
+
                 if (client) {
                     client.bicicletas.push({
                         id: row[0],
@@ -1276,14 +1331,14 @@ export class DadosManager {
 
     parseRegistrosData(registrosData) {
         const registros = [];
-        
+
         for (let i = 1; i < registrosData.length; i++) {
             const row = registrosData[i];
             if (!row[0]) continue;
 
             if (row.length >= 10) {
                 let bikeSnapshot = null;
-                
+
                 if (row[9]) {
                     try {
                         const parsed = JSON.parse(row[9]);
@@ -1293,7 +1348,7 @@ export class DadosManager {
                         bikeSnapshot = null;
                     }
                 }
-                
+
                 registros.push({
                     id: row[0],
                     clientId: row[1],
@@ -1329,7 +1384,7 @@ export class DadosManager {
 
     parseUsuariosData(usuariosData) {
         const usuarios = [];
-        
+
         for (let i = 1; i < usuariosData.length; i++) {
             const row = usuariosData[i];
             if (!row[0]) continue;
@@ -1360,7 +1415,7 @@ export class DadosManager {
 
     parseCategoriasData(categoriasData) {
         const categorias = {};
-        
+
         for (let i = 1; i < categoriasData.length; i++) {
             const row = categoriasData[i];
             if (!row[0]) continue;
@@ -1377,19 +1432,19 @@ export class DadosManager {
 
         const colorClass = type === 'success' ? 'text-green-600 dark:text-green-400' :
             type === 'error' ? 'text-red-600 dark:text-red-400' :
-            'text-blue-600 dark:text-blue-400';
+                'text-blue-600 dark:text-blue-400';
 
         const progressColorClass = type === 'success' ? 'bg-green-500' :
             type === 'error' ? 'bg-red-500' : 'bg-orange-500';
 
         if (progress !== null && progress >= 0 && progress <= 100) {
-            const countDisplay = (current !== null && total !== null) 
-                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>` 
+            const countDisplay = (current !== null && total !== null)
+                ? `<span class="text-orange-500 dark:text-orange-400 font-bold">${current}/${total}</span>`
                 : '';
-            const progressDisplay = (current !== null && total !== null) 
+            const progressDisplay = (current !== null && total !== null)
                 ? `${countDisplay} <span class="text-slate-500 dark:text-slate-400">(${progress}%)</span>`
                 : `${progress}%`;
-            
+
             statusEl.innerHTML = `
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
@@ -1404,7 +1459,7 @@ export class DadosManager {
         } else {
             statusEl.innerHTML = `<p class="${colorClass}">${message}</p>`;
         }
-        
+
         statusEl.className = 'text-sm mt-2';
         statusEl.classList.remove('hidden');
     }

@@ -1,3 +1,53 @@
+/**
+ * ============================================================
+ *  ARQUIVO: configuracao.js
+ *  DESCRIÇÃO: Gerenciador de Configurações do Sistema
+ *
+ *  FUNÇÃO:
+ *  Módulo mais amplo da aba "Configuração". Controla:
+ *  - Gerenciamento de categorias (criar, editar, excluir)
+ *  - Tema da interface (claro / escuro / sistema)
+ *  - Temas personalizados (cores primárias/secundárias)
+ *  - Busca global por clientes, registros e bicicletas
+ *  - Importação e exportação de dados (clientes e sistema)
+ *  - Configurações de performance (debounce, limite de listas)
+ *  - Configurações de notificações push (via notificationManager)
+ *  - Histórico organizado por ano/mês
+ *  - Gerenciamento de backups automáticos
+ *  - Monitor de jobs em background (jobMonitor)
+ *
+ *  CLASSE: ConfiguracaoManager
+ *  Instanciada em app-modular.js como this.configuracaoManager
+ *
+ *  DEPENDÊNCIAS:
+ *  - storage.js           → Storage.loadCategorias(), saveCategorias(), etc.
+ *  - utils.js             → Utils.formatCPF(), formatTelefone(), adjustColor()
+ *  - modals.js            → Modals.show(), Modals.alert(), Modals.confirm()
+ *  - auth.js              → Auth.getCurrentSession()
+ *  - notifications.js     → notificationManager.setupNotificationToggle()
+ *  - job-monitor.js       → getJobMonitor()
+ *  - audit-logger.js      → logAction()
+ *  - performance-config.js → PerformanceConfig
+ *
+ *  CATEGORIAS:
+ *  - Armazenadas como objeto { "NOME": "emoji" } no localStorage
+ *  - Sanitizadas ao carregar (removeQuotes, uppercase)
+ *  - Ícone Lucide mapeado via emojiToIconMap
+ *
+ *  TEMA:
+ *  - Preferência salva em localStorage 'themePreference'
+ *  - applyTheme() aplica classes dark/light no <html>
+ *  - "Nuclear Option": sobrescreve inline styles do body para garantir mudança
+ *  - Monitora mudança do tema do SO via matchMedia
+ *
+ *  PARA INICIANTES:
+ *  Para adicionar uma nova opção de configuração:
+ *  1. Adicione o campo HTML na aba Configuração em index.html
+ *  2. Guarde o valor no localStorage em addEventListeners()
+ *  3. Leia o valor no init() ou setupPerformanceSettings()
+ * ============================================================
+ */
+
 import { Storage } from '../shared/storage.js';
 import { Utils } from '../shared/utils.js';
 import { Modals } from '../shared/modals.js';
@@ -5,6 +55,7 @@ import { Auth } from '../shared/auth.js';
 import { notificationManager } from '../shared/notifications.js';
 import { getJobMonitor } from '../shared/job-monitor.js';
 import { logAction } from '../shared/audit-logger.js';
+import { PerformanceConfig } from '../shared/performance-config.js';
 
 export class ConfiguracaoManager {
     // Constants for backup settings validation
@@ -80,6 +131,8 @@ export class ConfiguracaoManager {
         this.loadThemePreference();
         this.renderHistoricoOrganizado();
         this.setupNotificationSettings();
+        this.injectPerformanceUI(); // Injeta HTML da UI de performance
+        this.setupPerformanceSettings(); // Configurações de otimização
         this.setupJobMonitorCallbacks();
 
         // Pequeno atraso para garantir que o Storage carregou tudo
@@ -637,7 +690,7 @@ export class ConfiguracaoManager {
             if (select) {
                 const currentValue = select.value;
                 select.innerHTML = '<option value="">Selecione uma categoria (opcional)</option>' +
-                    Object.entries(categorias).map(([nome, emoji]) => `<option value="${nome}">${emoji} ${nome}</option>`).join('');
+                    Object.entries(categorias).map(([nome, emoji]) => `<option value="${nome}">${nome}</option>`).join('');
                 if (currentValue && currentValue in categorias) {
                     select.value = currentValue;
                 }
@@ -738,6 +791,7 @@ export class ConfiguracaoManager {
         const customColors = JSON.parse(localStorage.getItem(storageKey) || '{}');
         if (customColors.primary) {
             document.documentElement.style.setProperty('--color-primary', customColors.primary);
+            document.documentElement.style.setProperty('--color-primary-hover', Utils.adjustColor(customColors.primary, -20));
         }
         if (customColors.secondary) {
             document.documentElement.style.setProperty('--color-secondary', customColors.secondary);
@@ -837,6 +891,7 @@ export class ConfiguracaoManager {
                 const secondary = secondaryInput.value;
                 const accent = accentInput.value;
                 document.documentElement.style.setProperty('--color-primary', primary);
+                document.documentElement.style.setProperty('--color-primary-hover', Utils.adjustColor(primary, -20));
                 document.documentElement.style.setProperty('--color-secondary', secondary);
                 document.documentElement.style.setProperty('--color-accent', accent);
 
@@ -3084,6 +3139,231 @@ export class ConfiguracaoManager {
         }
 
         this.loadStorageModeSettings();
+    }
+
+    /**
+     * Injeta HTML da UI de Otimização de Performance
+     */
+    injectPerformanceUI() {
+        // Procura por um container de notificações para inserir após ele
+        // Flexibilizado para funcionar de forma confiável no carregamento modular do DOM
+        const notificationSection = document.getElementById('save-notification-settings') || document.querySelector('#configuracao-tab-content .grid > div:nth-child(2)');
+
+        if (!notificationSection) {
+            console.warn('Seção de notificações não encontrada para adicionar UI de performance');
+            return;
+        }
+
+        // Verifica se já foi injetado
+        if (document.getElementById('performance-optimization-section')) {
+            return; // Já existe
+        }
+
+        const performanceHTML = `
+            <div id="performance-optimization-section" class="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 mt-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                        <i data-lucide="zap" class="w-6 h-6 text-orange-600 dark:text-orange-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Otimização para PC Fraco</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Ajuste o desempenho do sistema para computadores menos potentes</p>
+                    </div>
+                </div>
+
+                <!-- Debounce na Busca -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="debounce-enabled" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            </label>
+                            <div>
+                                <label for="debounce-enabled" class="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                    Atraso na Busca (Debounce)
+                                </label>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    Reduz chamadas de busca durante digitação
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Configurações de Debounce -->
+                    <div id="debounce-settings" class="hidden mt-3 ml-14 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Tempo de Atraso (ms)
+                        </label>
+                        <input type="number" 
+                               id="debounce-delay" 
+                               min="100" 
+                               max="1000" 
+                               step="50" 
+                               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100"
+                               placeholder="300">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            Recomendado: 300ms. Maior = menos processamento, mas busca mais lenta
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Limite de Lista de Clientes -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="limit-list-enabled" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            </label>
+                            <div>
+                                <label for="limit-list-enabled" class="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                    Limitar Lista de Clientes
+                                </label>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    Mostra clientes por partes com botão "Carregar Mais"
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Configurações de Limite -->
+                    <div id="limit-list-settings" class="hidden mt-3 ml-14 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Quantidade Inicial de Clientes
+                        </label>
+                        <input type="number" 
+                               id="list-limit" 
+                               min="10" 
+                               max="500" 
+                               step="10" 
+                               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100"
+                               placeholder="100">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            Recomendado: 100. Menor = carregamento mais rápido
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Botão Salvar -->
+                <div class="flex items-center gap-2 pt-4 border-t border-slate-200 dark:border-slate-600">
+                    <button id="save-performance-settings" 
+                            class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        Salvar Configurações
+                    </button>
+                </div>
+
+                <!-- Informação -->
+                <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div class="flex gap-2">
+                        <i data-lucide="info" class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"></i>
+                        <p class="text-xs text-blue-700 dark:text-blue-300">
+                            <strong>Dica:</strong> Após salvar, recarregue a página para aplicar as mudanças. 
+                            Ative ambas as opções para melhor desempenho em PCs fracos.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Insere de maneira segura para não quebrar no Load (dependendo da âncora encontrada)
+        if (notificationSection.id === 'save-notification-settings') {
+            const parentContainer = notificationSection.closest('.bg-white, .dark\\:bg-slate-800, .theme-glass-panel');
+            if (parentContainer && parentContainer.parentElement) {
+                parentContainer.parentElement.insertAdjacentHTML('beforeend', performanceHTML);
+            } else {
+                notificationSection.parentElement?.insertAdjacentHTML('afterend', performanceHTML);
+            }
+        } else {
+            // Âncora fallback via querySelector
+            notificationSection.insertAdjacentHTML('afterend', performanceHTML);
+        }
+
+        // Inicializa ícones do Lucide
+        if (typeof window.lucide !== 'undefined') {
+            window.lucide.createIcons();
+        }
+    }
+
+    /**
+     * Configurações de Performance/Otimização
+     */
+    setupPerformanceSettings() {
+        const settings = PerformanceConfig.load();
+
+        // Elementos de controle para Debounce
+        const debounceEnabled = document.getElementById('debounce-enabled');
+        const debounceSettings = document.getElementById('debounce-settings');
+        const debounceDelay = document.getElementById('debounce-delay');
+
+        // Elementos de controle para Limite de Lista
+        const limitListEnabled = document.getElementById('limit-list-enabled');
+        const limitListSettings = document.getElementById('limit-list-settings');
+        const listLimit = document.getElementById('list-limit');
+
+        const savePerformanceBtn = document.getElementById('save-performance-settings');
+
+        // Carregar configurações salvas - Debounce
+        if (debounceEnabled) {
+            debounceEnabled.checked = settings.enableDebounce;
+            if (settings.enableDebounce && debounceSettings) {
+                debounceSettings.classList.remove('hidden');
+            }
+        }
+
+        if (debounceDelay) {
+            debounceDelay.value = settings.debounceDelay;
+        }
+
+        // Carregar configurações salvas - Limite de Lista
+        if (limitListEnabled) {
+            limitListEnabled.checked = settings.limitClientList;
+            if (settings.limitClientList && limitListSettings) {
+                limitListSettings.classList.remove('hidden');
+            }
+        }
+
+        if (listLimit) {
+            listLimit.value = settings.clientListLimit;
+        }
+
+        // Event listeners para toggles
+        if (debounceEnabled) {
+            debounceEnabled.addEventListener('change', (e) => {
+                if (debounceSettings) {
+                    debounceSettings.classList.toggle('hidden', !e.target.checked);
+                }
+            });
+        }
+
+        if (limitListEnabled) {
+            limitListEnabled.addEventListener('change', (e) => {
+                if (limitListSettings) {
+                    limitListSettings.classList.toggle('hidden', !e.target.checked);
+                }
+            });
+        }
+
+        // Salvar configurações
+        if (savePerformanceBtn) {
+            savePerformanceBtn.addEventListener('click', () => {
+                const newSettings = {
+                    enableDebounce: debounceEnabled?.checked ?? false,
+                    debounceDelay: parseInt(debounceDelay?.value || 300),
+                    limitClientList: limitListEnabled?.checked ?? false,
+                    clientListLimit: parseInt(listLimit?.value || 50), // Hard default seguro
+                };
+
+                PerformanceConfig.save(newSettings);
+
+                Modals.alert(
+                    'Configurações de otimização salvas! Recarregue a página para aplicar as mudanças.',
+                    'Configurações Salvas',
+                    'zap'
+                );
+            });
+        }
     }
 
     async loadStorageModeSettings() {

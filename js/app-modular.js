@@ -1,3 +1,37 @@
+/**
+ * ============================================================
+ *  ARQUIVO: app-modular.js
+ *  DESCRIÇÃO: Arquivo principal da aplicação — ponto de entrada do sistema
+ *
+ *  FUNÇÃO: Orquestra todos os módulos do sistema de bicicletário.
+ *          É aqui que os gerenciadores de cada seção (clientes, registros,
+ *          configuração, etc.) são criados e conectados.
+ *
+ *  ARQUITETURA:
+ *  - Este arquivo define a classe App (aplicação principal).
+ *  - Cada aba do sistema tem seu próprio Manager (gerenciador):
+ *      • ClientesManager   → aba de clientes cadastrados
+ *      • BicicletasManager → aba de bicicletas
+ *      • RegistrosManager  → aba de registros diários
+ *      • ConfiguracaoManager → aba de configurações
+ *      • DadosManager      → aba de exportação/importação
+ *      • JogosManager      → aba de jogos
+ *      • Usuarios          → aba de gerenciamento de usuários
+ *  - Módulos compartilhados ficam em js/shared/ (auth, storage, debug, etc.)
+ *
+ *  FLUXO DE INICIALIZAÇÃO:
+ *  1. DOMContentLoaded → inicia Debug, ícones Lucide e SystemLoader
+ *  2. SystemLoader verifica o sistema (backend, dados, usuários)
+ *  3. App.init() verifica autenticação e redireciona se necessário
+ *  4. Se autenticado, carrega dados e inicializa todos os managers
+ *
+ *  PARA INICIANTES:
+ *  - Este arquivo é carregado automaticamente pelo index.html
+ *  - A instância global do app fica em: window.app
+ *  - Para trocar de aba via console: window.app.switchTab('clientes')
+ * ============================================================
+ */
+
 import { ClientesManager } from './cadastros/clientes.js';
 import { BicicletasManager } from './cadastros/bicicletas.js';
 import { RegistrosManager } from './registros/registros-diarios.js';
@@ -13,6 +47,8 @@ import { Utils } from './shared/utils.js';
 import { SystemLoader } from './shared/system-loader.js';
 import { getJobMonitor } from './shared/job-monitor.js';
 import { Config } from './shared/config.js';
+import { Hotkeys } from './shared/hotkeys.js';
+import { HelpGuide } from './shared/help-guide.js';
 
 class App {
     constructor() {
@@ -81,13 +117,21 @@ class App {
         this.registrosManager.renderDailyRecords();
 
         this.initJobMonitor();
+        this.hotkeys = new Hotkeys(this);
+        this.helpGuide = new HelpGuide(this);
+
+        // Ligar o ícone da bicicleta ao guia de atalhos
+        const bikeLogoBtn = document.querySelector('.bike-logo-btn');
+        if (bikeLogoBtn) {
+            bikeLogoBtn.addEventListener('click', () => this.helpGuide.openGuide());
+        }
     }
 
     initJobMonitor() {
         this.jobMonitor = getJobMonitor();
 
         this.jobMonitor.onChanges((changes) => {
-            console.log('📡 Mudanças detectadas:', changes);
+            console.log('📡 Mudanças detectadas pelo monitor de jobs:', changes);
 
             if (changes.clients) {
                 this.refreshClients();
@@ -267,7 +311,8 @@ class App {
 
     handleLogout() {
         Auth.logout();
-        // Pular tela de carregamento ao trocar de perfil
+        // Sinaliza para o próximo carregamento pular a tela de splash/loading
+        // (evita mostrar a tela de carregamento desnecessariamente ao trocar de usuário)
         sessionStorage.setItem('skipLoadingScreen', 'true');
         window.location.reload();
     }
@@ -308,7 +353,7 @@ class App {
         try {
             const result = await Auth.login(username, password);
             if (result.success) {
-                // Pular tela de carregamento ao trocar de perfil
+                // Login bem-sucedido: recarrega a página sem mostrar tela de carregamento
                 sessionStorage.setItem('skipLoadingScreen', 'true');
                 window.location.reload();
             } else {
@@ -379,7 +424,7 @@ class App {
             const result = await Auth.changePassword(session.userId, newPassword);
             if (result.success) {
                 document.getElementById('password-change-modal').remove();
-                // Pular tela de carregamento ao alterar senha
+                // Senha alterada com sucesso: recarrega sem tela de loading
                 sessionStorage.setItem('skipLoadingScreen', 'true');
                 window.location.reload();
             } else {
@@ -390,7 +435,7 @@ class App {
 
         document.getElementById('modal-logout-btn').addEventListener('click', () => {
             Auth.logout();
-            // Pular tela de carregamento ao trocar de perfil
+            // Usuário optou por sair durante a troca de senha obrigatória
             sessionStorage.setItem('skipLoadingScreen', 'true');
             window.location.reload();
         });
@@ -438,16 +483,14 @@ class App {
 
         Object.values(tabs).forEach(tab => {
             if (tab.btn && tab.content) {
-                tab.btn.classList.remove('border-blue-500', 'text-blue-600', 'dark:text-blue-400', 'dark:border-blue-400');
-                tab.btn.classList.add('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+                tab.btn.classList.remove('active');
                 tab.content.classList.add('hidden');
             }
         });
 
         const active = tabs[tabName];
         if (active && active.btn && active.content) {
-            active.btn.classList.add('border-blue-500', 'text-blue-600', 'dark:text-blue-400', 'dark:border-blue-400');
-            active.btn.classList.remove('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+            active.btn.classList.add('active');
             active.content.classList.remove('hidden');
         }
 
@@ -493,7 +536,7 @@ class App {
         const closeBtn = document.getElementById('close-comments-modal-btn');
 
         if (!modal || !clientName || !clientCpf || !commentsList || !commentInput || !addCommentBtn || !closeBtn) {
-            console.error('Comments modal elements not found');
+            console.error('Elementos do modal de comentários não encontrados no DOM — verifique o HTML do modal #comments-modal');
             return;
         }
 
@@ -585,18 +628,30 @@ class App {
     }
 }
 
+/**
+ * Ponto de entrada da aplicação.
+ * Executado automaticamente quando o HTML termina de carregar.
+ *
+ * Ordem de execução:
+ * 1. Debug.init()       — inicializa o sistema de debug (lê preferência do LocalStorage)
+ * 2. lucide.createIcons() — renderiza todos os ícones SVG na página
+ * 3. SystemLoader.start() — executa a tela de carregamento e verifica o sistema
+ * 4. App.init()         — inicializa o app com autenticação e dados
+ */
 document.addEventListener('DOMContentLoaded', async () => {
     Debug.init();
     lucide.createIcons();
 
-    // Executar verificação do sistema com tela de carregamento
+    // Executa a tela de splash/carregamento e verifica se o sistema está pronto
     const systemLoader = new SystemLoader();
     const systemReady = await systemLoader.start();
 
     if (systemReady) {
+        // Cria a instância global do app e inicia a aplicação
         window.app = new App();
         window.app.init();
     } else {
+        // Erros críticos na verificação do sistema (backend inacessível, dados corrompidos, etc.)
         console.error('Sistema não pôde ser iniciado devido a erros críticos');
     }
 });
