@@ -1,6 +1,44 @@
 /**
- * Sistema de Armazenamento Offline com IndexedDB
- * Fornece armazenamento persistente e sincronização automática
+ * ============================================================
+ *  ARQUIVO: offline-storage.js
+ *  DESCRIÇÃO: Sistema de Armazenamento Offline com IndexedDB
+ *
+ *  FUNÇÃO:
+ *  Camada de persistência usando IndexedDB (banco de dados embutido
+ *  no navegador). Suporta maior volume de dados que o localStorage
+ *  e adiciona uma fila de sincronização para ambientes offline.
+ *
+ *  QUANDO É USADO:
+ *  - Aplicação PWA funcionando sem internet
+ *  - Sincronização automática quando a conexão é restaurada
+ *  - Backup de dados do IndexedDB para JSON
+ *
+ *  DIFERENÇA vs storage.js:
+ *  - storage.js   → usado pelo sistema principal (localStorage/Electron)
+ *  - offline-storage.js → usado como backup e quando há servidor REST
+ *
+ *  ESTRUTURA DO BANCO (IndexedDB 'BicicletarioDB'):
+ *  ┌──────────────┬────────────────────────────────────────┐
+ *  │ Store        │ Índices                                │
+ *  ├──────────────┼────────────────────────────────────────┤
+ *  │ clientes     │ cpf (único), nome                      │
+ *  │ bicicletas   │ clienteId                              │
+ *  │ registros    │ clienteId, dataHoraEntrada             │
+ *  │ usuarios     │ username (único)                       │
+ *  │ syncQueue    │ timestamp, synced (true/false)         │
+ *  └──────────────┴────────────────────────────────────────┘
+ *
+ *  FILA DE SINCRONIZAÇÃO:
+ *  - Operações feitas offline são registradas em 'syncQueue'
+ *  - Ao ficar online, syncPendingOperations() é chamado
+ *  - Envia os dados para o servidor REST (API_BASE_URL)
+ *
+ *  PARA INICIANTES:
+ *  import { getOfflineStorage } from './shared/offline-storage.js';
+ *  const db = getOfflineStorage();
+ *  await db.init();
+ *  const clientes = await db.getAll('clientes');
+ * ============================================================
  */
 
 const DB_NAME = 'BicicletarioDB';
@@ -113,12 +151,12 @@ export class OfflineStorage {
 
             request.onsuccess = () => {
                 console.log(`✅ Dados salvos em ${storeName}:`, data.id);
-                
+
                 // Adiciona à fila de sincronização se offline
                 if (!this.isOnline) {
                     this.addToSyncQueue(storeName, 'save', data);
                 }
-                
+
                 resolve(data);
             };
 
@@ -186,12 +224,12 @@ export class OfflineStorage {
 
             request.onsuccess = () => {
                 console.log(`✅ Item ${id} deletado de ${storeName}`);
-                
+
                 // Adiciona à fila de sincronização se offline
                 if (!this.isOnline) {
                     this.addToSyncQueue(storeName, 'delete', { id });
                 }
-                
+
                 resolve();
             };
 
@@ -243,7 +281,7 @@ export class OfflineStorage {
         }
 
         const pendingOps = await this.getPendingSync();
-        
+
         if (pendingOps.length === 0) {
             console.log('✅ Nenhuma operação pendente para sincronizar');
             return;
@@ -350,40 +388,40 @@ export class OfflineStorage {
      */
     showOfflineIndicator() {
         let indicator = document.getElementById('offline-indicator');
-        
+
         if (!indicator) {
             // Cria elementos de forma segura
             const container = document.createElement('div');
             container.className = 'fixed top-4 right-4 z-[10000] bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2';
-            
+
             // Ícone SVG
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('class', 'w-5 h-5');
             svg.setAttribute('fill', 'none');
             svg.setAttribute('stroke', 'currentColor');
             svg.setAttribute('viewBox', '0 0 24 24');
-            
+
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('stroke-linecap', 'round');
             path.setAttribute('stroke-linejoin', 'round');
             path.setAttribute('stroke-width', '2');
             path.setAttribute('d', 'M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414');
-            
+
             svg.appendChild(path);
-            
+
             // Texto
             const span = document.createElement('span');
             span.textContent = 'Modo Offline';
-            
+
             container.appendChild(svg);
             container.appendChild(span);
-            
+
             indicator = document.createElement('div');
             indicator.id = 'offline-indicator';
             indicator.appendChild(container);
             document.body.appendChild(indicator);
         }
-        
+
         indicator.style.display = 'block';
     }
 
@@ -395,7 +433,7 @@ export class OfflineStorage {
         if (indicator) {
             indicator.style.display = 'none';
         }
-        
+
         // Mostra notificação temporária
         this._createNotification('online', 'Online - Sincronizando...');
     }
@@ -419,36 +457,36 @@ export class OfflineStorage {
             'online': 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
             'sync': 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
         };
-        
+
         const container = document.createElement('div');
         container.className = `fixed top-4 right-4 z-[10000] ${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2`;
-        
+
         // Ícone SVG
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('class', 'w-5 h-5');
         svg.setAttribute('fill', 'none');
         svg.setAttribute('stroke', 'currentColor');
         svg.setAttribute('viewBox', '0 0 24 24');
-        
+
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('stroke-linecap', 'round');
         path.setAttribute('stroke-linejoin', 'round');
         path.setAttribute('stroke-width', '2');
         path.setAttribute('d', icons[type]);
-        
+
         svg.appendChild(path);
-        
+
         // Texto (seguro contra XSS)
         const span = document.createElement('span');
         span.textContent = message;
-        
+
         container.appendChild(svg);
         container.appendChild(span);
-        
+
         const notification = document.createElement('div');
         notification.appendChild(container);
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.remove();
         }, 3000);

@@ -1,3 +1,51 @@
+/**
+ * ============================================================
+ *  ARQUIVO: job-monitor.js
+ *  DESCRIÇÃO: Monitor de Jobs em Background e Sistema de Toasts
+ *
+ *  FUNÇÃO:
+ *  Monitora operações assíncronas longas no servidor (jobs),
+ *  exibindo barras de progresso em tempo real para o usuário.
+ *  Também detecta mudanças no banco de dados e notifica os
+ *  módulos interessados via callbacks.
+ *
+ *  CLASSE: JobMonitor
+ *  Singleton — obtido via getJobMonitor() exportado no final
+ *  Instanciada em app-modular.js como this.jobMonitor
+ *
+ *  RESPONSABILIDADES:
+ *  1. jobMonitor.pollJobs()    → Busca jobs ativos em /api/jobs a cada 1-5s
+ *  2. jobMonitor.pollChanges() → Verifica mudanças em /api/changes a cada 10s
+ *  3. jobMonitor.showToast()   → Exibe notificação toast (canto inferior direito)
+ *  4. jobMonitor.onChanges()   → Registra callback para quando dados mudarem
+ *
+ *  CARDS DE JOB:
+ *  - Cada job recebe um card fixo no canto inferior direito
+ *  - Barra de progresso colorida por status: pending(amarelo) /
+ *    running(laranja) / completed(verde) / failed(vermelho)
+ *  - Card desaparece automaticamente 5 segundos após conclusão
+ *
+ *  SISTEMA DE DETECÇÃO DE MUDANÇAS:
+ *  - Compara contadores do servidor com lastKnownChanges (localStorage)
+ *  - Quando há mudança: dispara todos os callbacks registrados via onChanges()
+ *  - Usado por app-modular.js para recarregar dados sem reload da página
+ *
+ *  TOASTS:
+ *  - showToast(message, type) → tipos: 'success', 'error', 'warning', 'info'
+ *  - Soma ao container de jobs (mesma área, canto inferior direito)
+ *  - Auto-remove após 4 segundos
+ *
+ *  FALLBACK SEM SERVIDOR:
+ *  - Todas as chamadas fetch() têm try/catch
+ *  - Sem servidor: silenciosamente ignora erros (console.warn apenas)
+ *  - O resto do sistema funciona normalmente
+ *
+ *  DEPENDÊNCIAS:
+ *  - Nenhuma! Módulo totalmente autossuficiente (usa apenas fetch e DOM)
+ *  - Lucide.js (global) para ícones nos cards — via lucide.createIcons()
+ * ============================================================
+ */
+
 export class JobMonitor {
     constructor() {
         this.jobs = new Map();
@@ -336,9 +384,9 @@ export class JobMonitor {
     showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `bg-slate-800 border rounded-lg shadow-lg p-3 animate-slide-in ${type === 'success' ? 'border-green-500' :
-                type === 'error' ? 'border-red-500' :
-                    type === 'warning' ? 'border-yellow-500' :
-                        'border-blue-500'
+            type === 'error' ? 'border-red-500' :
+                type === 'warning' ? 'border-yellow-500' :
+                    'border-blue-500'
             }`;
 
         const iconMap = {
