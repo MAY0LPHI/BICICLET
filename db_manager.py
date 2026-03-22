@@ -58,6 +58,7 @@ class DatabaseManager:
         conn.execute("PRAGMA mmap_size=134217728;")       # Mapeia apenas até 128MB na RAM (antes: 3GB)
         
         conn.execute("PRAGMA busy_timeout=5000;")         # Espera até 5s em caso de lock
+        conn.execute("PRAGMA foreign_keys=ON;")          # Ativa integridade referencial
         
         return conn
     
@@ -186,6 +187,7 @@ class DatabaseManager:
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_registros_data ON registros(data_hora_entrada)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_auditoria_usuario ON auditoria(usuario)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_auditoria_timestamp ON auditoria(timestamp)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_registros_bicicleta ON registros(bicicleta_id)")
                 
                 conn.commit()
                 logger.info("Banco de dados inicializado com sucesso")
@@ -211,12 +213,19 @@ class DatabaseManager:
                 elif not isinstance(comentarios, str):
                     comentarios = str(comentarios) if comentarios else ''
                 
-                # Verifica se cliente já existe
-                cursor.execute("SELECT id FROM clientes WHERE id = ?", (cliente['id'],))
+                if 'id' not in cliente or not cliente['id']:
+                    cursor.execute("SELECT id FROM clientes WHERE cpf = ?", (cliente['cpf'],))
+                    existing = cursor.fetchone()
+                    if existing:
+                        cliente['id'] = existing['id']
+                    else:
+                        cliente['id'] = cliente['cpf']
+
+                cursor.execute("SELECT id FROM clientes WHERE id = ? OR cpf = ?", (cliente['id'], cliente['cpf']))
                 exists = cursor.fetchone()
                 
                 if exists:
-                    # Atualiza cliente existente
+                    cliente['id'] = exists['id']
                     cursor.execute("""
                         UPDATE clientes SET
                             cpf = ?, nome = ?, telefone = ?, categoria = ?,
@@ -283,7 +292,12 @@ class DatabaseManager:
                     elif not isinstance(comentarios, str):
                         comentarios = str(comentarios) if comentarios else ''
 
-                    # Upsert cliente
+                    existing_row = cursor.execute("SELECT id FROM clientes WHERE cpf = ?", (cliente['cpf'],)).fetchone()
+                    if existing_row:
+                        cliente['id'] = existing_row['id']
+                    elif 'id' not in cliente or not cliente['id']:
+                        cliente['id'] = cliente['cpf']
+
                     cursor.execute("""
                         INSERT INTO clientes (
                             id, cpf, nome, telefone, categoria, comentarios,
@@ -315,7 +329,7 @@ class DatabaseManager:
                             cursor.execute("""
                                 INSERT INTO bicicletas (
                                     id, cliente_id, descricao, marca, modelo,
-                                    cor, aro, ativa, criado_em, atualizada_em
+                                    cor, aro, ativa, criada_em, atualizada_em
                                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                 ON CONFLICT(id) DO UPDATE SET
                                     cliente_id=excluded.cliente_id,
@@ -341,6 +355,7 @@ class DatabaseManager:
             logger.error(f"Erro ao salvar clientes em lote: {e}", exc_info=True)
             return False
 
+    def get_cliente_by_id(self, cliente_id: str) -> Optional[Dict[str, Any]]:
         """Retorna um cliente pelo ID"""
         try:
             with self._get_connection() as conn:
@@ -351,28 +366,57 @@ class DatabaseManager:
                 if row:
                     cliente = dict(row)
                     cliente['ativo'] = bool(cliente['ativo'])
-                    # Carrega bicicletas do cliente
                     cliente['bicicletas'] = self.get_bicicletas_cliente(cliente_id)
                     return cliente
                 return None
         except Exception as e:
             logger.error(f"Erro ao buscar cliente: {e}", exc_info=True)
             return None
-    
+
+    def get_cliente_by_id_or_cpf(self, param: str) -> Optional[Dict[str, Any]]:
+        """Retorna um cliente pelo ID ou CPF com query direta"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM clientes WHERE id = ? OR cpf = ?", (param, param))
+                row = cursor.fetchone()
+                
+                if row:
+                    cliente = dict(row)
+                    cliente['ativo'] = bool(cliente['ativo'])
+                    cliente['bicicletas'] = self.get_bicicletas_cliente(cliente['id'])
+                    return cliente
+                return None
+        except Exception as e:
+            logger.error(f"Erro ao buscar cliente por ID/CPF: {e}", exc_info=True)
+            return None
+
     def get_all_clientes(self) -> List[Dict[str, Any]]:
-        """Retorna todos os clientes"""
+        """Retorna todos os clientes com bicicletas em 2 queries (ao invés de N+1)"""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT * FROM clientes ORDER BY nome")
-                rows = cursor.fetchall()
+                client_rows = cursor.fetchall()
+                
+                cursor.execute("SELECT * FROM bicicletas ORDER BY descricao")
+                bike_rows = cursor.fetchall()
+                
+                bikes_by_client = {}
+                for row in bike_rows:
+                    bike = dict(row)
+                    cid = bike.pop('cliente_id')
+                    bike['clienteId'] = cid
+                    bike['ativa'] = bool(bike['ativa'])
+                    if cid not in bikes_by_client:
+                        bikes_by_client[cid] = []
+                    bikes_by_client[cid].append(bike)
                 
                 clientes = []
-                for row in rows:
+                for row in client_rows:
                     cliente = dict(row)
                     cliente['ativo'] = bool(cliente['ativo'])
-                    # Carrega bicicletas do cliente
-                    cliente['bicicletas'] = self.get_bicicletas_cliente(cliente['id'])
+                    cliente['bicicletas'] = bikes_by_client.get(cliente['id'], [])
                     clientes.append(cliente)
                 
                 return clientes
@@ -385,7 +429,7 @@ class DatabaseManager:
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
+                cursor.execute("DELETE FROM clientes WHERE id = ? OR cpf = ?", (cliente_id, cliente_id))
                 conn.commit()
                 logger.info(f"Cliente deletado: {cliente_id}")
                 return True
@@ -550,8 +594,12 @@ class DatabaseManager:
                 registros = []
                 for row in rows:
                     registro = dict(row)
-                    registro['clienteId'] = registro.pop('cliente_id')
-                    registro['bicicletaId'] = registro.pop('bicicleta_id')
+                    cid = registro.pop('cliente_id')
+                    bid = registro.pop('bicicleta_id')
+                    registro['clienteId'] = cid
+                    registro['clientId'] = cid
+                    registro['bicicletaId'] = bid
+                    registro['bikeId'] = bid
                     registro['dataHoraEntrada'] = registro.pop('data_hora_entrada')
                     registro['dataHoraSaida'] = registro.pop('data_hora_saida')
                     registro['pernoite'] = bool(registro['pernoite'])
@@ -761,6 +809,13 @@ class DatabaseManager:
     def restore_backup(self, backup_file: str) -> bool:
         """Restaura um backup"""
         try:
+            pre_restore = os.path.join(BACKUP_DIR, f"pre_restore_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+            try:
+                self.create_backup(format='json')
+                logger.info(f"Backup de segurança criado antes da restauração")
+            except Exception as e:
+                logger.warning(f"Não foi possível criar backup de segurança: {e}")
+
             if backup_file.endswith('.zip'):
                 with zipfile.ZipFile(backup_file, 'r') as zipf:
                     zipf.extractall(DB_DIR)
@@ -1124,18 +1179,17 @@ class DatabaseManager:
         else:
             return f"{size_bytes / (1024 * 1024):.1f} MB"
     
-    def create_full_backup(self) -> Optional[Dict[str, Any]]:
+    def create_full_backup(self, auth_users: Optional[List[Dict[str, Any]]] = None) -> Optional[Dict[str, Any]]:
         """Cria um backup completo do sistema e retorna os dados do backup"""
         try:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             backup_filename = f"backup_{timestamp}.json"
             backup_filepath = os.path.join(BACKUP_DIR, backup_filename)
             
-            # Coleta todos os dados do sistema
             clientes = self.get_all_clientes()
             registros = self.get_all_registros()
             categorias = self.get_all_categorias()
-            usuarios = self.get_all_usuarios()
+            usuarios = auth_users if auth_users is not None else self.get_all_usuarios()
             
             # Estrutura do backup
             backup_data = {
@@ -1178,11 +1232,22 @@ class DatabaseManager:
             logger.error(f"Erro ao criar backup completo: {e}", exc_info=True)
             return None
     
+    def _safe_backup_path(self, filename: str) -> Optional[str]:
+        """Valida e retorna caminho seguro para arquivo de backup"""
+        safe_name = os.path.basename(filename)
+        if not safe_name.endswith('.json'):
+            return None
+        filepath = os.path.join(BACKUP_DIR, safe_name)
+        real_path = os.path.realpath(filepath)
+        if not real_path.startswith(os.path.realpath(BACKUP_DIR)):
+            return None
+        return filepath
+
     def get_backup_content(self, filename: str) -> Optional[Dict[str, Any]]:
         """Retorna o conteúdo de um arquivo de backup"""
         try:
-            filepath = os.path.join(BACKUP_DIR, filename)
-            if not os.path.exists(filepath):
+            filepath = self._safe_backup_path(filename)
+            if not filepath or not os.path.exists(filepath):
                 return None
             
             with open(filepath, 'r', encoding='utf-8') as f:
@@ -1229,14 +1294,7 @@ class DatabaseManager:
                     except Exception as e:
                         result['errors'].append(f"Erro ao restaurar registro {registro.get('id', 'unknown')}: {str(e)}")
             
-            # Restaurar usuários
-            if 'usuarios' in data:
-                for usuario in data['usuarios']:
-                    try:
-                        if self.save_usuario(usuario):
-                            result['restored']['usuarios'] += 1
-                    except Exception as e:
-                        result['errors'].append(f"Erro ao restaurar usuário {usuario.get('username', 'unknown')}: {str(e)}")
+            # Usuários são restaurados pelo auth_manager no server.py
             
             result['success'] = len(result['errors']) == 0
             logger.info(f"Backup restaurado: {result['restored']}")
@@ -1250,12 +1308,16 @@ class DatabaseManager:
     def delete_backup(self, filename: str) -> bool:
         """Remove um arquivo de backup"""
         try:
-            filepath = os.path.join(BACKUP_DIR, filename)
-            if os.path.exists(filepath):
-                os.remove(filepath)
-                logger.info(f"Backup removido: {filename}")
+            filepath = self._safe_backup_path(filename)
+            if not filepath:
+                logger.warning(f"Tentativa de excluir backup com nome inválido: {filename}")
+                return False
+            if not os.path.exists(filepath):
+                logger.warning(f"Backup já foi removido ou não existe: {filename}")
                 return True
-            return False
+            os.remove(filepath)
+            logger.info(f"Backup removido: {filename}")
+            return True
         except Exception as e:
             logger.error(f"Erro ao remover backup {filename}: {e}", exc_info=True)
             return False
@@ -1263,20 +1325,18 @@ class DatabaseManager:
     def save_backup_file(self, backup_data: Dict[str, Any], filename: Optional[str] = None) -> Optional[str]:
         """Salva um backup enviado por upload"""
         try:
-            # Validar estrutura básica
             if 'data' not in backup_data:
                 raise ValueError("Estrutura de backup inválida")
             
-            # Gerar nome do arquivo se não fornecido
             if not filename:
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 filename = f"backup_{timestamp}.json"
             
-            # Garantir que tem extensão .json
             if not filename.endswith('.json'):
                 filename += '.json'
             
-            filepath = os.path.join(BACKUP_DIR, filename)
+            safe_name = os.path.basename(filename)
+            filepath = os.path.join(BACKUP_DIR, safe_name)
             os.makedirs(BACKUP_DIR, exist_ok=True)
             
             with open(filepath, 'w', encoding='utf-8') as f:
@@ -1309,7 +1369,9 @@ class DatabaseManager:
     def save_backup_settings(self, settings: Dict[str, Any]) -> bool:
         """Salva as configurações de backup automático"""
         try:
-            return self.set_config('backup_settings', json.dumps(settings))
+            current = self.get_backup_settings()
+            merged = {**current, **settings}
+            return self.set_config('backup_settings', json.dumps(merged))
         except Exception as e:
             logger.error(f"Erro ao salvar configurações de backup: {e}", exc_info=True)
             return False
@@ -1331,7 +1393,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Erro ao limpar backups antigos: {e}", exc_info=True)
     
-    def check_automatic_backup(self) -> Optional[Dict[str, Any]]:
+    def check_automatic_backup(self, auth_users: Optional[List[Dict[str, Any]]] = None) -> Optional[Dict[str, Any]]:
         """Verifica se é hora de fazer backup automático e executa se necessário"""
         try:
             settings = self.get_backup_settings()
@@ -1358,7 +1420,7 @@ class DatabaseManager:
                     should_backup = (now - last_dt).days >= 30
             
             if should_backup:
-                result = self.create_full_backup()
+                result = self.create_full_backup(auth_users=auth_users)
                 if result and result.get('success'):
                     settings['last_backup'] = datetime.now().isoformat()
                     self.save_backup_settings(settings)
