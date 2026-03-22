@@ -11,6 +11,9 @@ import threading
 import time
 import logging
 import base64
+import queue
+import gzip
+import io
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -19,6 +22,56 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+class SSEBroadcaster:
+    """Gerencia conexões SSE e transmite eventos para todos os clientes conectados."""
+
+    def __init__(self):
+        self._clients = []
+        self._lock = threading.Lock()
+        self._last_job_broadcast = 0
+
+    def subscribe(self):
+        q = queue.Queue(maxsize=100)
+        with self._lock:
+            self._clients.append(q)
+        return q
+
+    def unsubscribe(self, q):
+        with self._lock:
+            if q in self._clients:
+                self._clients.remove(q)
+
+    def broadcast(self, event_type, data):
+        msg = f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+        with self._lock:
+            dead = []
+            for q in self._clients:
+                try:
+                    q.put_nowait(msg)
+                except queue.Full:
+                    dead.append(q)
+            for q in dead:
+                self._clients.remove(q)
+
+    def broadcast_jobs(self):
+        now = time.time()
+        if now - self._last_job_broadcast < 0.3:
+            return
+        self._last_job_broadcast = now
+        if JOB_MANAGER is not None:
+            active = JOB_MANAGER.get_active_jobs()
+            recent = JOB_MANAGER.get_recent_jobs(5)
+            self.broadcast('jobs', {'active': active, 'recent': recent})
+
+    def broadcast_changes(self):
+        if JOB_MANAGER is not None:
+            self.broadcast('changes', JOB_MANAGER.get_changes())
+
+
+SSE_BROADCASTER = SSEBroadcaster()
+
 
 PORT = 5000
 DIRECTORY = "."
@@ -64,14 +117,45 @@ except ImportError as e:
     logger.warning(f"Gerenciador de Autenticação não disponível: {e}")
 except Exception as e:
     logger.warning(f"Erro ao inicializar Gerenciador de Autenticação: {e}")
-    from background_jobs import get_job_manager, get_import_worker
-    JOB_MANAGER = get_job_manager()
-    IMPORT_WORKER = get_import_worker(DB_MANAGER, STORAGE_DIR)
-    logger.info("✅ Sistema de jobs em segundo plano carregado")
-except ImportError as e:
-    logger.warning(f"Sistema de jobs não disponível: {e}")
-except Exception as e:
-    logger.warning(f"Erro ao inicializar sistema de jobs: {e}")
+
+def _patch_job_manager_for_sse(jm):
+    """Intercepta métodos do JOB_MANAGER para emitir eventos SSE em tempo real."""
+    _orig_notify = jm.notify_change
+    _orig_start = jm.start_job
+    _orig_update = jm.update_progress
+    _orig_complete = jm.complete_job
+    _orig_fail = jm.fail_job
+
+    def notify_change(change_type):
+        _orig_notify(change_type)
+        SSE_BROADCASTER.broadcast_changes()
+
+    def start_job(job_id, message='Processando...'):
+        _orig_start(job_id, message)
+        SSE_BROADCASTER.broadcast_jobs()
+
+    def update_progress(job_id, current, message=None):
+        _orig_update(job_id, current, message)
+        SSE_BROADCASTER.broadcast_jobs()
+
+    def complete_job(job_id, result=None, message='Concluído com sucesso!'):
+        _orig_complete(job_id, result, message)
+        SSE_BROADCASTER.broadcast_jobs()
+
+    def fail_job(job_id, error):
+        _orig_fail(job_id, error)
+        SSE_BROADCASTER.broadcast_jobs()
+
+    jm.notify_change = notify_change
+    jm.start_job = start_job
+    jm.update_progress = update_progress
+    jm.complete_job = complete_job
+    jm.fail_job = fail_job
+
+
+if JOB_MANAGER is not None:
+    _patch_job_manager_for_sse(JOB_MANAGER)
+
 
 def use_sqlite_storage() -> bool:
     """Verifica se deve usar SQLite baseado na configuração atual"""
@@ -127,9 +211,40 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
     Handler HTTP que serve arquivos estáticos e também endpoints de API
     """
     
+    SILENT_PATHS = {'/api/jobs', '/api/changes', '/api/events'}
+    COMPRESSIBLE_EXTS = {'.js', '.css', '.html', '.json', '.svg', '.txt', '.xml'}
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
-    
+
+    def send_head(self):
+        """Serve static files with gzip compression when client supports it."""
+        accept_enc = self.headers.get('Accept-Encoding', '')
+        if 'gzip' not in accept_enc:
+            return super().send_head()
+
+        path = self.translate_path(self.path)
+        _, ext = os.path.splitext(path)
+
+        if ext.lower() not in self.COMPRESSIBLE_EXTS or not os.path.isfile(path):
+            return super().send_head()
+
+        try:
+            with open(path, 'rb') as f:
+                raw = f.read()
+            compressed = gzip.compress(raw, compresslevel=6)
+
+            self.send_response(200)
+            mime = self.guess_type(path)
+            self.send_header('Content-Type', mime)
+            self.send_header('Content-Encoding', 'gzip')
+            self.send_header('Content-Length', str(len(compressed)))
+            self.send_header('Vary', 'Accept-Encoding')
+            self.end_headers()
+            return io.BytesIO(compressed)
+        except Exception:
+            return super().send_head()
+
     def _load_solicitacoes(self):
         if os.path.exists(SOLICITACOES_FILE):
             try:
@@ -159,15 +274,26 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
     
     def end_headers(self):
-        """Adiciona headers de segurança e controle de cache"""
-        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-        self.send_header('Pragma', 'no-cache')
-        self.send_header('Expires', '0')
-        
+        """Adiciona headers de segurança e controle de cache adequados por tipo de recurso"""
+        path = getattr(self, 'path', '')
+        is_api = path.startswith('/api/')
+
+        if is_api:
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+        else:
+            base = path.split('?')[0]
+            if base == '/' or base.endswith('.html') or base == '':
+                self.send_header('Cache-Control', 'no-cache, must-revalidate')
+            elif '?v=' in path:
+                self.send_header('Cache-Control', 'public, max-age=31536000, immutable')
+            else:
+                self.send_header('Cache-Control', 'public, max-age=3600')
+
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('X-XSS-Protection', '1; mode=block')
         self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
-        
+
         csp = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; "
@@ -178,7 +304,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             "connect-src 'self' https://*.replit.dev https://*.repl.co"
         )
         self.send_header('Content-Security-Policy', csp)
-        
+
         super().end_headers()
     
     def do_OPTIONS(self):
@@ -207,7 +333,42 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
     
     def _handle_api_get(self, parsed_path):
         path = parsed_path.path
-        
+
+        if path == '/api/events':
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/event-stream')
+            self.send_header('Cache-Control', 'no-cache')
+            self.send_header('Connection', 'keep-alive')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('X-Accel-Buffering', 'no')
+            self.end_headers()
+            client_q = SSE_BROADCASTER.subscribe()
+            try:
+                init_data = {
+                    'jobs': {
+                        'active': JOB_MANAGER.get_active_jobs() if JOB_MANAGER else [],
+                        'recent': JOB_MANAGER.get_recent_jobs(5) if JOB_MANAGER else []
+                    },
+                    'changes': JOB_MANAGER.get_changes() if JOB_MANAGER else {}
+                }
+                self.wfile.write(
+                    f"event: init\ndata: {json.dumps(init_data, ensure_ascii=False)}\n\n".encode('utf-8')
+                )
+                self.wfile.flush()
+                while True:
+                    try:
+                        msg = client_q.get(timeout=25)
+                        self.wfile.write(msg.encode('utf-8'))
+                        self.wfile.flush()
+                    except queue.Empty:
+                        self.wfile.write(b": keepalive\n\n")
+                        self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                pass
+            finally:
+                SSE_BROADCASTER.unsubscribe(client_q)
+            return
+
         if path == '/api/health':
             self._set_api_headers()
             health_status = {
@@ -235,10 +396,9 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             return
         
         if path.startswith('/api/client/'):
-            cpf = path.split('/')[-1]
+            param = path.split('/')[-1]
             if use_sqlite_storage():
-                clients = DB_MANAGER.get_all_clientes()
-                client = next((c for c in clients if c['cpf'] == cpf), None)
+                client = DB_MANAGER.get_cliente_by_id_or_cpf(param)
                 if client:
                     self._set_api_headers()
                     self.wfile.write(json.dumps(client, ensure_ascii=False).encode('utf-8'))
@@ -279,8 +439,8 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self._set_api_headers()
                 self.wfile.write(json.dumps(logs, ensure_ascii=False).encode('utf-8'))
             else:
-                self._set_api_headers(404)
-                self.wfile.write(json.dumps({"error": "Audit logs not available"}).encode())
+                self._set_api_headers()
+                self.wfile.write(json.dumps([], ensure_ascii=False).encode('utf-8'))
             return
         
         if path == '/api/sync/status':
@@ -400,6 +560,16 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "Database not available"}).encode())
             return
         
+        if path == '/api/users':
+            if AUTH_MANAGER:
+                users = AUTH_MANAGER.get_all_users()
+                self._set_api_headers()
+                self.wfile.write(json.dumps(users, ensure_ascii=False).encode('utf-8'))
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "Auth not available"}).encode())
+            return
+
         if path == '/api/backup/settings':
             if DB_AVAILABLE and DB_MANAGER is not None:
                 settings = DB_MANAGER.get_backup_settings()
@@ -415,10 +585,15 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             if DB_AVAILABLE and DB_MANAGER is not None:
                 backup_content = DB_MANAGER.get_backup_content(filename)
                 if backup_content:
-                    self._set_api_headers(content_type='application/octet-stream')
+                    content = json.dumps(backup_content, ensure_ascii=False, indent=2).encode('utf-8')
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/octet-stream')
                     self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
-                    content = json.dumps(backup_content, ensure_ascii=False, indent=2)
-                    self.wfile.write(content.encode('utf-8'))
+                    self.send_header('Content-Length', str(len(content)))
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Cache-Control', 'no-cache')
+                    self.end_headers()
+                    self.wfile.write(content)
                 else:
                     self._set_api_headers(404)
                     self.wfile.write(json.dumps({"error": "Backup not found"}).encode())
@@ -468,7 +643,16 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if self.path == '/api/client':
-            client = json.loads(post_data.decode('utf-8'))
+            try:
+                client = json.loads(post_data.decode('utf-8'))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                self._set_api_headers(status=400)
+                self.wfile.write(json.dumps({"error": "Dados JSON inválidos"}).encode())
+                return
+            if not client.get('cpf') or not client.get('nome'):
+                self._set_api_headers(status=400)
+                self.wfile.write(json.dumps({"error": "Campos obrigatórios: nome e cpf"}).encode())
+                return
             if use_sqlite_storage():
                 success = DB_MANAGER.save_cliente(client)
                 if success:
@@ -486,7 +670,12 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if self.path == '/api/clients':
-            clients = json.loads(post_data.decode('utf-8'))
+            try:
+                clients = json.loads(post_data.decode('utf-8'))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                self._set_api_headers(status=400)
+                self.wfile.write(json.dumps({"error": "Dados JSON inválidos"}).encode())
+                return
             if use_sqlite_storage():
                 success = DB_MANAGER.save_all_clientes(clients)
                 if success:
@@ -495,7 +684,6 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     if JOB_MANAGER is not None:
                          JOB_MANAGER.notify_change('clients')
                     
-                    self._set_api_headers()
                     self._set_api_headers()
                     self.wfile.write(json.dumps({
                         "success": True,
@@ -524,7 +712,22 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
         
         if self.path == '/api/registro':
-            registro = json.loads(post_data.decode('utf-8'))
+            try:
+                registro = json.loads(post_data.decode('utf-8'))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                self._set_api_headers(status=400)
+                self.wfile.write(json.dumps({"error": "Dados JSON inválidos"}).encode())
+                return
+            if 'data' in registro and 'entrada' in registro and 'dataHoraEntrada' not in registro:
+                registro['dataHoraEntrada'] = f"{registro['data']}T{registro['entrada'] or '00:00'}:00"
+                if registro.get('saida'):
+                    registro['dataHoraSaida'] = f"{registro['data']}T{registro['saida']}:00"
+                if 'cpf' in registro and 'clienteId' not in registro:
+                    registro['clienteId'] = registro['cpf']
+                if 'bicicletaId' not in registro:
+                    registro['bicicletaId'] = registro.get('bikeId', '')
+                if 'observacoes' not in registro and 'observacao' in registro:
+                    registro['observacoes'] = registro['observacao']
             if use_sqlite_storage():
                 success = DB_MANAGER.save_registro(registro)
                 if success:
@@ -778,7 +981,8 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         # ========== BACKUP POST ENDPOINTS ==========
         if self.path == '/api/backup':
             if DB_AVAILABLE and DB_MANAGER is not None:
-                result = DB_MANAGER.create_full_backup()
+                auth_users = AUTH_MANAGER.get_all_users_for_backup() if AUTH_MANAGER else None
+                result = DB_MANAGER.create_full_backup(auth_users=auth_users)
                 if result and result.get('success'):
                     self._set_api_headers()
                     self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))
@@ -801,12 +1005,19 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     backup_data = DB_MANAGER.get_backup_content(filename)
                     if not backup_data:
                         self._set_api_headers(404)
-                        self.wfile.write(json.dumps({"error": "Backup file not found"}).encode())
+                        self.wfile.write(json.dumps({"error": "Arquivo de backup não encontrado. Pode ter sido removido pela limpeza automática."}).encode())
                         return
                 
                 if backup_data:
                     result = DB_MANAGER.restore_from_backup(backup_data)
-                    if result.get('success'):
+                    if AUTH_MANAGER and 'data' in backup_data and 'usuarios' in backup_data['data']:
+                        try:
+                            restored_users = AUTH_MANAGER.restore_users_from_backup(backup_data['data']['usuarios'])
+                            result['restored']['usuarios'] = restored_users
+                        except Exception as e:
+                            result['errors'].append(f"Erro ao restaurar usuários: {str(e)}")
+                    if result.get('success') or (result['restored']['clientes'] > 0 or result['restored']['registros'] > 0):
+                        result['success'] = len(result.get('errors', [])) == 0
                         if JOB_MANAGER is not None:
                             JOB_MANAGER.notify_change('clients')
                             JOB_MANAGER.notify_change('registros')
@@ -890,6 +1101,59 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
 
+        if self.path == '/api/users':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                username = data.get('username', '').strip()
+                password = data.get('password', '')
+                nome = data.get('nome', '').strip()
+                tipo = data.get('tipo', 'funcionario')
+                if not username or not password or not nome:
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "Campos obrigatórios faltando"}).encode())
+                    return
+                if AUTH_MANAGER:
+                    success = AUTH_MANAGER.create_user(username, password, nome, tipo)
+                    if success:
+                        self._set_api_headers()
+                        self.wfile.write(json.dumps({"success": True}).encode())
+                    else:
+                        self._set_api_headers(400)
+                        self.wfile.write(json.dumps({"error": "Usuário já existe"}).encode())
+                else:
+                    self._set_api_headers(503)
+                    self.wfile.write(json.dumps({"error": "Auth not available"}).encode())
+            except Exception as e:
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
+        if self.path == '/api/users/change-password':
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                username = data.get('username', '')
+                old_password = data.get('old_password', '')
+                new_password = data.get('new_password', '')
+                if not username or not new_password:
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "Campos obrigatórios faltando"}).encode())
+                    return
+                if AUTH_MANAGER:
+                    success = AUTH_MANAGER.change_password(username, old_password, new_password)
+                    if success:
+                        self._set_api_headers()
+                        self.wfile.write(json.dumps({"success": True}).encode())
+                    else:
+                        self._set_api_headers(400)
+                        self.wfile.write(json.dumps({"error": "Senha atual incorreta ou usuário não encontrado"}).encode())
+                else:
+                    self._set_api_headers(503)
+                    self.wfile.write(json.dumps({"error": "Auth not available"}).encode())
+            except Exception as e:
+                self._set_api_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
         if self.path == '/api/backup/settings':
             data = json.loads(post_data.decode('utf-8'))
             if DB_AVAILABLE and DB_MANAGER is not None:
@@ -903,8 +1167,6 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self._set_api_headers(503)
                 self.wfile.write(json.dumps({"error": "Database not available"}).encode())
-            return
-        
             return
 
         if self.path == '/api/solicitacoes':
@@ -1118,8 +1380,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 
                 # Fallback to DB_MANAGER if not found via direct file (e.g. if using SQLite)
                 if not found_client and use_sqlite_storage():
-                     clients = DB_MANAGER.get_all_clientes()
-                     found_client = next((c for c in clients if c['cpf'] == cpf), None)
+                     found_client = DB_MANAGER.get_cliente_by_id_or_cpf(cpf)
                 
                 if found_client:
                     self._set_api_headers()
@@ -1187,11 +1448,25 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps({"error": "Not found"}).encode())
     
     def _handle_api_delete(self):
+        if self.path.startswith('/api/users/'):
+            username = self.path.split('/')[-1]
+            if AUTH_MANAGER:
+                success = AUTH_MANAGER.delete_user(username)
+                if success:
+                    self._set_api_headers()
+                    self.wfile.write(json.dumps({"success": True}).encode())
+                else:
+                    self._set_api_headers(400)
+                    self.wfile.write(json.dumps({"error": "Não é possível remover este usuário"}).encode())
+            else:
+                self._set_api_headers(503)
+                self.wfile.write(json.dumps({"error": "Auth not available"}).encode())
+            return
+
         if self.path.startswith('/api/client/'):
-            cpf = self.path.split('/')[-1]
+            param = self.path.split('/')[-1]
             if use_sqlite_storage():
-                clients = DB_MANAGER.get_all_clientes()
-                client = next((c for c in clients if c['cpf'] == cpf), None)
+                client = DB_MANAGER.get_cliente_by_id_or_cpf(param)
                 if client:
                     success = DB_MANAGER.delete_cliente(client['id'])
                     if success:
@@ -1219,8 +1494,16 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     self._set_api_headers(404)
                     self.wfile.write(json.dumps({"error": "Registro not found"}).encode())
             else:
+                deleted = False
+                if os.path.exists(REGISTROS_DIR):
+                    for root, dirs, files in os.walk(REGISTROS_DIR):
+                        fname = f"{registro_id}.json"
+                        if fname in files:
+                            os.remove(os.path.join(root, fname))
+                            deleted = True
+                            break
                 self._set_api_headers()
-                self.wfile.write(json.dumps({"success": True}).encode())
+                self.wfile.write(json.dumps({"success": True, "deleted": deleted}).encode())
             return
         
         # ========== BACKUP DELETE ENDPOINT ==========
@@ -1336,23 +1619,37 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
     def _save_registro_file(self, registro):
         """Salva um registro em arquivo"""
         from datetime import datetime
-        entrada = datetime.fromisoformat(registro['dataHoraEntrada'].replace('Z', '+00:00'))
-        year = str(entrada.year)
-        month = str(entrada.month).zfill(2)
-        day = str(entrada.day).zfill(2)
-        
-        dir_path = os.path.join(REGISTROS_DIR, year, month, day)
-        os.makedirs(dir_path, exist_ok=True)
-        
-        filepath = os.path.join(dir_path, f"{registro['id']}.json")
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(registro, f, ensure_ascii=False, indent=2)
-        
-        self._set_api_headers()
-        self.wfile.write(json.dumps({"success": True, "id": registro['id']}).encode())
+        try:
+            if 'dataHoraEntrada' in registro:
+                entrada = datetime.fromisoformat(registro['dataHoraEntrada'].replace('Z', '+00:00'))
+            elif 'data' in registro and 'entrada' in registro:
+                dt_str = f"{registro['data']}T{registro['entrada'] or '00:00'}:00"
+                entrada = datetime.fromisoformat(dt_str)
+            else:
+                entrada = datetime.now()
+            year = str(entrada.year)
+            month = str(entrada.month).zfill(2)
+            day = str(entrada.day).zfill(2)
+
+            dir_path = os.path.join(REGISTROS_DIR, year, month, day)
+            os.makedirs(dir_path, exist_ok=True)
+
+            filepath = os.path.join(dir_path, f"{registro['id']}.json")
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(registro, f, ensure_ascii=False, indent=2)
+
+            self._set_api_headers()
+            self.wfile.write(json.dumps({"success": True, "id": registro['id']}).encode())
+        except Exception as e:
+            logger.error(f"Erro ao salvar registro: {e}")
+            self._set_api_headers(500)
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
     
     def log_message(self, format, *args):
         """Log de requisições HTTP"""
+        path = self.path.split('?')[0]
+        if path in self.SILENT_PATHS:
+            return
         logger.info("%s - %s" % (self.address_string(), format % args))
 
 
@@ -1360,7 +1657,8 @@ def check_automatic_backup():
     """Verifica e executa backup automático se necessário"""
     if DB_AVAILABLE and DB_MANAGER is not None:
         try:
-            result = DB_MANAGER.check_automatic_backup()
+            auth_users = AUTH_MANAGER.get_all_users_for_backup() if AUTH_MANAGER else None
+            result = DB_MANAGER.check_automatic_backup(auth_users=auth_users)
             if result and result.get('success'):
                 logger.info(f"✅ Backup automático realizado: {result.get('filename')}")
         except Exception as e:
@@ -1377,10 +1675,14 @@ def run_scheduler():
             logger.error(f"Erro no agendador: {e}")
 
 
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
 if __name__ == "__main__":
     try:
-        socketserver.TCPServer.allow_reuse_address = True
-        with socketserver.TCPServer(("0.0.0.0", PORT), CombinedHTTPHandler) as httpd:
+        with ThreadingHTTPServer(("0.0.0.0", PORT), CombinedHTTPHandler) as httpd:
             logger.info(f"🚀 Servidor BICICLETÁRIO (v2.0 Config) rodando em http://0.0.0.0:{PORT}/")
             logger.info(f"API integrada em http://0.0.0.0:{PORT}/api/")
             logger.info(f"Diretório servido: {os.path.abspath(DIRECTORY)}")
