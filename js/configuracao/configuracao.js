@@ -58,7 +58,7 @@ import { logAction } from '../shared/audit-logger.js';
 import { PerformanceConfig } from '../shared/performance-config.js';
 
 export class ConfiguracaoManager {
-    // Constants for backup settings validation
+    // Constantes para validação das configurações de backup
     static BACKUP_MAX_COUNT_MIN = 1;
     static BACKUP_MAX_COUNT_MAX = 50;
     static BACKUP_MAX_COUNT_DEFAULT = 10;
@@ -228,7 +228,7 @@ export class ConfiguracaoManager {
     }
 
     addEventListeners() {
-        // Event delegation for theme radio buttons to ensure reliability
+        // Delegação de eventos para botões de rádio de tema para garantir confiabilidade
         document.body.addEventListener('change', (e) => {
             if (e.target.matches('input[name="theme"]')) {
                 this.handleThemeChange(e.target.value);
@@ -776,7 +776,7 @@ export class ConfiguracaoManager {
             htmlElement.style.colorScheme = 'dark';
             document.body.classList.add('dark');
 
-            // "Nuclear Option": Force inline styles to ensure change is visible
+            // "Opção Nuclear": Forçar estilos inline para garantir que a mudança seja visível
             document.body.style.backgroundColor = '#0f172a'; // slate-900
             document.body.style.color = '#e2e8f0'; // slate-200
         } else {
@@ -784,7 +784,7 @@ export class ConfiguracaoManager {
             htmlElement.style.colorScheme = 'light';
             document.body.classList.remove('dark');
 
-            // "Nuclear Option": Force inline styles to ensure change is visible
+            // "Opção Nuclear": Forçar estilos inline para garantir que a mudança seja visível
             document.body.style.backgroundColor = '#f1f5f9'; // slate-100
             document.body.style.color = '#1e293b'; // slate-800
         }
@@ -887,7 +887,7 @@ export class ConfiguracaoManager {
             const cancelBtn = document.getElementById('cancel-theme-btn');
             const presetBtns = document.querySelectorAll('.preset-theme-btn');
 
-            // Sincronizar color input com text input
+            // Sincronizar input de cor com input de texto
             primaryInput.addEventListener('change', () => { primaryText.value = primaryInput.value; });
             secondaryInput.addEventListener('change', () => { secondaryText.value = secondaryInput.value; });
             accentInput.addEventListener('change', () => { accentText.value = accentInput.value; });
@@ -3376,11 +3376,11 @@ export class ConfiguracaoManager {
         const container = document.getElementById('storage-mode-container');
         if (!container) return;
 
-        // Check if running in Electron (desktop mode)
+        // Verificar se está rodando no Electron (modo desktop)
         const isDesktop = window.AppPlatform && typeof window.AppPlatform.isDesktop === 'function' && window.AppPlatform.isDesktop();
 
         if (isDesktop) {
-            // Desktop mode - storage is file-based only
+            // Modo desktop - armazenamento é baseado em arquivos apenas
             container.innerHTML = `
                 <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-4 rounded-lg">
                     <div class="flex items-center gap-2 text-blue-800 dark:text-blue-200">
@@ -3399,7 +3399,7 @@ export class ConfiguracaoManager {
             return;
         }
 
-        // Browser mode - try to fetch from API
+        // Modo navegador - tentar buscar da API
         try {
             const response = await fetch('/api/storage-mode');
             if (!response.ok) throw new Error('API not available');
@@ -3629,7 +3629,7 @@ export class ConfiguracaoManager {
         }
     }
 
-    // ==================== BACKUP MANAGEMENT ====================
+    // ==================== GERENCIAMENTO DE BACKUPS ====================
 
     async loadBackupManagement() {
         const container = document.getElementById('backup-management-container');
@@ -3643,11 +3643,11 @@ export class ConfiguracaoManager {
         `;
         if (window.lucide) lucide.createIcons();
 
-        // Check if running in Electron (desktop mode)
+        // Verificar se está rodando no Electron (modo desktop)
         const isDesktop = window.AppPlatform && typeof window.AppPlatform.isDesktop === 'function' && window.AppPlatform.isDesktop();
 
         if (isDesktop) {
-            // Desktop mode - use Electron IPC to list backups
+            // Modo desktop - usar Electron IPC para listar backups
             try {
                 await this.loadDesktopBackupManagement(container);
             } catch (error) {
@@ -3657,7 +3657,7 @@ export class ConfiguracaoManager {
             return;
         }
 
-        // Browser mode - use HTTP API
+        // Modo navegador - usar API HTTP
         try {
             const [backupsResponse, settingsResponse] = await Promise.all([
                 fetch('/api/backups'),
@@ -4045,19 +4045,19 @@ export class ConfiguracaoManager {
         }
     }
 
-    // ==================== DESKTOP BACKUP MANAGEMENT ====================
+    // ==================== GERENCIAMENTO DE BACKUPS DESKTOP ====================
 
     async loadDesktopBackupManagement(container) {
-        // In desktop mode, backups are stored in dados/database/backups/
+        // No modo desktop, backups são armazenados em dados/database/backups/
         try {
-            // Check if Electron IPC is available
+            // Verificar se o Electron IPC está disponível
             if (!window.electronAPI || typeof window.electronAPI.listBackups !== 'function') {
                 console.warn('Electron IPC not available for backup listing');
                 this.renderDesktopBackupManagement(container, []);
                 return;
             }
 
-            // Use Electron IPC to list backup files
+            // Usar Electron IPC para listar arquivos de backup
             const backups = await window.electronAPI.listBackups();
             this.renderDesktopBackupManagement(container, backups || []);
         } catch (error) {
@@ -4180,10 +4180,10 @@ export class ConfiguracaoManager {
 
         if (window.lucide) lucide.createIcons();
 
-        // Load backup settings
+        // Carregar configurações de backup
         this.loadDesktopBackupSettings();
 
-        // Add event listeners
+        // Adicionar event listeners
         this.attachDesktopBackupEventListeners();
     }
 
@@ -4233,25 +4233,25 @@ export class ConfiguracaoManager {
     attachDesktopBackupEventListeners() {
         const self = this;
 
-        // Create backup button
+        // Botão de criar backup
         const createBtn = document.getElementById('desktop-create-backup-btn');
         if (createBtn) {
             createBtn.addEventListener('click', () => this.handleDesktopCreateBackup());
         }
 
-        // Import backup button
+        // Botão de importar backup
         const uploadInput = document.getElementById('desktop-backup-upload-input');
         if (uploadInput) {
             uploadInput.addEventListener('change', (e) => this.handleDesktopImportBackup(e));
         }
 
-        // Save settings button
+        // Botão de salvar configurações
         const saveSettingsBtn = document.getElementById('desktop-save-backup-settings-btn');
         if (saveSettingsBtn) {
             saveSettingsBtn.addEventListener('click', () => this.handleDesktopSaveBackupSettings());
         }
 
-        // Restore buttons
+        // Botões de restaurar
         document.querySelectorAll('.desktop-backup-restore-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const filename = this.getAttribute('data-filename');
@@ -4259,7 +4259,7 @@ export class ConfiguracaoManager {
             });
         });
 
-        // Download buttons
+        // Botões de download
         document.querySelectorAll('.desktop-backup-download-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const filename = this.getAttribute('data-filename');
@@ -4267,7 +4267,7 @@ export class ConfiguracaoManager {
             });
         });
 
-        // Delete buttons
+        // Botões de excluir
         document.querySelectorAll('.desktop-backup-delete-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const filename = this.getAttribute('data-filename');
@@ -4296,7 +4296,7 @@ export class ConfiguracaoManager {
 
             if (result.success) {
                 Modals.alert(`Backup criado com sucesso: ${result.filename}`, 'Sucesso');
-                // Reload backup list
+                // Recarregar lista de backups
                 const container = document.getElementById('backup-management-container');
                 if (container) {
                     await this.loadDesktopBackupManagement(container);
@@ -4340,7 +4340,7 @@ export class ConfiguracaoManager {
 
                 Modals.alert(message, 'Sucesso');
 
-                // Reload page after a short delay
+                // Recarregar página após um pequeno atraso
                 setTimeout(() => {
                     window.location.reload();
                 }, 2000);
@@ -4363,7 +4363,7 @@ export class ConfiguracaoManager {
             const result = await window.electronAPI.downloadBackup(filename);
 
             if (result.success) {
-                // Create a download link
+                // Criar um link de download
                 const blob = new Blob([result.data], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -4404,7 +4404,7 @@ export class ConfiguracaoManager {
 
             if (result.success) {
                 Modals.alert(`Backup excluído com sucesso: ${filename}`, 'Sucesso');
-                // Reload backup list
+                // Recarregar lista de backups
                 const container = document.getElementById('backup-management-container');
                 if (container) {
                     await this.loadDesktopBackupManagement(container);
@@ -4437,7 +4437,7 @@ export class ConfiguracaoManager {
 
                     if (result.success) {
                         Modals.alert(`Backup importado com sucesso: ${result.filename}`, 'Sucesso');
-                        // Reload backup list
+                        // Recarregar lista de backups
                         const container = document.getElementById('backup-management-container');
                         if (container) {
                             await this.loadDesktopBackupManagement(container);
@@ -4450,7 +4450,7 @@ export class ConfiguracaoManager {
                     Modals.alert(`Erro ao processar arquivo: ${error.message}`, 'Erro');
                 }
 
-                // Clear file input
+                // Limpar input de arquivo
                 event.target.value = '';
             };
 
@@ -4477,7 +4477,7 @@ export class ConfiguracaoManager {
             const intervalSelect = document.getElementById('desktop-backup-interval');
             const maxCountInput = document.getElementById('desktop-backup-max-count');
 
-            // Parse and validate max_backups value
+            // Converter e validar valor de max_backups
             let maxBackups = ConfiguracaoManager.BACKUP_MAX_COUNT_DEFAULT;
             if (maxCountInput && maxCountInput.value) {
                 const parsed = parseInt(maxCountInput.value, 10);
