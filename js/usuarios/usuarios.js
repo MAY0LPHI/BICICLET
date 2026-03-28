@@ -425,6 +425,16 @@ export class Usuarios {
                                     <i data-lucide="hard-drive" class="w-4 h-4"></i>
                                     <span>Gerenciar Armazenamento</span>
                                 </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="perm-configuracao-adminMobile" class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <i data-lucide="smartphone" class="w-4 h-4"></i>
+                                    <span>Admin Mobile</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="perm-configuracao-acessoCelular" class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <i data-lucide="qr-code" class="w-4 h-4"></i>
+                                    <span>Acesso Celular</span>
+                                </label>
                             </div>
                         </div>
                         
@@ -505,7 +515,9 @@ export class Usuarios {
                     backupVer: document.getElementById('perm-configuracao-backupVer')?.checked || false,
                     backupGerenciar: document.getElementById('perm-configuracao-backupGerenciar')?.checked || false,
                     storageVer: document.getElementById('perm-configuracao-storageVer')?.checked || false,
-                    storageGerenciar: document.getElementById('perm-configuracao-storageGerenciar')?.checked || false
+                    storageGerenciar: document.getElementById('perm-configuracao-storageGerenciar')?.checked || false,
+                    adminMobile: document.getElementById('perm-configuracao-adminMobile')?.checked || false,
+                    acessoCelular: document.getElementById('perm-configuracao-acessoCelular')?.checked || false
                 },
                 jogos: {
                     ver: document.getElementById('perm-jogos-ver').checked
@@ -720,6 +732,16 @@ export class Usuarios {
                                     <i data-lucide="hard-drive" class="w-4 h-4"></i>
                                     <span>Gerenciar Armazenamento</span>
                                 </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-adminMobile" ${user.permissoes.configuracao?.adminMobile ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <i data-lucide="smartphone" class="w-4 h-4"></i>
+                                    <span>Admin Mobile</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100">
+                                    <input type="checkbox" id="edit-perm-configuracao-acessoCelular" ${user.permissoes.configuracao?.acessoCelular ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500 rounded focus:ring-blue-500 focus:ring-2">
+                                    <i data-lucide="qr-code" class="w-4 h-4"></i>
+                                    <span>Acesso Celular</span>
+                                </label>
                             </div>
                         </div>
                         
@@ -800,7 +822,9 @@ export class Usuarios {
                     backupVer: document.getElementById('edit-perm-configuracao-backupVer')?.checked || false,
                     backupGerenciar: document.getElementById('edit-perm-configuracao-backupGerenciar')?.checked || false,
                     storageVer: document.getElementById('edit-perm-configuracao-storageVer')?.checked || false,
-                    storageGerenciar: document.getElementById('edit-perm-configuracao-storageGerenciar')?.checked || false
+                    storageGerenciar: document.getElementById('edit-perm-configuracao-storageGerenciar')?.checked || false,
+                    adminMobile: document.getElementById('edit-perm-configuracao-adminMobile')?.checked || false,
+                    acessoCelular: document.getElementById('edit-perm-configuracao-acessoCelular')?.checked || false
                 },
                 jogos: {
                     ver: document.getElementById('edit-perm-jogos-ver').checked
