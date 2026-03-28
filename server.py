@@ -206,6 +206,39 @@ def save_system_config(new_config):
         return False
 
 
+_GZIP_CACHE = {}
+_GZIP_CACHE_LOCK = threading.Lock()
+_GZIP_CACHE_MAX = 30
+
+
+def _get_gzip_cached(path):
+    """Retorna bytes comprimidos de um arquivo, usando cache em memória."""
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return None
+
+    with _GZIP_CACHE_LOCK:
+        entry = _GZIP_CACHE.get(path)
+        if entry and entry[0] == mtime:
+            return entry[1]
+
+    try:
+        with open(path, 'rb') as f:
+            raw = f.read()
+        compressed = gzip.compress(raw, compresslevel=6)
+    except Exception:
+        return None
+
+    with _GZIP_CACHE_LOCK:
+        if len(_GZIP_CACHE) >= _GZIP_CACHE_MAX:
+            oldest = next(iter(_GZIP_CACHE))
+            del _GZIP_CACHE[oldest]
+        _GZIP_CACHE[path] = (mtime, compressed)
+
+    return compressed
+
+
 class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
     """
     Handler HTTP que serve arquivos estáticos e também endpoints de API
@@ -218,7 +251,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
     def send_head(self):
-        """Serve static files with gzip compression when client supports it."""
+        """Serve arquivos estáticos com compressão gzip quando o cliente suporta."""
         accept_enc = self.headers.get('Accept-Encoding', '')
         if 'gzip' not in accept_enc:
             return super().send_head()
@@ -230,9 +263,9 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             return super().send_head()
 
         try:
-            with open(path, 'rb') as f:
-                raw = f.read()
-            compressed = gzip.compress(raw, compresslevel=6)
+            compressed = _get_gzip_cached(path)
+            if compressed is None:
+                return super().send_head()
 
             self.send_response(200)
             mime = self.guess_type(path)
@@ -308,7 +341,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
     
     def do_OPTIONS(self):
-        """Handle CORS preflight requests"""
+        """Trata requisições preflight CORS"""
         self._set_api_headers()
     
     def do_GET(self):
@@ -409,13 +442,13 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self._get_client_file(cpf)
             return
 
-        # Serve uploaded images
+        # Servir imagens enviadas
         if path.startswith('/imagens/'):
             image_filename = path.split('/')[-1]
             image_path = os.path.join(IMAGES_DIR, image_filename)
             if os.path.exists(image_path):
                 self.send_response(200)
-                self.send_header('Content-Type', 'image/jpeg') # Assuming JPEG for simplicity
+                self.send_header('Content-Type', 'image/jpeg') # Assumindo JPEG por simplicidade
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 with open(image_path, 'rb') as f:
@@ -629,7 +662,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                             "user": user_data
                         }).encode())
                     else:
-                        # Log error internally and simulate 1.5s delay to prevent timing attacks
+                        # Registrar erro internamente e simular atraso de 1.5s para prevenir ataques de temporização
                         logger.warning(f"Falha de autenticação para usuário: {username}")
                         import time; time.sleep(1.5)
                         self._set_api_headers(status=401)
@@ -679,8 +712,8 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             if use_sqlite_storage():
                 success = DB_MANAGER.save_all_clientes(clients)
                 if success:
-                    # Notify change for all clients? Or just generic 'clients'
-                    # Ideally we would track changes, but for batch save it's a full update
+                    # Notificar mudança para todos os clientes? Ou apenas genérico 'clients'
+                    # Idealmente rastrearíamos mudanças, mas para salvamento em lote é uma atualização completa
                     if JOB_MANAGER is not None:
                          JOB_MANAGER.notify_change('clients')
                     
@@ -693,14 +726,14 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     self._set_api_headers(500)
                     self.wfile.write(json.dumps({"error": "Failed to save clients batch"}).encode())
             else:
-                # Fallback for file storage (saves one by one effectively, or overwrite all)
-                # Since we don't have a specific "save all files" optimized method yet, 
-                # we can implement a basic loop here or in a helper.
-                # Given the instruction was mainly for SQLite optimization, 
-                # we'll implement a safety loop here.
+                # Fallback para armazenamento em arquivo (salva um por um, ou sobrescreve todos)
+                # Como ainda não temos um método otimizado "salvar todos os arquivos",
+                # podemos implementar um loop básico aqui ou em um auxiliar.
+                # Dado que a instrução era principalmente para otimização SQLite,
+                # implementaremos um loop de segurança aqui.
                 success_count = 0
                 for client in clients:
-                    if self._save_client_file(client): # Assuming this method exists on self logic
+                    if self._save_client_file(client): # Assumindo que este método existe na lógica do self
                          success_count += 1
                 
                 self._set_api_headers()
@@ -1042,7 +1075,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 filename = data.get('filename')
                 
                 if backup_data:
-                    # Validar estrutura básica
+                    # Validar estrutura básica do backup
                     if 'data' not in backup_data:
                         self._set_api_headers(400)
                         self.wfile.write(json.dumps({"error": "Invalid backup structure"}).encode())
@@ -1069,14 +1102,14 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         if self.path == '/api/upload-image':
             try:
                 data = json.loads(post_data.decode('utf-8'))
-                image_data = data.get('image') # Base64 string
+                image_data = data.get('image') # String Base64
                 
                 if not image_data:
                     self._set_api_headers(400)
                     self.wfile.write(json.dumps({"error": "No image data provided"}).encode())
                     return
 
-                # Remove header if present (data:image/jpeg;base64,...)
+                # Remove cabeçalho se presente (data:image/jpeg;base64,...)
                 if ',' in image_data:
                     header, encoded = image_data.split(',', 1)
                 else:
@@ -1096,7 +1129,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     "path": filename
                 }).encode())
             except Exception as e:
-                logger.error(f"Error uploading image: {e}")
+                logger.error(f"Erro ao fazer upload da imagem: {e}")
                 self._set_api_headers(500)
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
@@ -1173,7 +1206,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(post_data.decode('utf-8'))
                 
-                # Basic validation
+                # Validação básica
                 if not data.get('clientId') or not data.get('bikeId'):
                     self._set_api_headers(400)
                     self.wfile.write(json.dumps({"error": "Missing required fields"}).encode())
@@ -1181,7 +1214,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
                 solicitacoes = self._load_solicitacoes()
                 
-                # Add ID and timestamp if missing
+                # Adicionar ID e timestamp se ausentes
                 import uuid
                 new_solicitacao = {
                     "id": str(uuid.uuid4()),
@@ -1198,7 +1231,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": True, "id": new_solicitacao["id"]}).encode())
                 
             except Exception as e:
-                logger.error(f"Error creating solicitacao: {e}")
+                logger.error(f"Erro ao criar solicitação: {e}")
                 self._set_api_headers(500)
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
@@ -1209,10 +1242,10 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(post_data.decode('utf-8'))
                 
-                # Check if client exists
+                # Verificar se cliente já existe
                 cpf = data.get('cpf')
                 
-                # Manual file check to be safe
+                # Verificação manual de arquivo por segurança
                 cpf_clean = cpf.replace('.', '').replace('-', '')
                 filepath = os.path.join(CLIENTS_DIR, f"{cpf_clean}.json")
                 if os.path.exists(filepath):
@@ -1220,11 +1253,11 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(json.dumps({"error": "CPF já cadastrado"}).encode())
                     return
 
-                # Create Client Object
+                # Criar objeto do cliente
                 import uuid
                 new_client = {
                     "id": str(uuid.uuid4()),
-                    "nome": data.get('nome').upper(), # Ensure uppercase backend side too
+                    "nome": data.get('nome').upper(), # Garantir maiúsculas também no backend
                     "cpf": cpf,
                     "telefone": data.get('telefone', ''),
                     "bicicletas": [],
@@ -1232,7 +1265,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     "dataCadastro": datetime.now().isoformat()
                 }
 
-                # Save to file manually
+                # Salvar em arquivo manualmente
                 with open(filepath, 'w', encoding='utf-8') as f:
                     json.dump(new_client, f, ensure_ascii=False, indent=2)
                 
@@ -1243,7 +1276,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": True, "client": new_client}).encode())
 
             except Exception as e:
-                logger.error(f"Error registering client: {e}")
+                logger.error(f"Erro ao registrar cliente: {e}")
                 self._set_api_headers(500)
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
@@ -1259,9 +1292,9 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(json.dumps({"error": "Dados incompletos"}).encode())
                     return
 
-                # Find Client (Need to search all files if we don't have the filename/cpf)
-                # But typically we can optimize. For now, scan dir since we don't have DB_MANAGER active for sure.
-                # Actually, iterate and find by ID.
+                # Encontrar cliente (precisa buscar em todos os arquivos se não temos o nome/cpf)
+                # Mas tipicamente podemos otimizar. Por enquanto, varrer diretório já que não temos DB_MANAGER ativo com certeza.
+                # Na verdade, iterar e encontrar por ID.
                 
                 target_file = None
                 client = None
@@ -1285,7 +1318,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(json.dumps({"error": "Cliente não encontrado"}).encode())
                     return
 
-                # Handle Photo
+                # Tratar foto
                 photo_data = bike_data.get('photo')
                 photo_url = ''
                 if photo_data:
@@ -1301,7 +1334,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                         f.write(base64.b64decode(encoded))
                     photo_url = f"/imagens/{filename}"
 
-                # Add Bike
+                # Adicionar bicicleta
                 import uuid
                 new_bike = {
                     "id": str(uuid.uuid4()),
@@ -1316,7 +1349,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 
                 client['bicicletas'].append(new_bike)
 
-                # Save updated client
+                # Salvar cliente atualizado
                 with open(target_file, 'w', encoding='utf-8') as f:
                     json.dump(client, f, ensure_ascii=False, indent=2)
 
@@ -1327,7 +1360,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": True, "client": client}).encode())
 
             except Exception as e:
-                logger.error(f"Error adding bike: {e}")
+                logger.error(f"Erro ao adicionar bicicleta: {e}")
                 self._set_api_headers(500)
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
@@ -1336,16 +1369,15 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(post_data.decode('utf-8'))
                 solicitacao_id = data.get('id')
-                action = data.get('action') # 'approve' or 'reject'
+                action = data.get('action') # 'approve' ou 'reject'
 
                 solicitacoes = self._load_solicitacoes()
                 
-                # Remove from list regardless of action (approve handles logic on frontend/backend, reject just removes)
-                # In a real app, backend would do the create record logic too if approved to be safe.
-                # For now, frontend calls create_registro, backend just removes request.
-                # Wait, the JS 'approve' calls createRegistroInternal? No, handleSolicitacaoAction does.
-                # Actually, JS 'approve' calls internal create then calls this endpoint to remove.
-                # So here we just remove.
+                # Remove da lista independente da ação (aprovar trata a lógica no frontend/backend, rejeitar apenas remove)
+                # Em um app real, o backend também faria a lógica de criar registro se aprovado por segurança.
+                # Por enquanto, o frontend chama create_registro, o backend apenas remove a solicitação.
+                # O JS 'approve' chama criação interna e depois chama este endpoint para remover.
+                # Então aqui apenas removemos.
                 
                 new_solicitacoes = [s for s in solicitacoes if s['id'] != solicitacao_id]
                 self._save_solicitacoes(new_solicitacoes)
@@ -1354,7 +1386,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": True}).encode())
                 
             except Exception as e:
-                logger.error(f"Error processing solicitacao: {e}")
+                logger.error(f"Erro ao processar solicitação: {e}")
                 self._set_api_headers(500)
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
@@ -1364,7 +1396,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 data = json.loads(post_data.decode('utf-8'))
                 cpf = data.get('cpf')
                 
-                # Always reload from disk in this debug context to ensure we see the new bike
+                # Sempre recarregar do disco neste contexto de debug para garantir que vemos a nova bicicleta
                 files_found = []
                 if os.path.exists(CLIENTS_DIR):
                     for filename in os.listdir(CLIENTS_DIR):
@@ -1378,7 +1410,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                             except:
                                 continue
                 
-                # Fallback to DB_MANAGER if not found via direct file (e.g. if using SQLite)
+                # Fallback para DB_MANAGER se não encontrado via arquivo direto (ex: se usando SQLite)
                 if not found_client and use_sqlite_storage():
                      found_client = DB_MANAGER.get_cliente_by_id_or_cpf(cpf)
                 
@@ -1386,10 +1418,10 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     self._set_api_headers()
                     self.wfile.write(json.dumps({"success": True, "client": found_client}, ensure_ascii=False).encode('utf-8'))
                 else:
-                    self._set_api_headers() # Return 200 OK so frontend parses the error message
+                    self._set_api_headers() # Retornar 200 OK para que o frontend analise a mensagem de erro
                     self.wfile.write(json.dumps({"success": False, "error": "Client not found"}).encode())
             except Exception as e:
-                logger.error(f"Error in identify: {e}")
+                logger.error(f"Erro na identificação: {e}")
                 self._set_api_headers(500)
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
@@ -1422,7 +1454,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
         if self.path == '/api/solicitacoes/process':
             data = json.loads(post_data.decode('utf-8'))
             solicitacao_id = data.get('id')
-            action = data.get('action') # 'approve' or 'reject'
+            action = data.get('action') # 'approve' ou 'reject'
             
             try:
                 solicitacoes = []
@@ -1430,7 +1462,7 @@ class CombinedHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     with open(SOLICITACOES_FILE, 'r', encoding='utf-8') as f:
                         solicitacoes = json.load(f)
                 
-                # Filter out the processed solicitation
+                # Filtrar a solicitação processada
                 new_solicitacoes = [s for s in solicitacoes if s['id'] != solicitacao_id]
                 
                 with open(SOLICITACOES_FILE, 'w', encoding='utf-8') as f:
@@ -1689,10 +1721,10 @@ if __name__ == "__main__":
             logger.info(f"Dados serão salvos em: {os.path.abspath('dados')}/")
             if DB_AVAILABLE:
                 logger.info("✅ Usando banco de dados SQLite para armazenamento")
-                # Verificar backup automático na inicialização
+                # Verificar backup automático ao iniciar
                 check_automatic_backup()
                 
-                # Iniciar agendador em segundo plano
+                # Iniciar agendador de tarefas em segundo plano
                 scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
                 scheduler_thread.start()
             else:
