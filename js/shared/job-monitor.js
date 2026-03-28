@@ -58,6 +58,7 @@ export class JobMonitor {
         this.changeCallbacks = [];
         this.pollingInterval = null;
         this.changePollingInterval = null;
+        this.eventSource = null;
         this.container = null;
         this.isPolling = false;
         this.hasActiveJobs = false;
@@ -105,107 +106,103 @@ export class JobMonitor {
     startPolling() {
         if (this.isPolling) return;
         this.isPolling = true;
-
-        this.scheduleJobPolling();
-        this.changePollingInterval = setInterval(() => this.pollChanges(), 10000);
-
-        this.pollJobs();
-        this.pollChanges();
+        this._connectSSE();
     }
 
-    scheduleJobPolling() {
-        if (this.pollingInterval) {
-            clearTimeout(this.pollingInterval);
+    _connectSSE() {
+        if (this.eventSource) {
+            this.eventSource.close();
         }
-        const interval = this.hasActiveJobs ? 1000 : 5000;
-        this.pollingInterval = setTimeout(() => {
-            this.pollJobs();
-            this.scheduleJobPolling();
-        }, interval);
+
+        const es = new EventSource('/api/events');
+        this.eventSource = es;
+
+        es.addEventListener('init', (e) => {
+            try {
+                const data = JSON.parse(e.data);
+                if (data.jobs) this._handleJobsEvent(data.jobs);
+                if (data.changes) this._handleChangesEvent(data.changes);
+            } catch (err) {
+                console.warn('Erro ao processar evento init SSE:', err);
+            }
+        });
+
+        es.addEventListener('jobs', (e) => {
+            try {
+                this._handleJobsEvent(JSON.parse(e.data));
+            } catch (err) {
+                console.warn('Erro ao processar evento jobs SSE:', err);
+            }
+        });
+
+        es.addEventListener('changes', (e) => {
+            try {
+                this._handleChangesEvent(JSON.parse(e.data));
+            } catch (err) {
+                console.warn('Erro ao processar evento changes SSE:', err);
+            }
+        });
+
+        es.onerror = () => {
+        };
     }
 
     stopPolling() {
         this.isPolling = false;
-        if (this.pollingInterval) {
-            clearTimeout(this.pollingInterval);
-            this.pollingInterval = null;
-        }
-        if (this.changePollingInterval) {
-            clearInterval(this.changePollingInterval);
-            this.changePollingInterval = null;
+        if (this.eventSource) {
+            this.eventSource.close();
+            this.eventSource = null;
         }
     }
 
-    async pollJobs() {
-        try {
-            const response = await fetch('/api/jobs');
-            if (!response.ok) return;
+    _handleJobsEvent(data) {
+        const activeJobs = data.active || [];
+        this.hasActiveJobs = activeJobs.length > 0;
 
-            const data = await response.json();
-            const activeJobs = data.active || [];
+        activeJobs.forEach(job => {
+            this.updateJobCard(job);
+        });
 
-            this.hasActiveJobs = activeJobs.length > 0;
+        this.jobs.forEach((_, jobId) => {
+            const stillActive = activeJobs.find(j => j.id === jobId);
+            if (!stillActive) {
+                this._fetchAndUpdateFinishedJob(jobId);
+            }
+        });
+    }
 
-            activeJobs.forEach(job => {
-                this.updateJobCard(job);
-            });
+    _handleChangesEvent(currentChanges) {
+        const hasChanges = {
+            clients: (currentChanges.clients || 0) > this.lastKnownChanges.clients,
+            registros: (currentChanges.registros || 0) > this.lastKnownChanges.registros,
+            usuarios: (currentChanges.usuarios || 0) > this.lastKnownChanges.usuarios,
+            categorias: (currentChanges.categorias || 0) > this.lastKnownChanges.categorias
+        };
 
-            this.jobs.forEach((_, jobId) => {
-                const stillActive = activeJobs.find(j => j.id === jobId);
-                if (!stillActive) {
-                    this.fetchAndUpdateJob(jobId);
+        const anyChange = Object.values(hasChanges).some(v => v);
+
+        if (anyChange) {
+            this.lastKnownChanges = { ...currentChanges };
+            this.saveLastKnownChanges();
+
+            this.changeCallbacks.forEach(callback => {
+                try {
+                    callback(hasChanges);
+                } catch (e) {
+                    console.warn('Erro no callback de mudanças:', e);
                 }
             });
-
-        } catch (e) {
-            console.warn('Erro ao buscar jobs:', e);
         }
     }
 
-    async fetchAndUpdateJob(jobId) {
+    async _fetchAndUpdateFinishedJob(jobId) {
         try {
             const response = await fetch(`/api/job/${jobId}`);
             if (!response.ok) return;
-
             const job = await response.json();
             this.updateJobCard(job);
-
         } catch (e) {
-            console.warn('Erro ao buscar job:', e);
-        }
-    }
-
-    async pollChanges() {
-        try {
-            const response = await fetch('/api/changes');
-            if (!response.ok) return;
-
-            const currentChanges = await response.json();
-
-            const hasChanges = {
-                clients: currentChanges.clients > this.lastKnownChanges.clients,
-                registros: currentChanges.registros > this.lastKnownChanges.registros,
-                usuarios: currentChanges.usuarios > this.lastKnownChanges.usuarios,
-                categorias: currentChanges.categorias > this.lastKnownChanges.categorias
-            };
-
-            const anyChange = Object.values(hasChanges).some(v => v);
-
-            if (anyChange) {
-                this.lastKnownChanges = { ...currentChanges };
-                this.saveLastKnownChanges();
-
-                this.changeCallbacks.forEach(callback => {
-                    try {
-                        callback(hasChanges);
-                    } catch (e) {
-                        console.warn('Erro no callback de mudanças:', e);
-                    }
-                });
-            }
-
-        } catch (e) {
-            console.warn('Erro ao verificar mudanças:', e);
+            console.warn('Erro ao buscar job finalizado:', e);
         }
     }
 
