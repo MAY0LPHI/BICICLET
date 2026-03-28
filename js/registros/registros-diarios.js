@@ -74,6 +74,8 @@ import { notificationManager } from '../shared/notifications.js';
 export class RegistrosManager {
     constructor(app) {
         this.app = app;
+        this._clientsMap = null;
+        this._clientsMapSize = -1;
         // Estado dos filtros
         this.filters = {
             status: [],      // ['em-aberto', 'saida', 'pernoite', 'acesso-removido']
@@ -91,14 +93,14 @@ export class RegistrosManager {
             dailyRecordsDateInput: document.getElementById('daily-records-date'),
             dailyRecordsSearchInput: document.getElementById('daily-records-search'),
             dailyRecordsList: document.getElementById('daily-records-list'),
-            // Filter elements
+            // Elementos de filtro
             filterBtn: document.getElementById('filter-btn-registros'),
             filterDropdown: document.getElementById('filter-dropdown-registros'),
             filterBadge: document.getElementById('filter-badge'),
             applyFiltersBtn: document.getElementById('apply-filters-btn'),
             clearFiltersBtn: document.getElementById('clear-filters-btn'),
             filterCategoriasList: document.getElementById('filter-categorias-list'),
-            // Modal Solicitacoes Elements
+            // Elementos do Modal de Solicitações
             solicitacoesModal: document.getElementById('solicitacoes-modal'),
             solicitacoesModalList: document.getElementById('solicitacoes-modal-list'),
             closeSolicitacoesBtn: document.getElementById('close-solicitacoes-modal-btn'),
@@ -140,6 +142,23 @@ export class RegistrosManager {
         this.renderDailyRecords();
     }
 
+    getClientById(clientId) {
+        const clients = this.app.data.clients;
+        if (!this._clientsMap || this._clientsMapSize !== clients.length) {
+            this._clientsMap = new Map();
+            for (const c of clients) {
+                this._clientsMap.set(c.id, c);
+            }
+            this._clientsMapSize = clients.length;
+        }
+        return this._clientsMap.get(clientId) || null;
+    }
+
+    invalidateClientsMap() {
+        this._clientsMap = null;
+        this._clientsMapSize = -1;
+    }
+
     setupEventListeners() {
         this.elements.addRegistroForm.addEventListener('submit', this.handleAddRegistro.bind(this));
         this.elements.cancelAddRegistroBtn.addEventListener('click', () => this.app.toggleModal('add-registro-modal', false));
@@ -148,7 +167,7 @@ export class RegistrosManager {
         // Inicializa UI de filtros (injetará HTML e configurará event listeners)
         this.initializeFilterUI();
 
-        // Modal Solicitacoes Listeners
+        // Listeners do Modal de Solicitações
         if (this.elements.openSolicitacoesModalBtn) {
             this.elements.openSolicitacoesModalBtn.addEventListener('click', this.openSolicitacoesModal.bind(this));
         }
@@ -196,7 +215,7 @@ export class RegistrosManager {
 
         window.addEventListener('click', (e) => {
             this.toggleExportMenu(false);
-            // Close filter dropdown when clicking outside
+            // Fechar dropdown de filtro ao clicar fora
             if (this.elements.filterBtn && this.elements.filterDropdown &&
                 !this.elements.filterBtn.contains(e.target) &&
                 !this.elements.filterDropdown.contains(e.target)) {
@@ -233,7 +252,7 @@ export class RegistrosManager {
         try {
             Auth.requirePermission('registros', 'editar');
         } catch (error) {
-            return; // Silently fail on double click for usability, or alert
+            return; // Falha silenciosa no duplo clique para usabilidade
         }
 
         const confirmed = await Modals.showConfirm('Deseja registrar a SAÍDA deste acesso?', 'Saída Rápida');
@@ -437,7 +456,7 @@ export class RegistrosManager {
         if (this.elements.openSolicitacoesModalBtn) {
             this.elements.openSolicitacoesModalBtn.classList.remove('hidden');
 
-            // Toggle badge based on count
+            // Alternar visibilidade do badge com base na contagem
             if (this.elements.solicitacoesCount) {
                 if (count > 0) {
                     this.elements.solicitacoesCount.classList.remove('hidden');
@@ -463,7 +482,7 @@ export class RegistrosManager {
         const requests = JSON.parse(localStorage.getItem('bicicletario_requests') || '[]');
         const pending = requests.filter(r => r.status === 'pendente').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        // Update badge and button visibility
+        // Atualizar visibilidade do badge e do botão
         this.checkPendingRequests();
 
 
@@ -473,9 +492,9 @@ export class RegistrosManager {
         }
 
         this.elements.solicitacoesModalList.innerHTML = pending.map((req, index) => {
-            const client = this.app.data.clients.find(c => c.id === req.clientId);
+            const client = this.getClientById(req.clientId);
             const bike = client?.bicicletas.find(b => b.id === req.bikeId);
-            const requisicaoIndex = requests.indexOf(req); // Get original index for safer update
+            const requisicaoIndex = requests.indexOf(req); // Obter índice original para atualização mais segura
 
             const time = new Date(req.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
@@ -514,7 +533,7 @@ export class RegistrosManager {
         lucide.createIcons();
     }
 
-    // Override or update handleRequestAction to refresh modal
+    // Sobrescrever ou atualizar handleRequestAction para atualizar o modal
     async handleRequestAction(e) {
         if (!e.target.classList.contains('request-action-btn')) return;
 
@@ -527,7 +546,7 @@ export class RegistrosManager {
         if (!request) return;
 
         // Verificação de permissão antes de prosseguir
-        const permission = request.tipo === 'entrada' ? 'adicionar' : 'editar'; // Exit counts as edit
+        const permission = request.tipo === 'entrada' ? 'adicionar' : 'editar'; // Saída conta como edição
         try {
             Auth.requirePermission('registros', permission);
         } catch (error) {
@@ -557,13 +576,13 @@ export class RegistrosManager {
         requests[reqIndex] = request;
         localStorage.setItem('bicicletario_requests', JSON.stringify(requests));
 
-        // Refresh!
+        // Atualizar!
         this.renderRequestsInModal();
-        this.renderDailyRecords(); // Refresh main list if approved
+        this.renderDailyRecords(); // Atualizar lista principal se aprovado
     }
 
     async createEntryFromRequest(req) {
-        const bike = this.app.data.clients.find(c => c.id === req.clientId)?.bicicletas.find(b => b.id === req.bikeId);
+        const bike = this.getClientById(req.clientId)?.bicicletas.find(b => b.id === req.bikeId);
         if (!bike) throw new Error('Dados da bicicleta não encontrados.');
 
         const newRegistro = {
@@ -582,11 +601,10 @@ export class RegistrosManager {
         };
 
         this.app.data.registros.push(newRegistro);
-        await Storage.saveRegistros(this.app.data.registros);
+        await Storage.saveRegistro(newRegistro);
     }
 
     async createExitFromRequest(req) {
-        // Find open record for this bike
         const openRecord = this.app.data.registros.find(r =>
             r.clientId === req.clientId &&
             r.bikeId === req.bikeId &&
@@ -596,7 +614,7 @@ export class RegistrosManager {
         if (!openRecord) throw new Error('Registro de entrada não encontrado para esta bicicleta.');
 
         openRecord.dataHoraSaida = new Date().toISOString();
-        await Storage.saveRegistros(this.app.data.registros);
+        await Storage.saveRegistro(openRecord);
     };
 
     handleViewComments(e) {
@@ -742,19 +760,19 @@ export class RegistrosManager {
     openCategoriaModal(categoria) {
         if (!this.elements.categoriaModal || !this.elements.categoriaModalList) return;
 
-        // Filter records for this category
+        // Filtrar registros desta categoria
         const dailyRecords = this.app.data.currentDailyRecords || [];
         const categoriaRecords = dailyRecords.filter(({ registro }) => {
             const recordCategoria = registro.categoria || 'Sem Categoria';
             return recordCategoria === categoria;
         });
 
-        // Update modal title
+        // Atualizar título do modal
         if (this.elements.categoriaModalTitle) {
             this.elements.categoriaModalTitle.textContent = categoria;
         }
 
-        // Build list HTML
+        // Construir HTML da lista
         const categorias = Storage.loadCategorias();
         const listHtml = categoriaRecords.map(({ client, bike, registro }) => {
             const categoriaEmoji = categoria !== 'Sem Categoria' && categorias[categoria] ? categorias[categoria] : '';
@@ -792,10 +810,10 @@ export class RegistrosManager {
 
         this.elements.categoriaModalList.innerHTML = listHtml || '<p class="text-sm text-slate-500 dark:text-slate-400">Nenhuma pessoa registrada nesta categoria.</p>';
 
-        // Recreate icons
+        // Recriar ícones
         lucide.createIcons();
 
-        // Add event listeners to edit buttons
+        // Adicionar event listeners aos botões de edição
         this.elements.categoriaModalList.querySelectorAll('.edit-categoria-registro-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const registroId = btn.dataset.registroId;
@@ -810,7 +828,7 @@ export class RegistrosManager {
     openCustomListModal(title, recordsData) {
         if (!this.elements.categoriaModal || !this.elements.categoriaModalList) return;
 
-        // Update modal title
+        // Atualizar título do modal
         if (this.elements.categoriaModalTitle) {
             this.elements.categoriaModalTitle.textContent = title;
         }
@@ -826,7 +844,7 @@ export class RegistrosManager {
                 statusHtml = `<span class="text-xs text-green-600 dark:text-green-400 font-medium whitespace-nowrap">Saída: ${saida.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>`;
             } else {
                 const entrada = new Date(registro.dataHoraEntrada);
-                // Calculate duration nicely
+                // Calcular duração de forma legível
                 const now = new Date();
                 const diffMs = now - entrada;
                 const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
@@ -864,10 +882,10 @@ export class RegistrosManager {
 
         this.elements.categoriaModalList.innerHTML = listHtml || '<p class="text-sm text-slate-500 dark:text-slate-400">Nenhum registro encontrado.</p>';
 
-        // Recreate icons
+        // Recriar ícones
         lucide.createIcons();
 
-        // Add event listeners to edit buttons
+        // Adicionar event listeners aos botões de edição
         this.elements.categoriaModalList.querySelectorAll('.edit-categoria-registro-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const registroId = btn.dataset.registroId;
@@ -899,7 +917,7 @@ export class RegistrosManager {
             // 3. Renderizar o dashboard
             const dashboardContainer = document.getElementById('modal-dashboard-container');
             if (dashboardContainer) {
-                dashboardContainer.innerHTML = '<div class="flex justify-center p-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>'; // Loading indicator
+                dashboardContainer.innerHTML = '<div class="flex justify-center p-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>'; // Indicador de carregamento
 
                 console.log('Instanciando DonoDashboard...');
                 const dashboard = new DonoDashboard(this.app, 'modal-dashboard-container');
@@ -926,7 +944,7 @@ export class RegistrosManager {
 
         const clientId = this.elements.registroClientIdInput.value;
         const bikeId = this.elements.registroBikeIdInput.value;
-        const client = this.app.data.clients.find(c => c.id === clientId);
+        const client = this.getClientById(clientId);
         const bike = client?.bicicletas.find(b => b.id === bikeId);
         const categoriaSelect = document.getElementById('registro-categoria');
         const categoria = categoriaSelect ? categoriaSelect.value : (client?.categoria || '');
@@ -946,10 +964,24 @@ export class RegistrosManager {
                 }
             };
             this.app.data.registros.push(newRegistro);
-            await Storage.saveRegistros(this.app.data.registros);
 
-            // Notificar o gerenciador de notificações sobre a atividade
-            notificationManager.onClientActivity();
+            this.app.toggleModal('add-registro-modal', false);
+
+            this.app.bicicletasManager.renderClientDetails();
+            if (this.app.data.activeTab === 'registros-diarios') {
+                this.renderDailyRecords();
+            }
+
+            try {
+                await Storage.saveRegistro(newRegistro);
+            } catch (error) {
+                console.warn('Erro ao salvar registro:', error);
+            }
+
+            try {
+                notificationManager.onClientActivity();
+            } catch (err) {
+            }
 
             logAction('register_entry', 'registro', newRegistro.id, {
                 cliente: client.nome,
@@ -959,12 +991,6 @@ export class RegistrosManager {
                 categoria: categoria,
                 dataHoraEntrada: newRegistro.dataHoraEntrada
             });
-
-            this.app.bicicletasManager.renderClientDetails();
-            if (this.app.data.activeTab === 'registros-diarios') {
-                this.renderDailyRecords();
-            }
-            this.app.toggleModal('add-registro-modal', false);
         }
     }
 
@@ -976,7 +1002,7 @@ export class RegistrosManager {
             return;
         }
 
-        const client = this.app.data.clients.find(c => c.id === clientId);
+        const client = this.getClientById(clientId);
         if (!client || !client.bicicletas || client.bicicletas.length === 0) {
             Modals.showAlert('Cliente não tem bicicletas cadastradas.', 'Atenção');
             return;
@@ -1015,8 +1041,8 @@ export class RegistrosManager {
         };
 
         this.app.data.registros.push(newRegistro);
-        await Storage.saveRegistros(this.app.data.registros);
-        notificationManager.onClientActivity();
+        await Storage.saveRegistro(newRegistro);
+        try { notificationManager.onClientActivity(); } catch(e) {}
 
         logAction('register_entry', 'registro_rapido', newRegistro.id, {
             cliente: client.nome,
@@ -1034,7 +1060,7 @@ export class RegistrosManager {
     }
 
     openAddRegistroModal(clientId, bikeId) {
-        const client = this.app.data.clients.find(c => c.id === clientId);
+        const client = this.getClientById(clientId);
         const bike = client?.bicicletas.find(b => b.id === bikeId);
 
         if (client && bike) {
@@ -1072,10 +1098,9 @@ export class RegistrosManager {
 
             if (registro && !registro.dataHoraSaida) {
                 registro.dataHoraSaida = Utils.getLocalISOString();
-                await Storage.saveRegistros(this.app.data.registros);
+                await Storage.saveRegistro(registro);
 
-                // Notificar o gerenciador de notificações sobre a atividade
-                notificationManager.onClientActivity();
+                try { notificationManager.onClientActivity(); } catch(e) {}
 
                 this.renderDailyRecords();
                 this.app.bicicletasManager.renderClientDetails();
@@ -1131,7 +1156,7 @@ export class RegistrosManager {
     }
 
     async handleActionDropdownClick(e) {
-        // Toggle dropdown menu
+        // Alternar menu dropdown
         const dropdownButton = e.target.closest('.dropdown-button');
         if (dropdownButton) {
             e.stopPropagation();
@@ -1158,7 +1183,7 @@ export class RegistrosManager {
             return;
         }
 
-        // Handle option selection
+        // Tratar seleção de opção
         const dropdownOption = e.target.closest('.dropdown-option');
         if (dropdownOption) {
             const action = dropdownOption.dataset.value;
@@ -1169,7 +1194,7 @@ export class RegistrosManager {
             const menu = dropdown.querySelector('.dropdown-menu');
             const button = dropdown.querySelector('.dropdown-button');
 
-            // Close dropdown
+            // Fechar dropdown
             menu.classList.add('hidden');
             button.classList.remove('active');
 
@@ -1219,12 +1244,11 @@ export class RegistrosManager {
         const registro = this.app.data.registros.find(r => r.id === registroId);
         if (registro && !registro.dataHoraSaida) {
             registro.dataHoraSaida = Utils.getLocalISOString();
-            await Storage.saveRegistros(this.app.data.registros);
+            await Storage.saveRegistro(registro);
 
-            // Notificar o gerenciador de notificações sobre a atividade
-            notificationManager.onClientActivity();
+            try { notificationManager.onClientActivity(); } catch(e) {}
 
-            const client = this.app.data.clients.find(c => c.id === registro.clientId);
+            const client = this.getClientById(registro.clientId);
             logAction('register_exit', 'registro', registroId, {
                 cliente: client?.nome || 'Desconhecido',
                 clienteCpf: client?.cpf || '',
@@ -1253,7 +1277,7 @@ export class RegistrosManager {
             if (registro && !registro.dataHoraSaida) {
                 registro.dataHoraSaida = Utils.getLocalISOString();
                 registro.acessoRemovido = true;
-                await Storage.saveRegistros(this.app.data.registros);
+                await Storage.saveRegistro(registro);
                 this.renderDailyRecords();
                 this.app.bicicletasManager.renderClientDetails();
                 await Modals.showAlert('Acesso removido com sucesso!', 'Sucesso');
@@ -1296,9 +1320,9 @@ export class RegistrosManager {
             if (registro.acessoRemovido) {
                 delete registro.acessoRemovido;
             }
-            await Storage.saveRegistros(this.app.data.registros);
+            await Storage.saveRegistro(registro);
 
-            const client = this.app.data.clients.find(c => c.id === registro.clientId);
+            const client = this.getClientById(registro.clientId);
             logAction('revert_action', 'registro', registroId, {
                 acao: tipoAcao === 'remoção de acesso' ? 'remocao_acesso' : 'saida',
                 clienteNome: client?.nome || 'desconhecido'
@@ -1444,10 +1468,10 @@ export class RegistrosManager {
             }
         }
 
-        // Recreate icons
+        // Recriar ícones
         lucide.createIcons();
 
-        // Re-initialize the dropdown
+        // Reinicializar o dropdown
         if (window.editRegistroCategoriaDropdown) {
             window.editRegistroCategoriaDropdown.init();
         }
@@ -1458,7 +1482,7 @@ export class RegistrosManager {
 
         if (!clientId) return;
 
-        const client = this.app.data.clients.find(c => c.id === clientId);
+        const client = this.getClientById(clientId);
         if (!client || !client.bicicletas) return;
 
         client.bicicletas.forEach(bike => {
@@ -1506,7 +1530,7 @@ export class RegistrosManager {
             return;
         }
 
-        const client = this.app.data.clients.find(c => c.id === newClientId);
+        const client = this.getClientById(newClientId);
         const bike = client?.bicicletas.find(b => b.id === newBikeId);
 
         if (!bike) {
@@ -1533,7 +1557,7 @@ export class RegistrosManager {
             }
         }
 
-        await Storage.saveRegistros(this.app.data.registros);
+        await Storage.saveRegistro(registro);
         this.renderDailyRecords();
         this.app.bicicletasManager.renderClientDetails();
         this.app.toggleModal('edit-registro-modal', false);
@@ -1551,7 +1575,7 @@ export class RegistrosManager {
         const registro = this.app.data.registros.find(r => r.id === registroId);
         if (!registro) return;
 
-        const client = this.app.data.clients.find(c => c.id === registro.clientId);
+        const client = this.getClientById(registro.clientId);
         if (!client || !client.bicicletas || client.bicicletas.length === 0) {
             await Modals.showAlert('Cliente não tem bicicletas cadastradas.', 'Atenção');
             return;
@@ -1584,7 +1608,7 @@ export class RegistrosManager {
                     marca: novaBike.marca,
                     cor: novaBike.cor
                 };
-                await Storage.saveRegistros(this.app.data.registros);
+                await Storage.saveRegistro(registro);
                 this.renderDailyRecords();
                 this.app.bicicletasManager.renderClientDetails();
                 await Modals.showAlert('Bicicleta trocada com sucesso!', 'Sucesso');
@@ -1602,7 +1626,7 @@ export class RegistrosManager {
             return;
         }
 
-        const client = this.app.data.clients.find(c => c.id === clientId);
+        const client = this.getClientById(clientId);
         if (!client || !client.bicicletas || client.bicicletas.length === 0) {
             await Modals.showAlert('Cliente não tem bicicletas cadastradas.', 'Atenção');
             return;
@@ -1645,7 +1669,7 @@ export class RegistrosManager {
                     }
                 };
                 this.app.data.registros.push(novoRegistro);
-                await Storage.saveRegistros(this.app.data.registros);
+                await Storage.saveRegistro(novoRegistro);
                 this.renderDailyRecords();
                 await Modals.showAlert('Bicicleta adicionada ao mesmo registro com sucesso!', 'Sucesso');
             } else {
@@ -1691,9 +1715,10 @@ export class RegistrosManager {
             registro.registroPernoiteId = novoRegistroId;
 
             this.app.data.registros.push(novoRegistro);
-            await Storage.saveRegistros(this.app.data.registros);
+            await Storage.saveRegistro(registro);
+            await Storage.saveRegistro(novoRegistro);
 
-            const client = this.app.data.clients.find(c => c.id === registro.clientId);
+            const client = this.getClientById(registro.clientId);
             logAction('overnight_stay', 'registro', registroId, {
                 clienteNome: client?.nome || 'desconhecido'
             });
@@ -1718,28 +1743,31 @@ export class RegistrosManager {
 
         const confirmed = await Modals.showConfirm('Tem certeza que deseja reverter o PERNOITE?', 'Reverter Pernoite');
         if (confirmed) {
-            const client = this.app.data.clients.find(c => c.id === registro.clientId);
+            const client = this.getClientById(registro.clientId);
 
             if (registro.registroPernoiteId) {
-                const indexPernoite = this.app.data.registros.findIndex(r => r.id === registro.registroPernoiteId);
+                const pernoiteId = registro.registroPernoiteId;
+                const indexPernoite = this.app.data.registros.findIndex(r => r.id === pernoiteId);
                 if (indexPernoite >= 0) {
                     this.app.data.registros.splice(indexPernoite, 1);
                 }
                 delete registro.pernoite;
                 delete registro.registroPernoiteId;
+                await Storage.saveRegistro(registro);
+                await Storage.deleteRegistro(pernoiteId);
             } else if (registro.registroOriginalId) {
                 const registroOriginal = this.app.data.registros.find(r => r.id === registro.registroOriginalId);
                 if (registroOriginal) {
                     delete registroOriginal.pernoite;
                     delete registroOriginal.registroPernoiteId;
+                    await Storage.saveRegistro(registroOriginal);
                 }
                 const indexAtual = this.app.data.registros.findIndex(r => r.id === registroId);
                 if (indexAtual >= 0) {
                     this.app.data.registros.splice(indexAtual, 1);
                 }
+                await Storage.deleteRegistro(registroId);
             }
-
-            await Storage.saveRegistros(this.app.data.registros);
 
             logAction('revert_action', 'registro', registroId, {
                 acao: 'pernoite',
@@ -1800,7 +1828,7 @@ export class RegistrosManager {
 
         // 2. Enriquecer com dados de Cliente e Bike
         let dailyRecords = dailyRecordsRaw.map(registro => {
-            const client = this.app.data.clients.find(c => c.id === registro.clientId);
+            const client = this.getClientById(registro.clientId);
             if (!client) return null;
             const bike = client.bicicletas.find(b => b.id === registro.bikeId);
             if (!bike) return null;
@@ -2586,7 +2614,7 @@ export class RegistrosManager {
     }
 
     // Parte do método de inicialização (init ou construtor)
-    // This block is inserted here based on the provided context.
+    // Este bloco é inserido aqui com base no contexto fornecido.
     initEventListeners() {
         if (this.elements.exportPdfBtn) {
             this.elements.exportPdfBtn.addEventListener('click', () => this.exportToPDF());
@@ -2610,7 +2638,7 @@ export class RegistrosManager {
 
         // Verifica solicitações periodicamente para atualizar visibilidade do badge
         this.checkPendingRequests();
-        // Optional: Poll for new requests every few seconds
+        // Opcional: Verificar novas solicitações a cada poucos segundos
         setInterval(() => this.checkPendingRequests(), 5000);
     }
 
