@@ -73,8 +73,10 @@ export const DEFAULT_PERMISSIONS = {
         },
         configuracao: {
             ver: true,
-            gerenciarUsuarios: true, // Pode criar/editar/excluir outros usuários
-            buscaAvancada: true
+            gerenciarUsuarios: true,
+            buscaAvancada: true,
+            adminMobile: true,
+            acessoCelular: true
         },
         jogos: { ver: true }
     },
@@ -89,13 +91,15 @@ export const DEFAULT_PERMISSIONS = {
             importar: true,
             exportarDados: true,
             importarDados: true,
-            exportarSistema: false, // Admin não pode exportar backup completo
-            importarSistema: false  // Admin não pode restaurar backup
+            exportarSistema: false,
+            importarSistema: false
         },
         configuracao: {
             ver: true,
-            gerenciarUsuarios: false, // Não pode gerenciar outros usuários
-            buscaAvancada: true
+            gerenciarUsuarios: false,
+            buscaAvancada: true,
+            adminMobile: true,
+            acessoCelular: true
         },
         jogos: { ver: true }
     },
@@ -116,7 +120,9 @@ export const DEFAULT_PERMISSIONS = {
         configuracao: {
             ver: false,
             gerenciarUsuarios: false,
-            buscaAvancada: false
+            buscaAvancada: false,
+            adminMobile: false,
+            acessoCelular: false
         },
         jogos: { ver: false }
     }

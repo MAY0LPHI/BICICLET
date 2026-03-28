@@ -83,10 +83,10 @@
         })();
     </script>
     <!-- Lucide Icons: biblioteca de ícones SVG. Usada em todo o sistema com <i data-lucide="nome-do-icone"> -->
-    <script src="libs/lucide.js"></script>
+    <script src="libs/lucide.js?v=1" defer></script>
 
     <!-- SheetJS (XLSX): biblioteca para criar e ler arquivos Excel (.xlsx) e CSV -->
-    <script src="libs/xlsx.full.min.js"></script>
+    <script src="libs/xlsx.full.min.js?v=1" defer></script>
 
     <!--
       platform.js: detecta em qual ambiente o sistema está rodando
@@ -103,7 +103,7 @@
       que os imports ES6 (import/export) funcionem corretamente no navegador.
       Todo o comportamento dinâmico do sistema parte daqui.
     -->
-    <script type="module" src="js/app-modular.js?v=4"></script>
+    <script type="module" src="js/app-modular.js?v=7"></script>
 
     <!-- CSS do Tailwind pré-compilado: contém apenas as classes realmente usadas no HTML -->
     <link rel="stylesheet" href="css/tailwind-compiled.css?v=1">
@@ -113,6 +113,28 @@
 <body
     class="bg-gradient-to-br from-blue-50 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-300 min-h-screen dark:text-slate-200 transition-colors duration-300">
 
+    <div id="instant-loader" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(30,41,82,0.5),rgba(51,65,145,0.15),rgba(30,41,59,0.45));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:opacity 0.4s">
+        <div style="text-align:center">
+            <div style="width:48px;height:48px;margin:0 auto 16px;border:3px solid rgba(255,255,255,0.2);border-top-color:rgba(96,165,250,0.8);border-radius:50%;animation:ils 0.7s linear infinite"></div>
+            <div style="color:rgba(255,255,255,0.85);font:600 15px system-ui,sans-serif">Carregando sistema...</div>
+        </div>
+    </div>
+    <style>@keyframes ils{to{transform:rotate(360deg)}}</style>
+    <script>
+    (function(){
+        function removeIL(){var e=document.getElementById('instant-loader');if(e){e.style.opacity='0';setTimeout(function(){e.remove()},400)}}
+        setTimeout(removeIL,6000);
+        var mo=new MutationObserver(function(){
+            var sl=document.getElementById('system-loading-screen');
+            var lc=document.getElementById('login-container');
+            var ac=document.getElementById('app-container');
+            if(sl||(lc&&!lc.classList.contains('hidden'))||(ac&&!ac.classList.contains('hidden'))){removeIL();mo.disconnect()}
+        });
+        if(document.body)mo.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+        else document.addEventListener('DOMContentLoaded',function(){mo.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})});
+    })();
+    </script>
+
     <!--
       ╔══════════════════════════════════════════════════════════╗
       ║  TELA DE LOGIN                                           ║
@@ -120,8 +142,9 @@
       ║  Visível: quando o usuário NÃO está autenticado          ║
       ║  Oculto: após login bem-sucedido (via app-modular.js)    ║
       ╚══════════════════════════════════════════════════════════╝
-      Credenciais padrão: admin / admin123
-      (Podem ser alteradas na aba Usuários após o primeiro login)
+      Credenciais padrão: CELO123 / CELO123 (tipo: dono — acesso total)
+      Outros: admin / admin123 (admin), Funcionario / 1234 (funcionario)
+      (Podem ser alteradas na aba Usuários após o login)
     -->
     <div id="login-container"
         class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -222,7 +245,7 @@
                       Obs: a classe 'hidden' em #usuarios-tab e #jogos-tab é controlada
                       por permissões do usuário logado (ver applyPermissions() no app-modular.js)
                     -->
-                    <nav class="flex items-center space-x-1 sm:space-x-2 flex-nowrap overflow-x-auto overflow-y-hidden w-full xl:w-2/4 justify-start sm:justify-center pb-1 sm:pb-0 px-2 sm:px-0"
+                    <nav class="flex items-center space-x-1 sm:space-x-2 flex-nowrap overflow-x-auto overflow-y-hidden justify-center pb-1 sm:pb-0 px-2 sm:px-0 mx-auto"
                         aria-label="Tabs" style="scrollbar-width: none;">
                         <button id="clientes-tab" class="liquid-glass-item active">
                             <i data-lucide="users"></i>
@@ -256,26 +279,33 @@
                         para acesso via QR Code em dispositivos móveis
                       - #user-info: preenchido pelo JS com o nome do usuário logado
                       - #logout-btn: chama handleLogout() no app-modular.js
-                      Nota: esta seção fica oculta em telas pequenas (hidden md:flex)
+                      Nota: esta seção é responsiva - elementos reduzidos em telas pequenas
                     -->
-                    <div class="hidden md:flex items-center justify-end space-x-3 w-full xl:w-1/4">
+                    <div class="flex items-center justify-center md:justify-end space-x-2 sm:space-x-3 w-full xl:w-1/4">
+                        <a href="/admin-mobile.html" target="_blank" id="admin-mobile-btn"
+                            class="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-500/20 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-500/30 dark:hover:bg-blue-500/40 transition-colors"
+                            title="Painel Admin Mobile">
+                            <i data-lucide="smartphone" class="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2"></i>
+                            <span class="text-[10px] sm:text-xs font-semibold">Admin</span>
+                        </a>
                         <a href="/mobile-access.html" target="_blank" id="mobile-access-btn"
-                            class="flex items-center px-3 py-2 bg-slate-100/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors">
-                            <i data-lucide="qr-code" class="w-5 h-5 mr-2"></i>
-                            <span class="text-xs font-semibold">Celular</span>
+                            class="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 bg-slate-100/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
+                            title="Totem Cliente">
+                            <i data-lucide="qr-code" class="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2"></i>
+                            <span class="text-[10px] sm:text-xs font-semibold">Celular</span>
                         </a>
 
                         <div
-                            class="flex items-center space-x-3 pl-4 border-l border-slate-300/50 dark:border-slate-600/50">
+                            class="flex items-center space-x-2 sm:space-x-3 pl-2 sm:pl-4 border-l border-slate-300/50 dark:border-slate-600/50">
                             <div class="text-right">
-                                <p class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                                <p class="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                                     Usuário</p>
-                                <p id="user-info" class="text-sm font-bold text-slate-700 dark:text-slate-200">Admin</p>
+                                <p id="user-info" class="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 max-w-[80px] sm:max-w-none truncate">Admin</p>
                             </div>
                             <button id="logout-btn"
-                                class="p-2.5 text-slate-600 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-all"
+                                class="p-1.5 sm:p-2.5 text-slate-600 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-all"
                                 title="Sair">
-                                <i data-lucide="log-out" class="w-5 h-5"></i>
+                                <i data-lucide="log-out" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                             </button>
                         </div>
                     </div>
@@ -451,10 +481,10 @@
                             </div>
                         </div>
 
-                        <div id="client-details-section" class="lg:col-span-2 theme-glass-panel p-6 rounded-2xl hidden">
+                        <div id="client-details-section" class="md:col-span-2 theme-glass-panel p-6 rounded-2xl hidden">
                         </div>
                         <div id="client-details-placeholder"
-                            class="lg:col-span-2 theme-glass-panel p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center">
+                            class="md:col-span-2 theme-glass-panel p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" data-lucide="info"
@@ -2214,9 +2244,12 @@
                             }
                         });
                         // Handler do backdrop para fechar o modal com clique externo
-                        dashboardModal.querySelector('.bg-opacity-75').addEventListener('click', () => {
-                            dashboardModal.classList.add('hidden');
-                        });
+                        const dashboardBackdrop = dashboardModal.querySelector('.bg-opacity-75');
+                        if (dashboardBackdrop) {
+                            dashboardBackdrop.addEventListener('click', () => {
+                                dashboardModal.classList.add('hidden');
+                            });
+                        }
                     }
                 });
             </script>
