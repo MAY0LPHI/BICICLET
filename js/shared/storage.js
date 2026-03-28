@@ -631,18 +631,18 @@ export const Storage = {
 
     async saveImage(base64Data) {
         if (isElectron) {
-            // Electron implementation
+            // Implementação Electron
             const result = await window.electron.saveImage(base64Data);
             if (result.success) {
-                return result.url; // Returns filename or full path
+                return result.url; // Retorna nome do arquivo ou caminho completo
             }
         } else if (fileStorageAvailable) {
             const result = await FileStorage.uploadImage(base64Data);
             if (result.success) {
-                return result.url; // Returns /imagens/img_uuid.jpg
+                return result.url; // Retorna /imagens/img_uuid.jpg
             }
         }
-        return base64Data; // Fallback: retorna base64 se o upload falhou ou API nao disponível
+        return base64Data; // Fallback: retorna base64 se o upload falhou ou API não disponível
     },
 
     // Métodos para o Dashboard
@@ -652,7 +652,7 @@ export const Storage = {
         if (isElectron) {
             allRegistros = await window.electron.loadRegistros();
         } else {
-            // First try to load from the main flat list which is usually the source of truth in web mode
+            // Primeiro tenta carregar da lista plana principal que geralmente é a fonte de verdade no modo web
             const flatList = this.loadRegistrosSync();
 
             if (flatList && flatList.length > 0) {
@@ -690,7 +690,7 @@ export const Storage = {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
 
-            // Generate local YYYY-MM-DD string
+            // Gerar string local YYYY-MM-DD
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
@@ -731,6 +731,6 @@ export const Storage = {
             }
         });
 
-        return hours; // Array com 24 posições, cada uma com a contagem acumulada
+        return hours; // Array com 24 posições, cada uma com a contagem acumulada por hora
     }
 };
