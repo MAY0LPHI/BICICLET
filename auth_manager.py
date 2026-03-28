@@ -29,7 +29,7 @@ except ImportError:
 try:
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
-    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC as PBKDF2
     CRYPTO_AVAILABLE = True
 except ImportError:
     CRYPTO_AVAILABLE = False
@@ -323,6 +323,15 @@ class OfflineAuthManager:
         logger.info(f"✅ Senha alterada para usuário: {username}")
         return True
     
+    def delete_user(self, username: str) -> bool:
+        users = self._load_users()
+        if username not in users or username == 'admin':
+            return False
+        del users[username]
+        self._save_users(users)
+        logger.info(f"Usuário removido: {username}")
+        return True
+
     def get_all_users(self) -> list:
         """Retorna todos os usuários (sem senhas)"""
         users = self._load_users()
@@ -330,6 +339,42 @@ class OfflineAuthManager:
             {k: v for k, v in user.items() if k != 'password'}
             for user in users.values()
         ]
+
+    def get_all_users_for_backup(self) -> list:
+        """Retorna todos os usuários COM senhas hash para backup"""
+        users = self._load_users()
+        result = []
+        for username, user in users.items():
+            u = dict(user)
+            if 'id' not in u:
+                u['id'] = username
+            if 'password' in u:
+                u['password_hash'] = u.pop('password')
+            result.append(u)
+        return result
+
+    def restore_users_from_backup(self, backup_users: list) -> int:
+        """Restaura usuários de um backup (merge, não substitui)"""
+        users = self._load_users()
+        restored = 0
+        for bu in backup_users:
+            username = bu.get('username') or bu.get('id')
+            if not username:
+                continue
+            pwd = bu.get('password_hash') or bu.get('password')
+            if not pwd:
+                continue
+            if username not in users:
+                users[username] = {
+                    'username': username,
+                    'password': pwd,
+                    'nome': bu.get('nome', username),
+                    'tipo': bu.get('tipo', 'funcionario')
+                }
+                restored += 1
+        if restored > 0:
+            self._save_users(users)
+        return restored
 
 
 # Singleton instance
