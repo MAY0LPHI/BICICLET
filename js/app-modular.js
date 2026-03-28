@@ -10,20 +10,27 @@
  *  ARQUITETURA:
  *  - Este arquivo define a classe App (aplicação principal).
  *  - Cada aba do sistema tem seu próprio Manager (gerenciador):
- *      • ClientesManager   → aba de clientes cadastrados
- *      • BicicletasManager → aba de bicicletas
- *      • RegistrosManager  → aba de registros diários
- *      • ConfiguracaoManager → aba de configurações
- *      • DadosManager      → aba de exportação/importação
- *      • JogosManager      → aba de jogos
- *      • Usuarios          → aba de gerenciamento de usuários
+ *      • ClientesManager     → aba de clientes cadastrados (carrega imediato)
+ *      • BicicletasManager   → painel de bicicletas do cliente selecionado (carrega imediato)
+ *      • RegistrosManager    → aba de registros diários (carrega imediato)
+ *      • ConfiguracaoManager → aba de configurações (lazy load: 1.5s)
+ *      • DadosManager        → aba de exportação/importação (lazy load: 3s)
+ *      • Usuarios            → aba de gerenciamento de usuários (lazy load: 4.5s)
+ *      • JogosManager        → aba de jogos (lazy load: ao clicar na aba)
  *  - Módulos compartilhados ficam em js/shared/ (auth, storage, debug, etc.)
+ *
+ *  LAZY LOADING ESCALONADO (lazyLoadDeferred):
+ *  - ConfiguracaoManager, DadosManager e Usuarios são carregados em background
+ *    com intervalos de 1.5s, 3s e 4.5s para evitar pico de CPU
+ *  - JogosManager (~360KB) só é carregado via import() dinâmico ao clicar na aba
+ *  - Cada manager começa como null e é instanciado via ensure*() na primeira necessidade
  *
  *  FLUXO DE INICIALIZAÇÃO:
  *  1. DOMContentLoaded → inicia Debug, ícones Lucide e SystemLoader
  *  2. SystemLoader verifica o sistema (backend, dados, usuários)
  *  3. App.init() verifica autenticação e redireciona se necessário
- *  4. Se autenticado, carrega dados e inicializa todos os managers
+ *  4. Se autenticado, carrega dados e inicializa managers imediatos
+ *  5. lazyLoadDeferred() agenda carregamento escalonado dos managers restantes
  *
  *  PARA INICIANTES:
  *  - Este arquivo é carregado automaticamente pelo index.html
@@ -35,14 +42,9 @@
 import { ClientesManager } from './cadastros/clientes.js';
 import { BicicletasManager } from './cadastros/bicicletas.js';
 import { RegistrosManager } from './registros/registros-diarios.js';
-import { ConfiguracaoManager } from './configuracao/configuracao.js';
-import { DadosManager } from './dados/dados.js';
-import { JogosManager } from './jogos/jogos.js';
-
 import { Storage } from './shared/storage.js';
 import { Debug } from './shared/debug.js';
 import { Auth } from './shared/auth.js';
-import { Usuarios } from './usuarios/usuarios.js';
 import { Utils } from './shared/utils.js';
 import { SystemLoader } from './shared/system-loader.js';
 import { getJobMonitor } from './shared/job-monitor.js';
@@ -106,10 +108,12 @@ class App {
         this.clientesManager = new ClientesManager(this);
         this.bicicletasManager = new BicicletasManager(this);
         this.registrosManager = new RegistrosManager(this);
-        this.configuracaoManager = new ConfiguracaoManager(this);
-        this.dadosManager = new DadosManager(this);
-        this.jogosManager = new JogosManager(this);
-        this.usuariosManager = Usuarios;
+        this.configuracaoManager = null;
+        this.dadosManager = null;
+        this.jogosManager = null;
+        this.usuariosManager = null;
+
+        this.lazyLoadDeferred();
 
 
         this.clientesManager.renderClientList();
@@ -133,6 +137,12 @@ class App {
         if (bikeLogoBtn) {
             bikeLogoBtn.addEventListener('click', () => this.helpGuide.openGuide());
         }
+    }
+
+    lazyLoadDeferred() {
+        setTimeout(() => this.ensureConfiguracao(), 1500);
+        setTimeout(() => this.ensureDados(), 3000);
+        setTimeout(() => this.ensureUsuarios(), 4500);
     }
 
     initJobMonitor() {
@@ -301,7 +311,7 @@ class App {
         if (this.dadosManager) {
             this.dadosManager.applyPermissionsToUI();
         }
-        if (this.jogosManager) {
+        if (this.jogosManager && this.jogosManager.applyPermissionsToUI) {
             this.jogosManager.applyPermissionsToUI();
         }
     }
@@ -514,14 +524,49 @@ class App {
         if (tabName === 'registros-diarios') {
             this.registrosManager.renderDailyRecords();
         } else if (tabName === 'dados') {
-            lucide.createIcons();
+            this.ensureDados().then(() => lucide.createIcons());
         } else if (tabName === 'usuarios') {
-            this.usuariosManager.init();
+            this.ensureUsuarios().then(m => m.init());
         } else if (tabName === 'jogos') {
-            this.jogosManager.init();
-            lucide.createIcons();
-
+            this.loadJogos();
+        } else if (tabName === 'configuracao') {
+            this.ensureConfiguracao();
         }
+    }
+
+    async ensureConfiguracao() {
+        if (!this.configuracaoManager) {
+            const { ConfiguracaoManager } = await import('./configuracao/configuracao.js');
+            this.configuracaoManager = new ConfiguracaoManager(this);
+            this.configuracaoManager.applyPermissionsToUI();
+        }
+        return this.configuracaoManager;
+    }
+
+    async ensureDados() {
+        if (!this.dadosManager) {
+            const { DadosManager } = await import('./dados/dados.js');
+            this.dadosManager = new DadosManager(this);
+            this.dadosManager.applyPermissionsToUI();
+        }
+        return this.dadosManager;
+    }
+
+    async ensureUsuarios() {
+        if (!this.usuariosManager) {
+            const { Usuarios } = await import('./usuarios/usuarios.js');
+            this.usuariosManager = Usuarios;
+        }
+        return this.usuariosManager;
+    }
+
+    async loadJogos() {
+        if (!this.jogosManager) {
+            const { JogosManager } = await import('./jogos/jogos.js?v=5');
+            this.jogosManager = new JogosManager(this);
+        }
+        this.jogosManager.init();
+        lucide.createIcons();
     }
 
     toggleModal(modalId, show) {
