@@ -50,11 +50,10 @@ export class SystemLoader {
         ];
         this.currentStepIndex = 0;
 
-        // Configurações de delay (em ms) - ~3 segundos no total
         this.config = {
-            stepDelay: 600,       // Delay entre etapas (4 × 600ms = 2400ms)
-            errorDelay: 400,      // Delay após erro
-            completionDelay: 600  // Delay antes de remover a tela (600ms)
+            stepDelay: 250,
+            errorDelay: 300,
+            completionDelay: 300
         };
     }
 
@@ -364,11 +363,11 @@ export class SystemLoader {
         const loadingScreen = document.getElementById('system-loading-screen');
         if (loadingScreen) {
             loadingScreen.style.opacity = '0';
-            loadingScreen.style.transition = 'opacity 0.5s ease-out';
+            loadingScreen.style.transition = 'opacity 0.3s ease-out';
 
             setTimeout(() => {
                 loadingScreen.remove();
-            }, 500);
+            }, 300);
         }
     }
 
@@ -380,19 +379,15 @@ export class SystemLoader {
         const skipLoadingScreen = sessionStorage.getItem('skipLoadingScreen');
 
         if (skipLoadingScreen === 'true') {
-            // Remover a flag e pular a tela de carregamento
             sessionStorage.removeItem('skipLoadingScreen');
-            console.log('Pulando tela de carregamento (recarga do sistema)');
-
-            // É seguro pular as verificações em uma recarga porque:
-            // 1. Os módulos JavaScript já foram carregados na primeira carga
-            // 2. Auth.init() será chamado novamente por App.init() (ver app-modular.js)
-            // 3. As verificações são principalmente para disponibilidade de módulos
-            // 4. Recargas sempre passam pelo mesmo fluxo: DOMContentLoaded → SystemLoader.start() → App.init()
+            const il = document.getElementById('instant-loader');
+            if (il) il.remove();
             return true;
         }
 
-        // Primeira carga do sistema - mostrar tela de carregamento
+        const instantLoader = document.getElementById('instant-loader');
+        if (instantLoader) { instantLoader.style.opacity = '0'; setTimeout(() => instantLoader.remove(), 300); }
+
         this.createLoadingScreen();
 
         try {
