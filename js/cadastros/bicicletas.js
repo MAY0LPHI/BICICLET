@@ -60,7 +60,7 @@ export class BicicletasManager {
             cancelAddBikeBtn: document.getElementById('cancel-add-bike'),
             bikeClientIdInput: document.getElementById('bike-client-id'),
 
-            // Edit Bike Elements (Restored)
+            // Elementos de Edição de Bicicleta (Restaurados)
             editBikeModal: document.getElementById('edit-bike-modal'),
             editBikeForm: document.getElementById('edit-bike-form'),
             editBikeClientId: document.getElementById('edit-bike-client-id'),
@@ -70,7 +70,7 @@ export class BicicletasManager {
             editBikeCor: document.getElementById('edit-bike-cor'),
             cancelEditBike: document.getElementById('cancel-edit-bike'),
 
-            // Photo elements
+            // Elementos de foto
             bikePhotoInput: document.getElementById('bike-photo-input'),
             btnStartCamera: document.getElementById('btn-start-camera'),
             cameraContainer: document.getElementById('camera-container'),
@@ -81,7 +81,7 @@ export class BicicletasManager {
             photoPreviewContainer: document.getElementById('photo-preview-container'),
             bikePhotoPreview: document.getElementById('bike-photo-preview'),
             btnRemovePhoto: document.getElementById('btn-remove-photo'),
-            // Edit Photo elements
+            // Elementos de foto da edição
             editBikePhotoInput: document.getElementById('edit-bike-photo-input'),
             editBtnStartCamera: document.getElementById('edit-btn-start-camera'),
             editCameraContainer: document.getElementById('edit-camera-container'),
@@ -107,7 +107,7 @@ export class BicicletasManager {
             this.app.toggleModal('add-bike-modal', false);
         });
 
-        // Photo handlers
+        // Handlers de foto
         this.elements.bikePhotoInput?.addEventListener('change', (e) => this.handlePhotoSelect(e));
         this.elements.btnStartCamera?.addEventListener('click', () => this.handleStartCamera());
         this.elements.btnTakePhoto?.addEventListener('click', () => this.handleTakePhoto());
@@ -138,7 +138,7 @@ export class BicicletasManager {
             this.app.toggleModal('edit-bike-modal', false);
         });
 
-        // Edit Photo handlers
+        // Handlers de foto da edição
         this.elements.editBikePhotoInput?.addEventListener('change', (e) => this.handleEditPhotoSelect(e));
         this.elements.editBtnStartCamera?.addEventListener('click', () => this.handleEditStartCamera());
         this.elements.editBtnTakePhoto?.addEventListener('click', () => this.handleEditTakePhoto());
@@ -157,7 +157,7 @@ export class BicicletasManager {
             e.target.value = e.target.value.toUpperCase();
         });
 
-        // Photo Zoom Handlers
+        // Handlers de zoom da foto
         this.elements.bikePhotoPreview?.addEventListener('click', () => {
             if (this.elements.bikePhotoPreview.src && this.elements.bikePhotoPreview.src !== window.location.href) {
                 Modals.showImage(this.elements.bikePhotoPreview.src, 'Nova Bicicleta');
@@ -171,7 +171,7 @@ export class BicicletasManager {
             }
         });
 
-        // Add cursor pointer
+        // Adicionar cursor pointer
         if (this.elements.bikePhotoPreview) this.elements.bikePhotoPreview.classList.add('cursor-pointer');
         if (this.elements.editBikePhotoPreview) this.elements.editBikePhotoPreview.classList.add('cursor-pointer');
     }
@@ -230,7 +230,7 @@ export class BicicletasManager {
         }
 
         this.elements.addBikeForm.reset();
-        this.handleRemovePhoto(); // Reset photo state
+        this.handleRemovePhoto(); // Resetar estado da foto
         this.elements.bikeClientIdInput.value = clientId;
         this.app.toggleModal('add-bike-modal', true);
     }
@@ -420,7 +420,7 @@ export class BicicletasManager {
         this.elements.editBikeMarca.value = bike.marca;
         this.elements.editBikeCor.value = bike.cor;
 
-        // Setup Photo
+        // Configurar foto
         this.editCurrentPhotoBase64 = bike.foto || null;
         if (this.editCurrentPhotoBase64) {
             this.showEditPreview(this.editCurrentPhotoBase64);
@@ -428,10 +428,10 @@ export class BicicletasManager {
             this.handleEditRemovePhoto();
         }
 
-        // Setup delete button in modal
+        // Configurar botão de exclusão no modal
         const deleteBtn = document.getElementById('delete-bike-from-modal');
         if (deleteBtn) {
-            // Remove old event listener by cloning the button
+            // Remove o event listener antigo clonando o botão
             const newDeleteBtn = deleteBtn.cloneNode(true);
             deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
 
@@ -472,7 +472,7 @@ export class BicicletasManager {
         bike.cor = cor;
 
         if (this.editCurrentPhotoBase64) {
-            // Check if it's a new base64 image (starts with data:) or existing url
+            // Verifica se é uma nova imagem base64 (começa com data:) ou URL existente
             if (this.editCurrentPhotoBase64.startsWith('data:')) {
                 bike.foto = await Storage.saveImage(this.editCurrentPhotoBase64);
             } else {
@@ -588,11 +588,11 @@ export class BicicletasManager {
         this.elements.bikePhotoPreview.src = '';
     }
 
-    // Edit Modal Photo Handlers
+    // Handlers de foto do modal de edição
     handleEditPhotoSelect(e) {
         const file = e.target.files[0];
         if (file) {
-            this.compressImage(file, true); // true for edit mode
+            this.compressImage(file, true); // true para modo de edição
         }
     }
 
@@ -669,7 +669,7 @@ export class BicicletasManager {
         }
     }
 
-    // Updated helper to support edit mode target
+    // Auxiliar atualizado para suportar modo de edição
     compressImage(file, isEdit = false) {
         const reader = new FileReader();
         reader.onload = (e) => {
