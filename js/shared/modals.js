@@ -124,7 +124,7 @@ export const Modals = {
         return new Promise((resolve) => {
             const modal = document.getElementById('custom-confirm-modal');
             const MODAL_ANIMATION_DURATION = 300;
-            const MODAL_CLOSE_BUFFER = 50; // Extra buffer for safety
+            const MODAL_CLOSE_BUFFER = 50; // Margem extra de segurança
 
             // Aguardar se o modal ainda estiver visível (fechando)
             const waitForClose = () => {
@@ -261,7 +261,7 @@ export const Modals = {
             const okBtn = oldOkBtn.cloneNode(true);
             oldOkBtn.parentNode.replaceChild(okBtn, oldOkBtn);
 
-            // Handle icon
+            // Tratar ícone
             if (iconContainer) {
                 if (iconName) {
                     iconContainer.innerHTML = `<i data-lucide="${iconName}" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>`;
@@ -316,13 +316,13 @@ export const Modals = {
                 }
             };
 
-            // Use { once: true } to ensure the listener only executes once
+            // Usa { once: true } para garantir que o listener execute apenas uma vez
             okBtn.addEventListener('click', handleOk, { once: true });
             document.addEventListener('keydown', handleKeyDown);
 
             modal.classList.remove('hidden');
 
-            // Small delay before showing modal to avoid accidental clicks
+            // Pequeno atraso antes de exibir o modal para evitar cliques acidentais
             setTimeout(() => {
                 modal.classList.add('show');
                 modal.querySelector('.modal-content').classList.remove('scale-95');
@@ -408,7 +408,7 @@ export const Modals = {
                 }
             };
 
-            // Use { once: true } to ensure the listener only executes once
+            // Usa { once: true } para garantir que o listener execute apenas uma vez
             okBtn.addEventListener('click', handleOk, { once: true });
             inputField.addEventListener('keypress', handleKeyPress);
             document.addEventListener('keydown', handleEscapeKey);
@@ -416,7 +416,7 @@ export const Modals = {
 
             modal.classList.remove('hidden');
 
-            // Small delay before showing modal to avoid accidental clicks
+            // Pequeno atraso antes de exibir o modal para evitar cliques acidentais
             setTimeout(() => {
                 modal.classList.add('show');
                 modal.querySelector('.modal-content').classList.remove('scale-95');
@@ -427,7 +427,7 @@ export const Modals = {
     },
 
     showImage(imageUrl, title = 'Visualizar Imagem') {
-        // Do NOT close previous modals. We want to stack on top.
+        // NÃO fechar modais anteriores. Queremos empilhar por cima.
         // this.close(); 
 
         const modalHtml = `
@@ -468,9 +468,9 @@ export const Modals = {
         const imageModal = document.getElementById('image-modal');
 
         // Se havia um modal dinâmico anterior, mantemos referência para não perdê-la 
-        // but Modals system is simple. Let's just track this specific image modal locally 
-        // or temporarily override currentModal if we want standard behavior.
-        // For safety, let's treat this as a standalone overlay.
+        // mas o sistema de Modals é simples. Vamos rastrear este modal de imagem localmente 
+        // ou temporariamente sobrescrever currentModal se quisermos o comportamento padrão.
+        // Por segurança, vamos tratar como uma sobreposição independente.
 
         lucide.createIcons();
 
@@ -494,7 +494,7 @@ export const Modals = {
         };
 
         const setZoom = (newScale) => {
-            scale = Math.min(Math.max(0.1, newScale), 5); // Limit zoom between 0.1x and 5x
+            scale = Math.min(Math.max(0.1, newScale), 5); // Limitar zoom entre 0.1x e 5x
             updateTransform();
         };
 
@@ -525,7 +525,7 @@ export const Modals = {
         resetBtn?.addEventListener('click', handleReset);
         closeBtn?.addEventListener('click', closeImageModal);
 
-        // Wheel Zoom
+        // Zoom com roda do mouse
         const handleWheel = (e) => {
             e.preventDefault();
             const delta = e.deltaY * -0.001;
@@ -560,7 +560,7 @@ export const Modals = {
         };
         window.addEventListener('mousemove', handleMouseMove);
 
-        // Double click to reset
+        // Duplo clique para resetar
         const handleDblClick = () => {
             if (scale === 1) {
                 setZoom(2);
