@@ -14,3 +14,8 @@ argon2-cffi>=23.1.0
 
 # Servidor web (já instalado)
 # http.server já vem incluso no Python 3.12
+argon2-cffi
+bcrypt
+cryptography
+flask
+flask-cors
