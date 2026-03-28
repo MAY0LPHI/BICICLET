@@ -96,7 +96,7 @@ export class ConexoesQRManager {
     }
 
     startAutoRefresh() {
-        // Refresh every 30 seconds
+        // Atualizar a cada 30 segundos
         this.autoRefreshInterval = setInterval(() => {
             this.loadSolicitacoes(true);
         }, 30000);
@@ -177,7 +177,7 @@ export class ConexoesQRManager {
                 lucide.createIcons();
             }
 
-            // Attach retry button handler
+            // Anexar handler do botão de tentar novamente
             const retryBtn = this.elements.container.querySelector('#retry-load-solicitacoes');
             if (retryBtn) {
                 retryBtn.addEventListener('click', () => this.loadSolicitacoes());
@@ -213,12 +213,12 @@ export class ConexoesQRManager {
         const html = this.filteredSolicitacoes.map(s => this.renderSolicitacao(s)).join('');
         this.elements.container.innerHTML = html;
 
-        // Re-initialize lucide icons
+        // Reinicializar ícones do Lucide
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
 
-        // Add event listeners for action buttons
+        // Adicionar event listeners para botões de ação
         this.attachActionListeners();
     }
 
@@ -363,7 +363,7 @@ export class ConexoesQRManager {
         const solicitacao = this.solicitacoes.find(s => s.id === id);
         if (!solicitacao) return;
 
-        // Use Modals.prompt if available, otherwise fall back to native prompt
+        // Usar Modals.prompt se disponível, caso contrário usar prompt nativo
         let observacoes;
         if (typeof Modals.prompt === 'function') {
             observacoes = await Modals.prompt(
